@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import Layout from './components/layout'
 import { profileService } from './lib/api-client'
+import { Profile } from './types/profile'
 
 export default function Home() {
-  const [profile, setProfile] = useState(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -35,6 +36,7 @@ export default function Home() {
       ) : profile ? (
         <div>
           <p>Welcome, {profile.name}!</p>
+          <p>Email: {profile.email}</p>
           {/* Add more profile information or dashboard widgets here */}
         </div>
       ) : null}

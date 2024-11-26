@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { Profile } from '../types/profile'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api'
 
@@ -42,13 +43,13 @@ apiClient.interceptors.response.use(
 )
 
 export const profileService = {
-  getProfile: () => apiClient.get('/profile'),
-  updateProfile: (data: any) => apiClient.patch('/profile', data),
+  getProfile: () => apiClient.get<Profile>('/profile'),
+  updateProfile: (data: Partial<Profile>) => apiClient.patch<Profile>('/profile', data),
 }
 
 export const authService = {
   login: (credentials: { email: string; password: string }) => 
-    apiClient.post('/auth/login', credentials),
+    apiClient.post<{ token: string; refreshToken: string }>('/auth/login', credentials),
   logout: () => apiClient.post('/auth/logout'),
 }
 
