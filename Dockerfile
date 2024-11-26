@@ -4,10 +4,13 @@ FROM node:18-alpine
 # Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy package.json and package-lock.json (if it exists)
 COPY package*.json ./
 
-# Install dependencies
+# Install dependencies and generate package-lock.json if it doesn't exist
+RUN npm install
+
+# If you want to ensure a clean install with exact versions, now you can run npm ci
 RUN npm ci
 
 # Copy the rest of your app's source code
