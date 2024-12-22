@@ -6,20 +6,10 @@ import Link from "next/link"
 import { useSession, useUser } from "@clerk/nextjs"
 
 // Components
-import ProjectCard from "@/components/opportunity-card"
-import EmptyState from "@/components/empty-state"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationEllipsis,
-} from "@/components/ui/pagination"
+import OpportunityTable from "@/components/opportunity-table"
+import { EmptyState } from "@/components/empty-state"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { MultiSelect } from "@/components/ui/multi-select"
 import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 
 // Icons
@@ -31,11 +21,6 @@ import { exchangeClerkToken } from "@/src/services/auth"
 
 // Constants
 const ITEMS_PER_PAGE = 15
-const MAX_VISIBLE_PAGES = 5
-const PROJECT_TYPES = [
-  'Ηλεκτρομηχανολογικές Εγκαταστάσεις',
-  'Συστήματα Ασφαλείας'
-]
 
 // Types
 interface Project {
@@ -106,7 +91,6 @@ export default function GridOpportunities() {
   const [totalItems, setTotalItems] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
 
   // Token initialization
   const initializeToken = async () => {
@@ -129,7 +113,7 @@ export default function GridOpportunities() {
   }
 
   // Data fetching
-  const fetchOpportunities = async (page: number, types: string[]) => {
+  const fetchOpportunities = async (page: number) => {
     setIsLoading(true)
     setError(null)
 
@@ -140,8 +124,7 @@ export default function GridOpportunities() {
         if (!token) return
       }
 
-      const typeParams = types.map(type => `category=${encodeURIComponent(type)}`).join('&')
-      const fullUrl = `/api/opportunities?page=${page}&limit=${ITEMS_PER_PAGE}${typeParams ? '&' + typeParams : ''}`
+      const fullUrl = `/api/opportunities?page=${page}&limit=${ITEMS_PER_PAGE}`
       
       const response = await fetch(fullUrl, {
         headers: {
@@ -181,17 +164,14 @@ export default function GridOpportunities() {
   }
 
   // Event handlers
-  const handlePageChange = (page: number) => setCurrentPage(page)
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    fetchOpportunities(page)
+  }
   
   const handleReset = () => {
     setCurrentPage(1)
-    setSelectedTypes([])
-    fetchOpportunities(1, [])
-  }
-
-  const handleTypeChange = (types: string[]) => {
-    setSelectedTypes(types)
-    setCurrentPage(1)
+    fetchOpportunities(1)
   }
 
   const handleClaimProject = async (opportunityId: string) => {
@@ -213,7 +193,7 @@ export default function GridOpportunities() {
         throw new Error(`Failed to claim project: ${errorText}`)
       }
 
-      await fetchOpportunities(currentPage, selectedTypes)
+      await fetchOpportunities(currentPage)
       router.push('/claimed')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to claim project')
@@ -227,7 +207,7 @@ export default function GridOpportunities() {
         const init = async () => {
           let token = getAccessToken()
           if (!token) token = await initializeToken()
-          if (token) fetchOpportunities(currentPage, selectedTypes)
+          if (token) fetchOpportunities(currentPage)
         }
         init()
       } else {
@@ -235,64 +215,6 @@ export default function GridOpportunities() {
       }
     }
   }, [session, isSessionLoaded])
-
-  useEffect(() => {
-    if (session && getAccessToken()) {
-      fetchOpportunities(currentPage, selectedTypes)
-    }
-  }, [currentPage, selectedTypes])
-
-  // Render helpers
-  const renderPaginationItems = () => {
-    const items = []
-    const startPage = Math.max(1, currentPage - Math.floor(MAX_VISIBLE_PAGES / 2))
-    const endPage = Math.min(totalPages, startPage + MAX_VISIBLE_PAGES - 1)
-
-    // First page
-    if (startPage > 1) {
-      items.push(
-        <PaginationItem key="first">
-          <PaginationLink href="#" onClick={(e) => { e.preventDefault(); handlePageChange(1) }}>
-            1
-          </PaginationLink>
-        </PaginationItem>
-      )
-      if (startPage > 2) {
-        items.push(<PaginationEllipsis key="ellipsis-start" />)
-      }
-    }
-
-    // Page numbers
-    for (let i = startPage; i <= endPage; i++) {
-      items.push(
-        <PaginationItem key={i}>
-          <PaginationLink 
-            href="#" 
-            isActive={currentPage === i}
-            onClick={(e) => { e.preventDefault(); handlePageChange(i) }}
-          >
-            {i}
-          </PaginationLink>
-        </PaginationItem>
-      )
-    }
-
-    // Last page
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        items.push(<PaginationEllipsis key="ellipsis-end" />)
-      }
-      items.push(
-        <PaginationItem key="last">
-          <PaginationLink href="#" onClick={(e) => { e.preventDefault(); handlePageChange(totalPages) }}>
-            {totalPages}
-          </PaginationLink>
-        </PaginationItem>
-      )
-    }
-
-    return items
-  }
 
   // Loading state
   if (!isSessionLoaded || isLoading) {
@@ -324,15 +246,6 @@ export default function GridOpportunities() {
           <CardTitle className="text-lg">Find public projects in your area</CardTitle>
         </CardHeader>
       </Card>
-          
-      <div className="mb-8 ml-6 mr-6 px-4 sm:px-6 lg:px-8">
-        <MultiSelect
-          options={PROJECT_TYPES.map(type => ({ label: type, value: type }))}
-          onValueChange={handleTypeChange}
-          placeholder="Filter projects by type"
-          defaultValue={selectedTypes}
-        />
-      </div>
 
       {error && (
         <Alert variant="destructive" className="mb-6">
@@ -340,7 +253,7 @@ export default function GridOpportunities() {
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
           <Button 
-            onClick={() => fetchOpportunities(currentPage, selectedTypes)} 
+            onClick={() => fetchOpportunities(currentPage)} 
             className="mt-2"
             variant="outline"
           >
@@ -351,51 +264,24 @@ export default function GridOpportunities() {
 
       {opportunities.length === 0 ? (
         <div className="flex justify-center items-center min-h-[50vh]">
-          <EmptyState onReset={handleReset} />
+          <EmptyState 
+            title="No projects found"
+            description="There are currently no public projects available in your area."
+            actionLabel="Reset filters"
+            actionOnClick={handleReset}
+            imagePath="/empty-projects.svg"
+          />
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-y-6 sm:gap-y-8 mb-8 gap-x-12 px-4 sm:px-6 lg:px-8">
-            {opportunities.map((opportunity) => (
-              <ProjectCard 
-                key={opportunity._id} 
-                {...opportunity} 
-                onClaim={() => handleClaimProject(opportunity._id)}
-              />
-            ))}
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex flex-col items-center justify-between space-y-4 sm:flex-row sm:space-y-0 px-4 sm:px-6 lg:px-8 mb-16">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      href="#" 
-                      onClick={(e) => {
-                        e.preventDefault()
-                        if (currentPage > 1) handlePageChange(currentPage - 1)
-                      }}
-                    />
-                  </PaginationItem>
-                  {renderPaginationItems()}
-                  <PaginationItem>
-                    <PaginationNext 
-                      href="#" 
-                      onClick={(e) => {
-                        e.preventDefault()
-                        if (currentPage < totalPages) handlePageChange(currentPage + 1)
-                      }}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-              <div className="text-sm text-gray-500">
-                Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} of {totalItems} opportunities
-              </div>
-            </div>
-          )}
-        </>
+        <div className="px-4 sm:px-6 lg:px-8">
+          <OpportunityTable 
+            opportunities={opportunities}
+            onClaim={handleClaimProject}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
       )}
     </main>
   )

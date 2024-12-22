@@ -1,22 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import ClaimedProjectCard from "@/components/claimed-project-card"
 import { getAccessToken, setAccessToken } from '@/src/utils/tokenManager';
 import { useSession, useUser } from "@clerk/nextjs"
 import { exchangeClerkToken } from "@/src/services/auth"
 import { Toaster } from "sonner"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
 import { Button } from "@/components/ui/button"
 import { SignInButton } from "@clerk/nextjs"
+import ClaimedProjectsTable from "@/components/claimed-projects-table"
 
 interface Project {
   _id: string
@@ -139,25 +130,18 @@ export default function PaginatedProjects() {
   }
 
   useEffect(() => {
-    if (isSessionLoaded) {
-      if (session) {
-        fetchProjects(currentPage);
-      } else {
-        setIsLoading(false);
-        setError(null);
-      }
+    if (isSessionLoaded && session) {
+      fetchProjects(currentPage);
+    } else if (isSessionLoaded) {
+      setIsLoading(false);
+      setError(null);
     }
-  }, [currentPage, session, isSessionLoaded]);
+  }, [isSessionLoaded, session]);
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1)
-    }
-  }
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1)
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    if (session) {
+      fetchProjects(page);
     }
   }
 
@@ -194,100 +178,17 @@ export default function PaginatedProjects() {
   return (
     <div className="space-y-8">
       <Toaster richColors position="top-center" />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {projects.map((project) => (
-          <ClaimedProjectCard key={project._id} {...project} />
-        ))}
-      </div>
       {projects.length === 0 ? (
         <div className="text-center py-10">
           <p className="text-gray-600">No claimed projects found</p>
         </div>
       ) : (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious 
-                onClick={handlePrevPage} 
-                isActive={currentPage > 1}
-                aria-disabled={currentPage === 1}
-              />
-            </PaginationItem>
-            
-            {/* First page */}
-            <PaginationItem>
-              <PaginationLink
-                onClick={() => setCurrentPage(1)}
-                isActive={currentPage === 1}
-              >
-                1
-              </PaginationLink>
-            </PaginationItem>
-
-            {/* Show ellipsis if there are many pages before current */}
-            {currentPage > 3 && (
-              <PaginationItem>
-                <PaginationEllipsis />
-              </PaginationItem>
-            )}
-
-            {/* Current page and surrounding pages */}
-            {currentPage > 2 && (
-              <PaginationItem>
-                <PaginationLink
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                >
-                  {currentPage - 1}
-                </PaginationLink>
-              </PaginationItem>
-            )}
-            
-            {currentPage !== 1 && currentPage !== totalPages && (
-              <PaginationItem>
-                <PaginationLink isActive>
-                  {currentPage}
-                </PaginationLink>
-              </PaginationItem>
-            )}
-
-            {currentPage < totalPages - 1 && (
-              <PaginationItem>
-                <PaginationLink
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                >
-                  {currentPage + 1}
-                </PaginationLink>
-              </PaginationItem>
-            )}
-
-            {/* Show ellipsis if there are many pages after current */}
-            {currentPage < totalPages - 2 && (
-              <PaginationItem>
-                <PaginationEllipsis />
-              </PaginationItem>
-            )}
-
-            {/* Last page */}
-            {totalPages > 1 && (
-              <PaginationItem>
-                <PaginationLink
-                  onClick={() => setCurrentPage(totalPages)}
-                  isActive={currentPage === totalPages}
-                >
-                  {totalPages}
-                </PaginationLink>
-              </PaginationItem>
-            )}
-
-            <PaginationItem>
-              <PaginationNext 
-                onClick={handleNextPage}
-                isActive={currentPage < totalPages}
-                aria-disabled={currentPage === totalPages}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <ClaimedProjectsTable 
+          projects={projects}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       )}
     </div>
   )

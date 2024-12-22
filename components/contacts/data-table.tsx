@@ -38,6 +38,8 @@ interface DataTableProps<TData, TValue> {
   pageCount?: number
   onPaginationChange?: (pagination: PaginationState) => void
   searchPlaceholder?: string
+  hideSearch?: boolean
+  stickyHeader?: boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -46,6 +48,8 @@ export function DataTable<TData, TValue>({
   pageCount,
   onPaginationChange,
   searchPlaceholder = "Search...",
+  hideSearch = false,
+  stickyHeader = true,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -81,21 +85,23 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={searchPlaceholder}
-            value={globalFilter ?? ""}
-            onChange={(event) => setGlobalFilter(event.target.value)}
-            className="pl-8"
-          />
+      {!hideSearch && (
+        <div className="flex items-center">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={searchPlaceholder}
+              value={globalFilter ?? ""}
+              onChange={(event) => setGlobalFilter(event.target.value)}
+              className="pl-8"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="rounded-md border">
         <Table>
-          <TableHeader>
+          <TableHeader className={stickyHeader ? "sticky top-0 bg-white z-10" : ""}>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {

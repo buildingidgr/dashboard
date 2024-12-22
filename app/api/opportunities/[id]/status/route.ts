@@ -19,7 +19,8 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const url = `${OPPORTUNITY_API_URL}/opportunities/${params.id}/status`
+    const opportunityId = params.id
+    const url = `${OPPORTUNITY_API_URL}/opportunities/${opportunityId}/status`
     console.log('Proxying request to:', url)
 
     const response = await fetch(url, {

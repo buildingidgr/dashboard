@@ -201,117 +201,27 @@ export async function POST(request: Request) {
     const body = await request.json()
     const url = `${CONTACTS_API_URL}/api/contacts`
     
-    // Transform the payload to match the API requirements
-    const transformedBody: {
-      email: string;
-      firstName: string;
-      lastName: string;
-      phones: Array<{
-        type: string;
-        number: string;
-        primary: boolean;
-      }>;
-      address?: {
-        street: string;
-        city: string;
-        state: string;
-        country: string;
-        postalCode: string;
-      };
-      opportunityIds: string[];
-    } = {
+    // Pass through the request body without transformation
+    const contactData = {
       email: body.email,
-      firstName: '',
-      lastName: '',
-      phones: [],
-      opportunityIds: []
-    }
-
-    // Add name if provided
-    if (body.name) {
-      const nameParts = body.name.split(' ').filter((part: string) => part.length > 0)
-      if (nameParts.length > 0) {
-        transformedBody.firstName = nameParts[0].trim()
-        if (nameParts.length > 1) {
-          transformedBody.lastName = nameParts.slice(1).join(' ').trim()
-        }
-      }
-    }
-
-    // Add phone if provided
-    if (body.phone?.countryCode && body.phone?.number) {
-      let phoneNumber = body.phone.countryCode + body.phone.number
-      phoneNumber = phoneNumber.replace(/\s+/g, '').replace(/[^0-9]/g, '')
-      phoneNumber = '+' + phoneNumber
-      transformedBody.phones = [{
-        type: "mobile",
-        number: phoneNumber,
-        primary: true
-      }]
-    }
-
-    // Add address if provided
-    if (body.address) {
-      try {
-        // Parse the address string
-        const parsedAddress = parseGreekAddress(body.address.street || '');
-        
-        // Use provided values or fall back to parsed ones
-        const addressData = {
-          street: body.address.street || parsedAddress.street || '',
-          city: body.address.city || parsedAddress.city || '',
-          state: body.address.state || parsedAddress.state || 'Macedonia',
-          country: body.address.country || 'GR',
-          postalCode: body.address.postalCode || parsedAddress.postalCode || ''
-        };
-
-        // Validate postal code format
-        if (/^\d{5}(-\d{4})?$/.test(addressData.postalCode)) {
-          transformedBody.address = addressData;
-
-          // Log address parsing results
-          console.log('Address Parsing Results:', {
-            original: body.address.street,
-            parsed: parsedAddress,
-            final: addressData
-          });
-        } else {
-          console.log('Invalid postal code format:', addressData.postalCode);
-          delete transformedBody.address;
-        }
-      } catch (error) {
-        console.error('Address parsing error:', error);
-        // Fallback to original address if parsing fails
-        if (body.address.postalCode && /^\d{5}(-\d{4})?$/.test(body.address.postalCode)) {
-          transformedBody.address = {
-            street: body.address.street || '',
-            city: body.address.city || '',
-            state: body.address.state || 'Macedonia',
-            country: body.address.country || 'GR',
-            postalCode: body.address.postalCode
-          };
-        } else {
-          delete transformedBody.address;
-        }
-      }
-    }
-
-    // Add opportunityIds if provided
-    if (body.opportunityIds) {
-      transformedBody.opportunityIds = body.opportunityIds
+      firstName: body.firstName,
+      lastName: body.lastName,
+      phones: body.phones || [],
+      address: body.address,
+      opportunityIds: body.opportunityIds || []
     }
 
     // Log the actual request to the Public Contacts API
-    console.log('\n🌐 PUBLIC CONTACTS API REQUEST 🌐');
-    console.log('URL:', url);
-    console.log('Method: POST');
+    console.log('\n🌐 PUBLIC CONTACTS API REQUEST 🌐')
+    console.log('URL:', url)
+    console.log('Method: POST')
     console.log('Headers:', {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + token.substring(0, 10) + '...'
-    });
-    console.log('Body:', JSON.stringify(transformedBody, null, 2));
-    console.log('----------------------------------------\n');
+    })
+    console.log('Body:', JSON.stringify(contactData, null, 2))
+    console.log('----------------------------------------\n')
 
     const response = await fetch(url, {
       method: 'POST',
@@ -320,31 +230,31 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(transformedBody)
-    });
+      body: JSON.stringify(contactData)
+    })
 
-    const responseText = await response.text();
+    const responseText = await response.text()
     
     // Log the response from the Public Contacts API
-    console.log('\n🌐 PUBLIC CONTACTS API RESPONSE 🌐');
-    console.log('Status:', response.status, response.statusText);
-    console.log('Headers:', Object.fromEntries(response.headers.entries()));
-    console.log('Body:', responseText);
-    console.log('----------------------------------------\n');
+    console.log('\n🌐 PUBLIC CONTACTS API RESPONSE 🌐')
+    console.log('Status:', response.status, response.statusText)
+    console.log('Headers:', Object.fromEntries(response.headers.entries()))
+    console.log('Body:', responseText)
+    console.log('----------------------------------------\n')
 
     if (!response.ok) {
       console.error('API error response:', {
         status: response.status,
         statusText: response.statusText,
         body: responseText
-      });
+      })
 
-      let errorMessage = 'Failed to create contact';
+      let errorMessage = 'Failed to create contact'
       try {
-        const errorData = JSON.parse(responseText);
-        errorMessage = errorData.error || errorData.message || errorMessage;
+        const errorData = JSON.parse(responseText)
+        errorMessage = errorData.error || errorData.message || errorMessage
       } catch (e) {
-        console.error('Failed to parse error response:', e);
+        console.error('Failed to parse error response:', e)
       }
 
       return NextResponse.json(
@@ -353,11 +263,11 @@ export async function POST(request: Request) {
       )
     }
 
-    let data;
+    let data
     try {
-      data = JSON.parse(responseText);
+      data = JSON.parse(responseText)
     } catch (e) {
-      console.error('Failed to parse success response:', e);
+      console.error('Failed to parse success response:', e)
       return NextResponse.json(
         { error: 'Invalid response from server' },
         { status: 500 }
@@ -370,7 +280,7 @@ export async function POST(request: Request) {
       error,
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined
-    });
+    })
     
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal server error' },
