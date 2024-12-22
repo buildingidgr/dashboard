@@ -7,6 +7,19 @@ import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/contacts/data-table"
 import { toast } from "sonner"
 import { getAccessToken } from '@/src/utils/tokenManager'
+import { useRouter } from 'next/navigation'
+
+function ToastLink({ href, children }: { href: string, children: React.ReactNode }) {
+  const router = useRouter()
+  return (
+    <span
+      onClick={() => router.push(href)}
+      className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+    >
+      {children}
+    </span>
+  )
+}
 
 interface Project {
   _id: string
@@ -68,6 +81,7 @@ export default function ClaimedProjectsTable({
   totalPages,
   onPageChange
 }: ClaimedProjectsTableProps) {
+  const router = useRouter()
   const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
 
   const formatPhoneNumber = (phones: Array<{ type: string, number: string, primary: boolean }> | undefined) => {
@@ -148,12 +162,9 @@ export default function ClaimedProjectsTable({
       const data = JSON.parse(responseText)
       toast.success(`Successfully added ${project.data.contact.firstName} ${project.data.contact.lastName} to your contacts!`, {
         description: (
-          <a 
-            href={`/contacts/${data.id}`}
-            className="text-blue-600 hover:text-blue-800 underline"
-          >
+          <ToastLink href={`/contacts/${data.id}`}>
             Click here to view contact details
-          </a>
+          </ToastLink>
         ),
         duration: 5000
       })
