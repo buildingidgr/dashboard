@@ -1,12 +1,6 @@
 'use client';
 
-import { Metadata } from "next";
 import { DocumentsGrid } from "@/components/documents/documents-grid";
-
-export const metadata: Metadata = {
-  title: "Documents",
-  description: "Create and manage documents.",
-};
 
 export default function DocumentsPage() {
   return (
