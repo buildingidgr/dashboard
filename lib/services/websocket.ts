@@ -74,7 +74,9 @@ interface SocketConfig {
 export class DocumentWebSocket {
   private socket: ExtendedSocket | null = null;
   private reconnectAttempts = 0;
-  private readonly MAX_RECONNECT_ATTEMPTS = 5;
+  private readonly MAX_RECONNECT_ATTEMPTS = 10;
+  private readonly MAX_RECONNECT_DELAY = 30000; // 30 seconds
+  private readonly BASE_RECONNECT_DELAY = 1000; // 1 second
   private messageQueue: Message[] = [];
   private isAuthenticated = false;
   private readonly BASE_URL = 'https://documents-production.up.railway.app';
@@ -414,39 +416,50 @@ export class DocumentWebSocket {
     if (this.closeRequested) return;
 
     this.reconnectAttempts++;
-    if (this.reconnectAttempts < 10) { // Maximum 10 reconnection attempts
-      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000); // Max delay 30 seconds
-      console.log(`Scheduling reconnection in ${delay}ms (attempt ${this.reconnectAttempts}/10)`);
+    if (this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS) {
+      const delay = Math.min(
+        this.BASE_RECONNECT_DELAY * Math.pow(2, this.reconnectAttempts),
+        this.MAX_RECONNECT_DELAY
+      );
+      console.log(`Scheduling reconnection in ${delay}ms (attempt ${this.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS})`);
       setTimeout(() => this.connect(), delay);
     } else {
-      console.error('Max reconnection attempts reached');
+      console.error(`Max reconnection attempts (${this.MAX_RECONNECT_ATTEMPTS}) reached`);
     }
   }
 
   private flushMessageQueue() {
-    console.log(`Flushing message queue (${this.messageQueue.length} messages)`);
-    while (this.messageQueue.length > 0) {
-      const message = this.messageQueue.shift();
-      if (message) {
-        this.sendMessage(message);
-      }
-    }
-  }
-
-  private sendMessage(message: Message) {
     if (!this.socket?.connected || !this.isAuthenticated) {
-      console.log('Socket not ready, queueing message:', message);
-      this.messageQueue.push(message);
+      console.log('Socket not ready, keeping messages in queue');
       return;
     }
 
-    try {
-      console.log('Sending message:', message);
-      this.socket.emit(message.type, message.data);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error('Error sending message:', errorMessage);
-      this.messageQueue.push(message);
+    const queueLength = this.messageQueue.length;
+    console.log(`Flushing message queue (${queueLength} messages)`);
+
+    while (this.messageQueue.length > 0) {
+      const message = this.messageQueue.shift();
+      if (message) {
+        try {
+          this.socket.emit(message.type, message.data);
+          console.log('Successfully sent queued message:', {
+            type: message.type,
+            documentId: message.data.documentId
+          });
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          console.error('Failed to send queued message:', errorMessage);
+          // Put the message back in the queue
+          this.messageQueue.unshift(message);
+          break;
+        }
+      }
+    }
+
+    if (this.messageQueue.length > 0) {
+      console.log(`${this.messageQueue.length}/${queueLength} messages remain in queue`);
+    } else {
+      console.log('Message queue successfully flushed');
     }
   }
 
@@ -543,5 +556,28 @@ export class DocumentWebSocket {
 
   public isConnected(): boolean {
     return this.socket?.connected === true && this.isAuthenticated;
+  }
+
+  private sendMessage(message: Message) {
+    if (!this.socket?.connected || !this.isAuthenticated) {
+      console.log('Socket not ready, queueing message:', {
+        type: message.type,
+        documentId: message.data.documentId
+      });
+      this.messageQueue.push(message);
+      return;
+    }
+
+    try {
+      console.log('Sending message:', {
+        type: message.type,
+        documentId: message.data.documentId
+      });
+      this.socket.emit(message.type, message.data);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Error sending message:', errorMessage);
+      this.messageQueue.push(message);
+    }
   }
 } 
