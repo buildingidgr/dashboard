@@ -33,10 +33,29 @@ interface SocketEngine {
   transport: SocketTransport;
 }
 
+interface SocketEventHandlers {
+  connect: () => void;
+  disconnect: (reason: string) => void;
+  'document:update': (data: DocumentUpdate) => void;
+  'document:cursor': (data: DocumentUpdate) => void;
+  'document:presence': (data: DocumentUpdate) => void;
+  error: (error: Error) => void;
+  connect_error: (error: Error) => void;
+}
+
+interface SocketEmitEvents {
+  'document:join': (documentId: string) => void;
+  'document:update': (data: DocumentUpdate) => void;
+  'document:cursor': (data: DocumentUpdate) => void;
+  'document:presence': (data: DocumentUpdate) => void;
+}
+
 interface ExtendedSocket extends SocketType {
   io?: {
     engine?: SocketEngine;
   };
+  on<T extends keyof SocketEventHandlers>(event: T, handler: SocketEventHandlers[T]): this;
+  emit<T extends keyof SocketEmitEvents>(event: T, ...args: Parameters<SocketEmitEvents[T]>): this;
 }
 
 interface SocketConfig {
@@ -281,83 +300,7 @@ export class DocumentWebSocket {
       // Set up event handlers before connecting
       if (!this.socket) return;
 
-      this.socket.on('connect', () => {
-        if (!this.socket) return;
-        const transport = this.socket.io?.engine?.transport?.name;
-        console.log('Socket.IO connected successfully:', {
-          socketId: this.socket.id,
-          transport: transport || 'unknown'
-        });
-        this.isConnecting = false;
-        this.isAuthenticated = true;
-        this.reconnectAttempts = 0;
-
-        if (this.documentId) {
-          console.log('Joining document:', this.documentId);
-          this.socket.emit('document:join', this.documentId);
-        }
-
-        this.flushMessageQueue();
-        this.sendPresence('online');
-      });
-
-      this.socket.on('connect_error', (error: Error) => {
-        console.error('Socket.IO connection error:', {
-          message: error.message,
-          name: error.name,
-          stack: error.stack,
-          token: this.token ? 'Bearer [REDACTED]' : 'no token'
-        });
-        this.isConnecting = false;
-        this.isAuthenticated = false;
-        this.handleReconnection();
-      });
-
-      this.socket.on('error', (error: Error) => {
-        console.error('Socket.IO error:', {
-          message: error.message,
-          name: error.name,
-          stack: error.stack
-        });
-        this.handleReconnection();
-      });
-
-      this.socket.on('disconnect', (reason: string) => {
-        console.log('Socket.IO disconnected:', {
-          reason,
-          socketId: this.socket?.id,
-          wasAuthenticated: this.isAuthenticated,
-          reconnectAttempts: this.reconnectAttempts,
-          transport: (this.socket as any)?.io?.engine?.transport?.name || 'unknown'
-        });
-        this.isConnecting = false;
-        this.isAuthenticated = false;
-        this.handleReconnection();
-      });
-
-      // Set up event handlers for document events
-      this.socket.on('document:update', (data: DocumentUpdate) => {
-        console.log('Received document update:', data);
-        if (data.content) {
-          this.onUpdate({
-            documentId: data.documentId,
-            content: {
-              type: data.content.type,
-              content: data.content.content
-            }
-          });
-        }
-      });
-
-      this.socket.on('document:cursor', (data: { documentId: string; userId: string; position: { line: number; ch: number } }) => {
-        console.log('Received cursor update:', data);
-        this.onCursor(data.userId, data.position);
-      });
-
-      this.socket.on('document:presence', (data: { documentId: string; userId: string; status: 'online' | 'offline' | 'idle' }) => {
-        console.log('Received presence update:', data);
-        this.onPresence(data.userId, data.status);
-      });
+      this.setupSocketEventHandlers(this.socket);
 
       // Connect
       console.log('Connecting Socket.IO...');
@@ -369,6 +312,99 @@ export class DocumentWebSocket {
       this.isAuthenticated = false;
       this.handleReconnection();
     }
+  }
+
+  private setupSocketEventHandlers(socket: ExtendedSocket) {
+    socket.on('connect', () => {
+      if (!socket) return;
+      const transport = socket.io?.engine?.transport?.name;
+      console.log('Socket.IO connected successfully:', {
+        socketId: socket.id,
+        transport: transport || 'unknown'
+      });
+      this.isConnecting = false;
+      this.isAuthenticated = true;
+      this.reconnectAttempts = 0;
+
+      if (this.documentId) {
+        console.log('Joining document:', this.documentId);
+        socket.emit('document:join', this.documentId);
+      }
+
+      this.flushMessageQueue();
+      this.sendPresence('online');
+    });
+
+    socket.on('disconnect', (reason: string) => {
+      console.log('Socket.IO disconnected:', reason);
+      this.isAuthenticated = false;
+      this.handleDisconnect(reason);
+    });
+
+    socket.on('document:update', (data: DocumentUpdate) => {
+      if (data.type === 'update' && data.content) {
+        this.onUpdate({
+          documentId: data.documentId,
+          content: data.content
+        });
+      }
+    });
+
+    socket.on('document:cursor', (data: DocumentUpdate) => {
+      if (data.type === 'cursor' && data.position) {
+        this.onCursor(data.userId, data.position);
+      }
+    });
+
+    socket.on('document:presence', (data: DocumentUpdate) => {
+      if (data.type === 'presence' && data.status) {
+        this.onPresence(data.userId, data.status);
+      }
+    });
+
+    socket.on('error', (error: Error) => {
+      console.error('Socket.IO error:', error);
+      this.handleError(error);
+    });
+
+    socket.on('connect_error', (error: Error) => {
+      console.error('Socket.IO connection error:', error);
+      this.handleConnectionError(error);
+    });
+  }
+
+  private handleDisconnect(reason: string) {
+    console.log('Socket.IO disconnected:', {
+      reason,
+      socketId: this.socket?.id,
+      wasAuthenticated: this.isAuthenticated,
+      reconnectAttempts: this.reconnectAttempts,
+      transport: this.socket?.io?.engine?.transport?.name || 'unknown'
+    });
+    this.isConnecting = false;
+    this.isAuthenticated = false;
+    this.handleReconnection();
+  }
+
+  private handleError(error: Error) {
+    console.error('Socket.IO error:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
+    this.handleReconnection();
+  }
+
+  private handleConnectionError(error: Error) {
+    console.error('Socket.IO connection error:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      token: this.token ? 'Bearer [REDACTED]' : 'no token'
+    });
+    this.isConnecting = false;
+    this.isAuthenticated = false;
+    this.handleReconnection();
   }
 
   private handleReconnection() {
