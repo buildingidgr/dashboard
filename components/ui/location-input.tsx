@@ -5,10 +5,18 @@ import { Input } from "@/components/ui/input"
 import { useLoadScript } from '@react-google-maps/api'
 import { GOOGLE_MAPS_LIBRARIES } from '@/lib/google-maps'
 
+interface LocationValue {
+  address: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+}
+
 interface LocationInputProps {
-  value: any
-  onChange: (location: { address: string; coordinates: { lat: number; lng: number } }) => void
-  disabled?: boolean
+  value: LocationValue;
+  onChange: (location: LocationValue) => void;
+  disabled?: boolean;
 }
 
 export default function LocationInput({ value, onChange, disabled }: LocationInputProps) {

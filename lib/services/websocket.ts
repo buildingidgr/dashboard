@@ -25,8 +25,22 @@ type Message = {
 
 type SocketType = ReturnType<typeof Manager.prototype.socket>;
 
+interface SocketTransport {
+  name: string;
+}
+
+interface SocketEngine {
+  transport: SocketTransport;
+}
+
+interface ExtendedSocket extends SocketType {
+  io?: {
+    engine?: SocketEngine;
+  };
+}
+
 export class DocumentWebSocket {
-  private socket: SocketType | null = null;
+  private socket: ExtendedSocket | null = null;
   private reconnectAttempts = 0;
   private readonly MAX_RECONNECT_ATTEMPTS = 5;
   private messageQueue: Message[] = [];
@@ -253,14 +267,18 @@ export class DocumentWebSocket {
       const manager = new Manager('wss://documents-production.up.railway.app', config);
 
       // Create socket and set auth explicitly
-      this.socket = manager.socket('/');
+      this.socket = manager.socket('/') as ExtendedSocket;
       this.socket.auth = { token: `Bearer ${this.token}` };
 
       // Set up event handlers before connecting
+      if (!this.socket) return;
+
       this.socket.on('connect', () => {
+        if (!this.socket) return;
+        const transport = this.socket.io?.engine?.transport?.name;
         console.log('Socket.IO connected successfully:', {
-          socketId: this.socket?.id,
-          transport: (this.socket as any)?.io?.engine?.transport?.name || 'unknown'
+          socketId: this.socket.id,
+          transport: transport || 'unknown'
         });
         this.isConnecting = false;
         this.isAuthenticated = true;

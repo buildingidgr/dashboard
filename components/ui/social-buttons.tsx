@@ -1,7 +1,7 @@
 // Dependencies: pnpm install @remixicon/react
 
 import { Button } from "@/components/ui/button";
-import { RiAppleFill, RiFacebookFill, RiGithubFill, RiGoogleFill, RiTwitterXFill } from "@remixicon/react";
+import { RiAppleFill, RiFacebookFill, RiGoogleFill } from "@remixicon/react";
 
 export default function SocialButtons() {
   return (
