@@ -2,7 +2,6 @@
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { 
-  Building2, 
   UserPlus, 
   FileEdit, 
   CheckCircle2,

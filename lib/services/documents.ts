@@ -1,11 +1,19 @@
 import { getAccessToken } from '@/lib/services/auth';
 
+interface DocumentContent {
+  type: string;
+  children: Array<{
+    text: string;
+    [key: string]: unknown;
+  }>;
+}
+
 export interface Document {
   id: string;
   title: string;
   content?: {
     type: string;
-    content: any[];
+    content: DocumentContent[];
   };
   createdAt: string;
   updatedAt: string;

@@ -31,7 +31,6 @@ interface TeamSwitcherProps {
 
 export function TeamSwitcher({ teams }: TeamSwitcherProps) {
   const { isMobile } = useSidebar()
-  const { isDarkMode } = useTheme()
   const TeamLogo = teams[0].logo
 
   return (

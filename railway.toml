@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm run build"
+buildCommand = "NEXT_TELEMETRY_DISABLED=1 CI=true npm run build || npm run build"
 
 [deploy]
 startCommand = "npm start"

@@ -84,7 +84,7 @@ export default function AreaSelector({
         circle.setRadius(newRadius * 1000)
       }
     }
-  }, [value?.address, value?.radius, maxRadius, circle])
+  }, [value?.address, value?.radius, maxRadius, circle, value])
 
   // Initialize autocomplete separately from map
   useEffect(() => {
@@ -252,43 +252,30 @@ export default function AreaSelector({
   useEffect(() => {
     if (!isLoaded || !mapRef.current || isInitializedRef.current) return;
 
-    const initialLocation = value?.coordinates && value?.address
-      ? value.coordinates
-      : { lat: 37.9838, lng: 23.7275 }; // Default to Greece
-
-    const initialRadius = Math.min(value?.radius || DEFAULT_RADIUS, maxRadius)
-
     const mapInstance = new google.maps.Map(mapRef.current, {
-      center: initialLocation,
-      zoom: 8,
-      mapTypeControl: false,
-      streetViewControl: false,
+      zoom: 12,
+      center: value?.coordinates || { lat: 0, lng: 0 },
+      disableDefaultUI: true,
+      zoomControl: true
     })
 
     const markerInstance = new google.maps.Marker({
       map: mapInstance,
-      position: initialLocation,
-      draggable: !disabled,
+      position: value?.coordinates || { lat: 0, lng: 0 },
+      draggable: !disabled
     })
 
     const circleInstance = new google.maps.Circle({
       map: mapInstance,
-      center: initialLocation,
-      radius: initialRadius * 1000, // Convert km to meters
-      fillColor: '#3B82F6',
-      fillOpacity: 0.2,
-      strokeColor: '#3B82F6',
-      strokeOpacity: 0.8,
-      strokeWeight: 2,
+      center: value?.coordinates || { lat: 0, lng: 0 },
+      radius: (value?.radius || DEFAULT_RADIUS) * 1000,
       editable: !disabled,
-      draggable: !disabled
+      draggable: !disabled,
+      fillColor: '#1d4ed8',
+      fillOpacity: 0.2,
+      strokeColor: '#1d4ed8',
+      strokeWeight: 2
     })
-
-    if (inputRef.current) {
-      const autocomplete = new google.maps.places.Autocomplete(inputRef.current)
-      autocomplete.bindTo('bounds', mapInstance)
-      setupMapListeners(mapInstance, markerInstance, circleInstance, autocomplete)
-    }
 
     setMap(mapInstance)
     setMarker(markerInstance)
@@ -298,9 +285,8 @@ export default function AreaSelector({
     return () => {
       markerInstance.setMap(null)
       circleInstance.setMap(null)
-      isInitializedRef.current = false
     }
-  }, [isLoaded])
+  }, [isLoaded, disabled, value?.coordinates, value?.radius, maxRadius, inputValue])
 
   // Update map elements when value changes externally
   useEffect(() => {
