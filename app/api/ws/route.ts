@@ -39,27 +39,27 @@ wss.on('connection', (socket: WebSocket) => {
 
         case 'update':
           // Broadcast the update to all other clients viewing the same document
-          for (const [_, conn] of connections) {
-            if (conn.documentId === message.documentId && conn.socket !== socket) {
-              conn.socket.send(JSON.stringify(message));
+          for (const [, connection] of connections) {
+            if (connection.documentId === message.documentId && connection.socket !== socket) {
+              connection.socket.send(JSON.stringify(message));
             }
           }
           break;
 
         case 'cursor':
           // Broadcast cursor position to all other clients viewing the same document
-          for (const [_, conn] of connections) {
-            if (conn.documentId === message.documentId && conn.socket !== socket) {
-              conn.socket.send(JSON.stringify(message));
+          for (const [, connection] of connections) {
+            if (connection.documentId === message.documentId && connection.socket !== socket) {
+              connection.socket.send(JSON.stringify(message));
             }
           }
           break;
 
         case 'presence':
           // Broadcast presence update to all other clients viewing the same document
-          for (const [_, conn] of connections) {
-            if (conn.documentId === message.documentId && conn.socket !== socket) {
-              conn.socket.send(JSON.stringify(message));
+          for (const [, connection] of connections) {
+            if (connection.documentId === message.documentId && connection.socket !== socket) {
+              connection.socket.send(JSON.stringify(message));
             }
           }
           break;
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // @ts-ignore - Next.js types don't include the socket property
+    // @ts-expect-error - Next.js types don't include the socket property
     const { socket, head } = req;
     
     if (!socket) {

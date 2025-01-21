@@ -72,7 +72,7 @@ export async function PUT(
     let body;
     try {
       body = JSON.parse(bodyText);
-    } catch (e) {
+    } catch {
       return NextResponse.json(
         { error: 'Invalid JSON in request body' },
         { status: 400 }
@@ -81,8 +81,13 @@ export async function PUT(
 
     console.log('Parsed body:', JSON.stringify(body, null, 2));
 
+    interface DocumentContent {
+      content?: DocumentContent | DocumentContent[];
+      [key: string]: any;
+    }
+
     // Helper function to find the actual content array if it exists
-    const findContentArray = (obj: any): any[] | undefined => {
+    const findContentArray = (obj: DocumentContent): DocumentContent[] | undefined => {
       if (!obj) return undefined;
       if (Array.isArray(obj)) return obj;
       if (obj?.content) return findContentArray(obj.content);
@@ -90,7 +95,7 @@ export async function PUT(
     };
 
     // Transform the body only if content exists
-    const transformedBody: any = {
+    const transformedBody: DocumentContent = {
       title: body.title
     };
 

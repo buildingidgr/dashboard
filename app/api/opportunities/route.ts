@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     let data
     try {
       data = JSON.parse(responseText)
-    } catch (error) {
+    } catch {
       console.error('Failed to parse response as JSON:', responseText)
       return new Response("Invalid JSON response from server", { status: 500 })
     }

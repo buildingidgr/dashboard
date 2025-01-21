@@ -1,7 +1,6 @@
 import { Share2, MessageSquare, Star, MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
 import { withTooltip } from "@/components/plate-ui/tooltip"
 import { useState, useRef, useEffect } from "react"
 import { Input } from "@/components/ui/input"

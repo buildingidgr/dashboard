@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs'
-import { getAccessToken } from '@/lib/services/auth'
 
 const API_URL = 'https://documents-production.up.railway.app'
 

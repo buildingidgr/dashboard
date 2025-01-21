@@ -3,7 +3,6 @@ import { headers, cookies } from 'next/headers'
 import { refreshToken } from '@/lib/services/auth'
 
 const CONTACTS_API_URL = process.env.CONTACTS_API_URL || 'https://contacts-production-ca50.up.railway.app'
-const OPPORTUNITY_API_URL = process.env.NEXT_PUBLIC_OPPORTUNITY_API_URL
 
 interface AddressComponents {
   street?: string;

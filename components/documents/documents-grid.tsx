@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { getAccessToken } from '@/lib/services/auth';
 import { useRouter } from 'next/navigation';
 import { DocumentsService } from '@/lib/services/documents';
 import { PlusIcon } from '@heroicons/react/24/outline';

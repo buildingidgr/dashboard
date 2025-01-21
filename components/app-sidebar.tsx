@@ -13,8 +13,6 @@ import {
 import { useTheme } from "@/components/layouts/client-layout"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { DocumentsList } from '@/components/documents/documents-list';
 import { DocumentsService } from '@/lib/services/documents';
 import { toast } from 'sonner';
 
