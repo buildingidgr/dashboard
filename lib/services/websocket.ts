@@ -224,16 +224,17 @@ export class DocumentWebSocket {
   }
 
   private async validateAndConnect() {
-    const isValid = await this.validateToken();
-    if (!isValid) {
-      console.error('Token validation failed, not connecting Socket.IO');
-      return;
+    if (!this.token) {
+      throw new Error('Authentication token is required');
     }
-    await this.connect();
+    if (!this.documentId) {
+      throw new Error('Document ID is required');
+    }
+    this.connect();
   }
 
   private setupVisibilityHandler() {
-    if (typeof window === 'undefined') return;
+    if (typeof document === 'undefined') return;
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
@@ -306,8 +307,9 @@ export class DocumentWebSocket {
       console.log('Connecting Socket.IO...');
       this.socket.connect();
 
-    } catch (error) {
-      console.error('Error creating Socket.IO connection:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Error creating Socket.IO connection:', errorMessage);
       this.isConnecting = false;
       this.isAuthenticated = false;
       this.handleReconnection();
@@ -490,15 +492,16 @@ export class DocumentWebSocket {
   }
 
   public sendPresence(status: 'online' | 'offline' | 'idle') {
-    this.sendMessage({
+    const message: Message = {
       type: 'document:presence',
       data: {
         type: 'presence',
         documentId: this.documentId,
-        userId: this.extractUserIdFromToken(this.token),
+        userId: this.socket?.id || '',
         status
       }
-    });
+    };
+    this.sendMessage(message);
   }
 
   public disconnect() {
