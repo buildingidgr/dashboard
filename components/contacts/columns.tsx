@@ -132,94 +132,99 @@ export const columns: ColumnDef<Contact, unknown>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
-      const contact = row.original
-      const [isDeleting, setIsDeleting] = useState(false)
-      const [isLoading, setIsLoading] = useState(false)
-      const router = useRouter()
+      return <ActionCell row={row} />
+    }
+  },
+]
 
-      const handleDelete = async () => {
-        setIsLoading(true)
-        try {
-          const accessToken = getAccessToken()
-          if (!accessToken) {
-            throw new Error("No access token available")
-          }
+function ActionCell({ row }: { row: any }) {
+  const contact = row.original
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
-          const response = await fetch(`/api/contacts/${contact.id}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`
-            }
-          })
-
-          if (!response.ok) {
-            throw new Error('Failed to delete contact')
-          }
-
-          toast.success("Contact deleted successfully")
-          router.refresh()
-          setIsDeleting(false)
-        } catch (error) {
-          toast.error(error instanceof Error ? error.message : 'Failed to delete contact')
-        } finally {
-          setIsLoading(false)
-        }
+  const handleDelete = async () => {
+    setIsLoading(true)
+    try {
+      const accessToken = getAccessToken()
+      if (!accessToken) {
+        throw new Error("No access token available")
       }
 
-      return (
-        <>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem asChild>
-                <Link href={`/contacts/${contact.id}`}>View details</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={`/contacts/${contact.id}/edit`}>Edit</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setIsDeleting(true)}
-              >
-                Delete contact
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      const response = await fetch(`/api/contacts/${contact.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
 
-          <Dialog open={isDeleting} onOpenChange={setIsDeleting}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Delete Contact</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to delete {contact.firstName} {contact.lastName}? This action cannot be undone.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsDeleting(false)}
-                  disabled={isLoading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleDelete}
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Deleting..." : "Delete"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </>
-      )
-    },
-  },
-] 
+      if (!response.ok) {
+        throw new Error('Failed to delete contact')
+      }
+
+      toast.success("Contact deleted successfully")
+      router.refresh()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete contact')
+    } finally {
+      setIsLoading(false)
+      setIsDeleting(false)
+    }
+  }
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuItem asChild>
+            <Link href={`/contacts/${contact.id}`}>View details</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href={`/contacts/${contact.id}/edit`}>Edit</Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => setIsDeleting(true)}
+          >
+            Delete contact
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={isDeleting} onOpenChange={setIsDeleting}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Contact</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {contact.firstName} {contact.lastName}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleting(false)}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isLoading}
+            >
+              {isLoading ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+} 

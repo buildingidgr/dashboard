@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, useUser } from "@clerk/nextjs"
+import Image from 'next/image'
+import Link from 'next/link'
 
 // Components
 import { EmptyState } from "@/components/empty-state"
@@ -14,7 +16,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -85,6 +86,11 @@ interface PaginatedResponse {
       status: string
     }
   }
+}
+
+// Helper functions
+const formatAddress = (address: string) => {
+  return address.split(',').slice(0, 2).join(',')
 }
 
 export default function GridOpportunities() {
@@ -210,19 +216,12 @@ export default function GridOpportunities() {
 
   // Effects
   useEffect(() => {
-    if (isSessionLoaded) {
-      if (session) {
-        const init = async () => {
-          let token = getAccessToken()
-          if (!token) token = await initializeToken()
-          if (token) fetchOpportunities(currentPage)
-        }
-        init()
-      } else {
-        setIsLoading(false)
-      }
+    const init = async () => {
+      await initializeToken()
+      await fetchOpportunities(currentPage)
     }
-  }, [session, isSessionLoaded])
+    init()
+  }, [currentPage, fetchOpportunities, initializeToken])
 
   // Loading state
   if (!isSessionLoaded || isLoading) {
@@ -363,12 +362,12 @@ export default function GridOpportunities() {
                     >
                       {project.data.contact.email}
                     </a>
-                    {project.data.contact.phones?.[0] && (
+                    {project.data.contact.phone && (
                       <a 
-                        href={`tel:${project.data.contact.phones[0].countryCode}${project.data.contact.phones[0].number}`}
+                        href={`tel:${project.data.contact.phone.countryCode}${project.data.contact.phone.number}`}
                         className="text-blue-600 hover:text-blue-700"
                       >
-                        +{project.data.contact.phones[0].countryCode} {project.data.contact.phones[0].number}
+                        +{project.data.contact.phone.countryCode} {project.data.contact.phone.number}
                       </a>
                     )}
                   </div>

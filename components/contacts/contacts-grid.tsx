@@ -42,38 +42,26 @@ export default function ContactsGrid() {
 
   useEffect(() => {
     const initializeTokenAndFetch = async () => {
-      if (!session) {
-        setIsLoading(false)
-        return
-      }
-
+      if (!session || !user) return
+      setIsLoading(true)
       try {
-        let accessToken = getAccessToken()
-        
-        if (!accessToken && user?.id && session?.id) {
-          const tokens = await exchangeClerkToken(session.id, user.id)
-          setAccessToken(tokens.access_token)
-          accessToken = tokens.access_token
-        }
-
-        if (accessToken) {
-          await fetchContacts()
-        }
+        await exchangeClerkToken(session.id, user.id)
+        await fetchContacts()
       } catch (error) {
-        console.error('Failed to initialize token:', error)
-        toast.error('Failed to initialize session')
+        console.error('Error initializing:', error)
+      } finally {
         setIsLoading(false)
       }
     }
 
     initializeTokenAndFetch()
-  }, [session, user])
+  }, [session, user, fetchContacts])
 
   useEffect(() => {
     if (session && !isLoading) {
       fetchContacts()
     }
-  }, [currentPage, searchQuery])
+  }, [currentPage, searchQuery, session, isLoading, fetchContacts])
 
   async function fetchContacts() {
     if (!session) return

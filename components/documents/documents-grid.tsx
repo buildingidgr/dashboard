@@ -6,18 +6,17 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { DocumentsService } from '@/lib/services/documents';
+import { DocumentsService, type Document } from '@/lib/services/documents';
 import { PlusIcon } from '@heroicons/react/24/outline';
 
-interface Document {
-  id: string;
-  title: string;
-  content?: {
+interface DocumentContent {
+  type: string;
+  children: Array<{
     type: string;
-    content: any[];
-  };
-  createdAt: string;
-  updatedAt: string;
+    text?: string;
+    children?: DocumentContent[];
+    [key: string]: unknown;
+  }>;
 }
 
 export function DocumentsGrid() {

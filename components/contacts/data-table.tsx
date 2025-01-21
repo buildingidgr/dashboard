@@ -9,7 +9,6 @@ import {
   SortingState,
   getSortedRowModel,
   PaginationState,
-  getPaginationRowModel,
   ColumnFiltersState,
   getFilteredRowModel,
   type OnChangeFn,

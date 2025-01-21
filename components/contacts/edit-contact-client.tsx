@@ -50,7 +50,7 @@ export function EditContactClient({ id }: EditContactClientProps) {
 
   useEffect(() => {
     fetchContact()
-  }, [id])
+  }, [id, fetchContact])
 
   // Update title when contact data changes
   useEffect(() => {

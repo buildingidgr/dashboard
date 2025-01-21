@@ -277,7 +277,7 @@ export default function ProfilePage() {
       const result = await uploadFile(file)
       await updateProfile({ coverPhoto: result.url })
       toast.success('Cover photo updated successfully')
-    } catch (error) {
+    } catch {
       toast.error('Failed to update cover photo')
     }
   }
@@ -303,7 +303,7 @@ export default function ProfilePage() {
       const result = await uploadFile(file)
       await updateProfile({ avatarUrl: result.url })
       toast.success('Profile picture updated successfully')
-    } catch (error) {
+    } catch {
       toast.error('Failed to update profile picture')
     }
   }

@@ -29,7 +29,7 @@ export function Clock() {
   // Update time immediately when timezone changes
   useEffect(() => {
     setTime(formatTime())
-  }, [preferences?.dashboard.timezone])
+  }, [preferences?.dashboard.timezone, formatTime])
 
   // Update time every minute
   useEffect(() => {
@@ -38,7 +38,7 @@ export function Clock() {
     }, 60000)
 
     return () => clearInterval(interval)
-  }, [preferences?.dashboard.timezone])
+  }, [preferences?.dashboard.timezone, formatTime])
 
   if (!preferences?.dashboard.timezone) {
     return null

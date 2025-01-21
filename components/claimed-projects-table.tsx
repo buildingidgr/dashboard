@@ -1,11 +1,9 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { Phone, Mail, MapPin, Calendar, ArrowUpRight, Clock, Tag, ArrowRight, Building2 } from "lucide-react"
+import { Clock, ArrowUpRight } from "lucide-react"
 import { format } from "date-fns"
-import { useTheme } from "@/components/layouts/client-layout"
 import { cn } from "@/lib/utils"
-import { ProjectMap } from "@/components/maps/project-map"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

@@ -100,20 +100,13 @@ export function PlateEditor() {
       }
 
       // Normalize the content by removing unstable properties and cleaning up the structure
-      const normalizeContent = (content: any[]) => {
-        return content.map(block => {
-          // Create a clean version of the block without unstable properties
-          const cleanBlock = {
-            type: block.type,
-            children: block.children?.map((child: any) => ({
-              text: child.text || '',
-              ...(child.bold && { bold: child.bold }),
-              ...(child.italic && { italic: child.italic }),
-              ...(child.underline && { underline: child.underline }),
-              // Add other formatting properties as needed
-            }))
+      const normalizeContent = (content: TElement[]) => {
+        return content.map(node => {
+          const { children, ...rest } = node;
+          return {
+            ...rest,
+            children: children ? normalizeContent(children) : []
           };
-          return cleanBlock;
         });
       };
 
