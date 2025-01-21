@@ -49,8 +49,37 @@ export function EditContactClient({ id }: EditContactClientProps) {
   const { setTitle, setDescription } = usePageTitle()
 
   useEffect(() => {
+    async function fetchContact() {
+      try {
+        const accessToken = getAccessToken()
+        if (!accessToken) {
+          throw new Error("No access token available")
+        }
+
+        const response = await fetch(`/api/contacts/${id}`, {
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          }
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.message || errorData.error || 'Failed to fetch contact')
+        }
+
+        const data = await response.json()
+        setContact(data)
+      } catch (error) {
+        console.error('Error fetching contact:', error)
+        toast.error(error instanceof Error ? error.message : 'Failed to fetch contact')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
     fetchContact()
-  }, [id, fetchContact])
+  }, [id])
 
   // Update title when contact data changes
   useEffect(() => {
@@ -62,35 +91,6 @@ export function EditContactClient({ id }: EditContactClientProps) {
       setDescription("Loading contact details...")
     }
   }, [contact, setTitle, setDescription])
-
-  async function fetchContact() {
-    try {
-      const accessToken = getAccessToken()
-      if (!accessToken) {
-        throw new Error("No access token available")
-      }
-
-      const response = await fetch(`/api/contacts/${id}`, {
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        }
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || errorData.error || 'Failed to fetch contact')
-      }
-
-      const data = await response.json()
-      setContact(data)
-    } catch (error) {
-      console.error('Error fetching contact:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to fetch contact')
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const handleSuccess = () => {
     toast.success("Contact updated successfully")

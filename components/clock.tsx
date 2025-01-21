@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { usePreferences } from '@/hooks/use-preferences'
 
 export function Clock() {
@@ -8,7 +8,7 @@ export function Clock() {
   const [time, setTime] = useState<string>('')
 
   // Function to format the current time
-  const formatTime = () => {
+  const formatTime = useCallback(() => {
     const now = new Date()
     const options: Intl.DateTimeFormatOptions = {
       hour: '2-digit',
@@ -24,7 +24,7 @@ export function Clock() {
       console.error('Error formatting time:', error)
       return '--:--'
     }
-  }
+  }, [preferences?.dashboard.timezone])
 
   // Update time immediately when timezone changes
   useEffect(() => {

@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, useUser } from "@clerk/nextjs"
-import Image from 'next/image'
 import Link from 'next/link'
+import Image from 'next/image'
 
 // Components
 import { EmptyState } from "@/components/empty-state"
@@ -107,7 +107,7 @@ export default function GridOpportunities() {
   const [error, setError] = useState<string | null>(null)
 
   // Token initialization
-  const initializeToken = async () => {
+  const initializeToken = useCallback(async () => {
     if (!session) {
       setError(null)
       setIsLoading(false)
@@ -124,10 +124,10 @@ export default function GridOpportunities() {
       setIsLoading(false)
       return null
     }
-  }
+  }, [session, user?.id])
 
   // Data fetching
-  const fetchOpportunities = async (page: number) => {
+  const fetchOpportunities = useCallback(async (page: number) => {
     setIsLoading(true)
     setError(null)
 
@@ -175,7 +175,7 @@ export default function GridOpportunities() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [initializeToken])
 
   // Event handlers
   const handlePageChange = (page: number) => {
@@ -314,11 +314,12 @@ export default function GridOpportunities() {
           <Card key={project._id}>
             <div className="flex gap-6 p-6">
               {/* Map Preview */}
-              <div className="w-24 h-24 rounded-lg shrink-0 overflow-hidden">
-                <img
+              <div className="w-24 h-24 rounded-lg shrink-0 overflow-hidden relative">
+                <Image
                   src={`https://maps.googleapis.com/maps/api/staticmap?center=${project.data.project.location.coordinates.lat},${project.data.project.location.coordinates.lng}&zoom=15&size=200x200&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&markers=color:red%7C${project.data.project.location.coordinates.lat},${project.data.project.location.coordinates.lng}`}
                   alt="Location preview"
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
                 />
               </div>
 

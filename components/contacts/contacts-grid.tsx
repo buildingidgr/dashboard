@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { getAccessToken, setAccessToken, exchangeClerkToken } from '@/lib/services/auth'
 import { toast } from "sonner"
 import { useSession, useUser } from "@clerk/nextjs"
@@ -40,30 +40,7 @@ export default function ContactsGrid() {
   const { user } = useUser()
   const router = useRouter()
 
-  useEffect(() => {
-    const initializeTokenAndFetch = async () => {
-      if (!session || !user) return
-      setIsLoading(true)
-      try {
-        await exchangeClerkToken(session.id, user.id)
-        await fetchContacts()
-      } catch (error) {
-        console.error('Error initializing:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    initializeTokenAndFetch()
-  }, [session, user, fetchContacts])
-
-  useEffect(() => {
-    if (session && !isLoading) {
-      fetchContacts()
-    }
-  }, [currentPage, searchQuery, session, isLoading, fetchContacts])
-
-  async function fetchContacts() {
+  const fetchContacts = useCallback(async () => {
     if (!session) return
 
     try {
@@ -108,7 +85,30 @@ export default function ContactsGrid() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [currentPage, searchQuery, session])
+
+  useEffect(() => {
+    const initializeTokenAndFetch = async () => {
+      if (!session || !user) return
+      setIsLoading(true)
+      try {
+        await exchangeClerkToken(session.id, user.id)
+        await fetchContacts()
+      } catch (error) {
+        console.error('Error initializing:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    initializeTokenAndFetch()
+  }, [session, user, fetchContacts])
+
+  useEffect(() => {
+    if (session && !isLoading) {
+      fetchContacts()
+    }
+  }, [currentPage, searchQuery, session, isLoading, fetchContacts])
 
   if (isLoading) {
     return (

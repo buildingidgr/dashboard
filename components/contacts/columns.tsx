@@ -137,7 +137,7 @@ export const columns: ColumnDef<Contact, unknown>[] = [
   },
 ]
 
-function ActionCell({ row }: { row: any }) {
+function ActionCell({ row }: { row: { original: Contact } }) {
   const contact = row.original
   const [isDeleting, setIsDeleting] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
