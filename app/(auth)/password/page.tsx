@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useSignIn, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +16,6 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
 import { exchangeClerkToken, setTokens } from "@/lib/services/auth";
-import { redirect } from "next/navigation";
 import { Command } from "@/components/ui/command";
 
 interface AuthError {
@@ -26,110 +25,6 @@ interface AuthError {
 }
 
 export default function PasswordPage() {
-  const searchParams = useSearchParams();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const { user } = useUser();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isLoaded || isLoading) return;
-
-    try {
-      setIsLoading(true);
-      const signInId = localStorage.getItem('signInId');
-      const email = localStorage.getItem('loginEmail');
-
-      if (!signInId || !email) {
-        toast({
-          variant: "destructive",
-          title: "Authentication Error",
-          description: "Session expired. Please try signing in again.",
-        });
-        router.push('/');
-        return;
-      }
-
-      if (!signIn) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Authentication service not available.",
-        });
-        return;
-      }
-
-      const result = await signIn.attemptFirstFactor({
-        strategy: "password",
-        password,
-      });
-
-      if (result.status === "complete") {
-        const sessionId = result.createdSessionId;
-        if (sessionId && user) {
-          try {
-            const tokens = await exchangeClerkToken(sessionId, user.id);
-            setTokens(tokens.access_token, tokens.refresh_token);
-            
-            localStorage.removeItem('loginEmail');
-            localStorage.removeItem('signInId');
-            window.location.href = '/dashboard';
-          } catch (err) {
-            console.error('Token exchange error:', err);
-            toast({
-              variant: "destructive",
-              title: "Authentication Error",
-              description: "Failed to complete authentication. Please try again.",
-            });
-          }
-        }
-      }
-    } catch (err: unknown) {
-      console.error('Password verification error:', err);
-      
-      const error = err as AuthError;
-      const errorMessage = error?.errors?.[0]?.message || error?.message;
-      const errorCode = error?.errors?.[0]?.code || error?.code;
-
-      switch(errorCode) {
-        case "form_password_incorrect":
-          toast({
-            variant: "destructive",
-            title: "Invalid Password",
-            description: "The password you entered is incorrect. Please try again.",
-          });
-          break;
-        case "form_identifier_not_found":
-          toast({
-            variant: "destructive",
-            title: "Account Not Found",
-            description: "No account found with this email. Please sign up first.",
-          });
-          break;
-        default:
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: errorMessage || "An error occurred. Please try again later.",
-          });
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleForgotPassword = () => {
-    const email = localStorage.getItem('loginEmail');
-    if (email) {
-      router.push(`/forgot-password?email=${encodeURIComponent(email)}`);
-    }
-  };
-
   return (
     <div className="container relative flex h-[800px] flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
       <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">

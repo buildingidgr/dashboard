@@ -1,8 +1,6 @@
 "use client"
 
 import { useState } from 'react'
-import { useProfile } from '@/hooks/use-profile'
-import { usePreferences } from '@/hooks/use-preferences'
 import { useProfessionalInfo } from '@/hooks/use-professional-info'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import LocationInput from '@/components/ui/location-input'
 import AreaSelector from '@/components/ui/area-selector'
 import { HelpCircle } from 'lucide-react'
 import {

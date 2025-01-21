@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
 import { usePageTitle } from "@/components/layouts/client-layout"
 import { ProjectForm } from "@/components/projects/project-form"
 import { Button } from "@/components/ui/button"
@@ -10,9 +9,6 @@ import Link from "next/link"
 
 export default function NewProjectPage() {
   const { setTitle, setDescription } = usePageTitle()
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const opportunityId = searchParams?.get('opportunity')
 
   useEffect(() => {
     setTitle("Create New Project")
