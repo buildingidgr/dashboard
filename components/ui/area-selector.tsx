@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
@@ -53,15 +53,26 @@ export default function AreaSelector({
   }, [circle])
 
   const debouncedOnChange = useCallback(
-    debounce((location: Parameters<typeof onChange>[0]) => {
+    (location: Parameters<typeof onChange>[0]) => {
       const updateKey = JSON.stringify(location)
       if (updateKey === lastUpdateRef.current) return
       lastUpdateRef.current = updateKey
       isUserInteractionRef.current = false
       onChange(location)
-    }, 1000),
+    },
     [onChange]
   )
+
+  const debouncedOnChangeWithDebounce = useMemo(
+    () => debounce(debouncedOnChange, 1000),
+    [debouncedOnChange]
+  )
+
+  useEffect(() => {
+    return () => {
+      debouncedOnChangeWithDebounce.cancel()
+    }
+  }, [debouncedOnChangeWithDebounce])
 
   // Update local state when value changes externally
   useEffect(() => {
@@ -109,14 +120,14 @@ export default function AreaSelector({
           marker.setPosition(place.geometry.location)
           updateCircle(place.geometry.location, radius)
         }
-        debouncedOnChange(location)
+        debouncedOnChangeWithDebounce(location)
       }
     })
 
     return () => {
       google.maps.event.removeListener(listener)
     }
-  }, [isLoaded, map, marker, circle, radius, debouncedOnChange, updateCircle])
+  }, [isLoaded, map, marker, circle, radius, debouncedOnChangeWithDebounce, updateCircle])
 
   const handleRadiusChange = useCallback(([newRadius]: number[]) => {
     isUserInteractionRef.current = true;
@@ -127,7 +138,7 @@ export default function AreaSelector({
       updateCircle(center, clampedRadius)
       
       // Use debounced onChange for radius changes
-      debouncedOnChange({
+      debouncedOnChangeWithDebounce({
         address: inputValue,
         coordinates: {
           lat: center.lat(),
@@ -136,7 +147,7 @@ export default function AreaSelector({
         radius: clampedRadius
       })
     }
-  }, [marker, circle, inputValue, debouncedOnChange, maxRadius, updateCircle])
+  }, [marker, circle, inputValue, debouncedOnChangeWithDebounce, maxRadius, updateCircle])
 
   useEffect(() => {
     if (!isLoaded || !mapRef.current || isInitializedRef.current) return;

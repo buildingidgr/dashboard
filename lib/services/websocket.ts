@@ -39,6 +39,19 @@ interface ExtendedSocket extends SocketType {
   };
 }
 
+interface SocketConfig {
+  transports: string[];
+  auth: { token: string };
+  timeout: number;
+  forceNew: boolean;
+  autoConnect: boolean;
+  withCredentials: boolean;
+  pingInterval: number;
+  pingTimeout: number;
+  maxHttpBufferSize: number;
+  reconnection: boolean;
+}
+
 export class DocumentWebSocket {
   private socket: ExtendedSocket | null = null;
   private reconnectAttempts = 0;
@@ -236,18 +249,7 @@ export class DocumentWebSocket {
       console.log(`Connecting to Socket.IO (attempt ${this.reconnectAttempts + 1}/${this.MAX_RECONNECT_ATTEMPTS})`);
 
       // Create Socket.IO manager with exact specifications
-      const config: {
-        transports: string[];
-        auth: { token: string };
-        timeout: number;
-        forceNew: boolean;
-        autoConnect: boolean;
-        withCredentials: boolean;
-        pingInterval: number;
-        pingTimeout: number;
-        maxHttpBufferSize: number;
-        reconnection: boolean;
-      } = {
+      const config: SocketConfig = {
         transports: ['polling', 'websocket'],
         auth: {
           token: `Bearer ${this.token}`
@@ -262,10 +264,12 @@ export class DocumentWebSocket {
         reconnection: false  // We'll handle reconnection manually
       };
 
-      console.log('Socket.IO configuration:', {
+      const loggableConfig: Omit<SocketConfig, 'auth'> & { auth: { token: string } } = {
         ...config,
         auth: { token: 'Bearer [REDACTED]' }
-      });
+      };
+
+      console.log('Socket.IO configuration:', loggableConfig);
 
       // Create manager with config
       const manager = new Manager('wss://documents-production.up.railway.app', config);
