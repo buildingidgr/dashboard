@@ -143,7 +143,8 @@ export class DocumentWebSocket {
       });
 
     } catch (error: unknown) {
-      console.error('Error saving document:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Error saving document:', errorMessage);
     } finally {
       this.saveInProgress = false;
     }

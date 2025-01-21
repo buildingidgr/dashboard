@@ -58,7 +58,7 @@ export interface ProfessionalInformation {
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 5): Promise<Response> {
-  let lastError: any;
+  let lastError: Error | null = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const response = await fetch(url, options);
@@ -71,7 +71,7 @@ async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 5)
       }
       return response;
     } catch (error) {
-      lastError = error;
+      lastError = error instanceof Error ? error : new Error('Unknown error occurred');
       if (attempt < maxRetries - 1) {
         const backoffTime = Math.min(Math.pow(2, attempt) * 2000, 32000);
         console.log(`Request failed. Retrying in ${backoffTime}ms... (Attempt ${attempt + 1}/${maxRetries})`);
