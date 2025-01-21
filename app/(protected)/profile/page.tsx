@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useProfile } from '@/hooks/use-profile'
 import { usePreferences } from '@/hooks/use-preferences'
 import { useProfessionalInfo } from '@/hooks/use-professional-info'
@@ -304,9 +305,10 @@ export default function ProfilePage() {
       {/* Cover Photo Section */}
       <div className="relative w-full h-56 rounded-lg overflow-hidden bg-muted">
         {profile?.coverPhoto ? (
-          <img
+          <Image
             src={profile.coverPhoto}
             alt="Cover"
+            fill
             className="w-full h-full object-cover"
           />
         ) : (

@@ -3,7 +3,6 @@
 import * as React from "react"
 import { ChevronsUpDown, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useTheme } from "@/components/layouts/client-layout"
 
 import {
   DropdownMenu,

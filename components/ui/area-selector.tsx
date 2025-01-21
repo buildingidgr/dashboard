@@ -48,21 +48,14 @@ export default function AreaSelector({
   const updateCircle = useCallback((center: google.maps.LatLng, newRadius: number) => {
     if (circle) {
       circle.setCenter(center)
-      circle.setRadius(newRadius * 1000) // Convert km to meters
+      circle.setRadius(newRadius * 1000)
     }
   }, [circle])
 
-  // Debounced onChange handler for address/location changes
   const debouncedOnChange = useCallback(
     debounce((location: Parameters<typeof onChange>[0]) => {
-      // Create a unique key for this update
       const updateKey = JSON.stringify(location)
-      
-      // Skip if this exact update was just made
-      if (updateKey === lastUpdateRef.current) {
-        return
-      }
-      
+      if (updateKey === lastUpdateRef.current) return
       lastUpdateRef.current = updateKey
       isUserInteractionRef.current = false
       onChange(location)
@@ -145,110 +138,6 @@ export default function AreaSelector({
     }
   }, [marker, circle, inputValue, debouncedOnChange, maxRadius, updateCircle])
 
-  const setupMapListeners = useCallback((
-    mapInstance: google.maps.Map,
-    markerInstance: google.maps.Marker,
-    circleInstance: google.maps.Circle,
-    autocomplete: google.maps.places.Autocomplete
-  ) => {
-    autocomplete.addListener('place_changed', () => {
-      isUserInteractionRef.current = true;
-      const place = autocomplete.getPlace()
-      if (place.geometry?.location) {
-        const location = {
-          address: place.formatted_address || '',
-          coordinates: {
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng(),
-          },
-          radius
-        }
-        setInputValue(place.formatted_address || '')
-        debouncedOnChange(location)
-        mapInstance.setCenter(place.geometry.location)
-        markerInstance.setPosition(place.geometry.location)
-        updateCircle(place.geometry.location, radius)
-      }
-    })
-
-    let dragEndTimeout: NodeJS.Timeout;
-    markerInstance.addListener('dragend', () => {
-      isUserInteractionRef.current = true;
-      const position = markerInstance.getPosition()
-      if (position) {
-        clearTimeout(dragEndTimeout)
-        dragEndTimeout = setTimeout(() => {
-          const geocoder = new google.maps.Geocoder()
-          geocoder.geocode({ location: position }, (results, status) => {
-            if (status === 'OK' && results?.[0]) {
-              const location = {
-                address: results[0].formatted_address,
-                coordinates: {
-                  lat: position.lat(),
-                  lng: position.lng(),
-                },
-                radius
-              }
-              setInputValue(results[0].formatted_address)
-              debouncedOnChange(location)
-              updateCircle(position, radius)
-            }
-          })
-        }, 500)
-      }
-    })
-
-    let radiusChangeTimeout: NodeJS.Timeout;
-    circleInstance.addListener('radius_changed', () => {
-      isUserInteractionRef.current = true;
-      clearTimeout(radiusChangeTimeout)
-      radiusChangeTimeout = setTimeout(() => {
-        const newRadius = Math.min(
-          Math.round(circleInstance.getRadius() / 1000),
-          maxRadius
-        )
-        setRadius(newRadius)
-        const center = circleInstance.getCenter()
-        if (center) {
-          debouncedOnChange({
-            address: inputValue,
-            coordinates: {
-              lat: center.lat(),
-              lng: center.lng(),
-            },
-            radius: newRadius
-          })
-        }
-      }, 500)
-    })
-
-    let centerChangeTimeout: NodeJS.Timeout;
-    circleInstance.addListener('center_changed', () => {
-      isUserInteractionRef.current = true;
-      clearTimeout(centerChangeTimeout)
-      centerChangeTimeout = setTimeout(() => {
-        const center = circleInstance.getCenter()
-        if (center) {
-          markerInstance.setPosition(center)
-          const geocoder = new google.maps.Geocoder()
-          geocoder.geocode({ location: center }, (results, status) => {
-            if (status === 'OK' && results?.[0]) {
-              debouncedOnChange({
-                address: results[0].formatted_address,
-                coordinates: {
-                  lat: center.lat(),
-                  lng: center.lng(),
-                },
-                radius
-              })
-              setInputValue(results[0].formatted_address)
-            }
-          })
-        }
-      }, 500)
-    })
-  }, [radius, debouncedOnChange, updateCircle, maxRadius])
-
   useEffect(() => {
     if (!isLoaded || !mapRef.current || isInitializedRef.current) return;
 
@@ -303,7 +192,7 @@ export default function AreaSelector({
       circle.setRadius(value.radius * 1000)
     }
     map.setCenter(newPosition)
-  }, [value?.coordinates?.lat, value?.coordinates?.lng, value?.radius])
+  }, [map, marker, circle, value?.coordinates?.lat, value?.coordinates?.lng, value?.radius, value?.coordinates])
 
   if (loadError) {
     return <div>Error loading maps</div>

@@ -1,6 +1,5 @@
 import { type TElement } from '@udecode/plate-common';
 import { Manager } from 'socket.io-client';
-import { getAccessToken } from '@/lib/services/auth';
 
 interface PlateContent {
   type: 'doc';
@@ -8,30 +7,21 @@ interface PlateContent {
 }
 
 interface DocumentUpdate {
-  type: string;
+  type: 'update' | 'cursor' | 'presence';
   documentId: string;
   userId: string;
-  content?: PlateContent;
-  data?: {
-    position?: { line: number; ch: number };
-    status?: 'online' | 'offline' | 'idle';
+  content?: {
+    type: 'doc';
+    content: TElement[];
   };
+  position?: { line: number; ch: number };
+  status?: 'online' | 'offline' | 'idle';
 }
 
-interface ServerToClientEvents {
-  'document:joined': (data: { documentId: string; userId: string }) => void;
-  'document:update': (data: DocumentUpdate) => void;
-  'document:cursor': (data: { documentId: string; userId: string; position: { line: number; ch: number } }) => void;
-  'document:presence': (data: { documentId: string; userId: string; status: 'online' | 'offline' | 'idle' }) => void;
-  'error': (error: { message: string }) => void;
-}
-
-interface ClientToServerEvents {
-  'document:join': (documentId: string) => void;
-  'document:update': (data: DocumentUpdate) => void;
-  'document:cursor': (data: { documentId: string; userId: string; position: { line: number; ch: number } }) => void;
-  'document:presence': (data: { documentId: string; userId: string; status: 'online' | 'offline' | 'idle' }) => void;
-}
+type Message = {
+  type: 'document:update' | 'document:cursor' | 'document:presence';
+  data: DocumentUpdate;
+};
 
 type SocketType = ReturnType<typeof Manager.prototype.socket>;
 
@@ -39,7 +29,7 @@ export class DocumentWebSocket {
   private socket: SocketType | null = null;
   private reconnectAttempts = 0;
   private readonly MAX_RECONNECT_ATTEMPTS = 5;
-  private messageQueue: any[] = [];
+  private messageQueue: Message[] = [];
   private isAuthenticated = false;
   private readonly BASE_URL = 'https://documents-production.up.railway.app';
   private readonly AUTH_URL = 'https://auth-service-production-16ee.up.railway.app';
@@ -378,40 +368,16 @@ export class DocumentWebSocket {
     }
   }
 
-  private sendMessage(message: any) {
-    if (!this.socket?.connected) {
-      console.log('Socket.IO not connected, queueing message');
+  private sendMessage(message: Message) {
+    if (!this.socket?.connected || !this.isAuthenticated) {
+      console.log('Socket not ready, queueing message:', message);
       this.messageQueue.push(message);
       return;
     }
 
     try {
-      switch (message.type) {
-        case 'update':
-          const updateMessage = {
-            type: 'update',
-            documentId: this.documentId,
-            userId: this.extractUserIdFromToken(this.token),
-            content: message.data.content
-          };
-          console.log('Sending document update:', updateMessage);
-          this.socket.emit('document:update', updateMessage);
-          break;
-        case 'cursor':
-          this.socket.emit('document:cursor', {
-            documentId: this.documentId,
-            userId: this.extractUserIdFromToken(this.token),
-            position: message.data.position
-          });
-          break;
-        case 'presence':
-          this.socket.emit('document:presence', {
-            documentId: this.documentId,
-            userId: this.extractUserIdFromToken(this.token),
-            status: message.data.status
-          });
-          break;
-      }
+      console.log('Sending message:', message);
+      this.socket.emit(message.type, message.data);
     } catch (error) {
       console.error('Error sending message:', error);
       this.messageQueue.push(message);
@@ -431,32 +397,19 @@ export class DocumentWebSocket {
   }
 
   public sendUpdate(content: TElement[]) {
-    // Clean and store the current content for autosave
-    this.currentContent = content.map(node => ({
-      type: node.type,
-      children: node.children,
-      ...(node.id ? { id: node.id } : {})
-    }));
+    this.currentContent = content;
     this.pendingChanges = true;
-
-    // Clear existing timeout if any
-    if (this.saveTimeout) {
-      clearTimeout(this.saveTimeout);
-    }
-
-    // Set a new timeout for saving
-    this.saveTimeout = setTimeout(async () => {
-      await this.checkAndSave();
-    }, this.SAVE_INTERVAL);
 
     // Send real-time update via WebSocket
     this.sendMessage({
-      type: 'update',
-      documentId: this.documentId,
+      type: 'document:update',
       data: {
+        type: 'update',
+        documentId: this.documentId,
+        userId: this.extractUserIdFromToken(this.token),
         content: {
           type: 'doc',
-          content: this.currentContent
+          content
         }
       }
     });
@@ -464,9 +417,11 @@ export class DocumentWebSocket {
 
   public sendCursor(position: { line: number; ch: number }) {
     this.sendMessage({
-      type: 'cursor',
-      documentId: this.documentId,
+      type: 'document:cursor',
       data: {
+        type: 'cursor',
+        documentId: this.documentId,
+        userId: this.extractUserIdFromToken(this.token),
         position
       }
     });
@@ -474,9 +429,11 @@ export class DocumentWebSocket {
 
   public sendPresence(status: 'online' | 'offline' | 'idle') {
     this.sendMessage({
-      type: 'presence',
-      documentId: this.documentId,
+      type: 'document:presence',
       data: {
+        type: 'presence',
+        documentId: this.documentId,
+        userId: this.extractUserIdFromToken(this.token),
         status
       }
     });
