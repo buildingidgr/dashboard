@@ -217,8 +217,9 @@ export class DocumentWebSocket {
       const data = await response.json();
       console.log('Token validation response:', data);
       return data.isValid === true;
-    } catch (error) {
-      console.error('Error validating token:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Error validating token:', errorMessage);
       return false;
     }
   }
@@ -442,20 +443,27 @@ export class DocumentWebSocket {
     try {
       console.log('Sending message:', message);
       this.socket.emit(message.type, message.data);
-    } catch (error) {
-      console.error('Error sending message:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Error sending message:', errorMessage);
       this.messageQueue.push(message);
     }
   }
 
   private extractUserIdFromToken(token: string): string {
     try {
-      // JWT tokens are base64 encoded with format: header.payload.signature
       const payload = token.split('.')[1];
+      if (!payload) {
+        throw new Error('Invalid token format');
+      }
       const decodedPayload = JSON.parse(atob(payload));
-      return decodedPayload.sub;  // User ID is stored in the 'sub' claim
-    } catch (error) {
-      console.error('Failed to extract user ID from token:', error);
+      if (!decodedPayload.sub) {
+        throw new Error('Token missing user ID');
+      }
+      return decodedPayload.sub;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Failed to extract user ID from token:', errorMessage);
       throw new Error('Invalid authentication token');
     }
   }
