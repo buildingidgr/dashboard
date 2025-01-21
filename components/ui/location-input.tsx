@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Input } from "@/components/ui/input"
 import { useLoadScript } from '@react-google-maps/api'
 import { GOOGLE_MAPS_LIBRARIES } from '@/lib/google-maps'
@@ -25,8 +25,6 @@ export default function LocationInput({ value, onChange, disabled }: LocationInp
     libraries: GOOGLE_MAPS_LIBRARIES
   })
 
-  const [map, setMap] = useState<google.maps.Map | null>(null)
-  const [marker, setMarker] = useState<google.maps.Marker | null>(null)
   const [inputValue, setInputValue] = useState(value?.address || '')
   const mapRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -35,7 +33,7 @@ export default function LocationInput({ value, onChange, disabled }: LocationInp
     setInputValue(value?.address || '')
   }, [value?.address])
 
-  const initializeMap = (initialLocation: { lat: number; lng: number }) => {
+  const initializeMap = useCallback((initialLocation: { lat: number; lng: number }) => {
     if (!mapRef.current || !isLoaded) return
 
     const mapInstance = new google.maps.Map(mapRef.current, {
@@ -50,9 +48,6 @@ export default function LocationInput({ value, onChange, disabled }: LocationInp
       position: initialLocation,
       draggable: true,
     })
-
-    setMap(mapInstance)
-    setMarker(markerInstance)
 
     if (inputRef.current) {
       const autocomplete = new google.maps.places.Autocomplete(inputRef.current)
@@ -95,16 +90,14 @@ export default function LocationInput({ value, onChange, disabled }: LocationInp
         })
       }
     })
-  }
+  }, [isLoaded, onChange])
 
   useEffect(() => {
     if (!isLoaded) return;
 
-    // Only initialize with stored value or get browser location if no value exists
     if (value?.coordinates && value?.address) {
       initializeMap(value.coordinates);
     } else {
-      // Get user's location only if no stored value exists
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -114,7 +107,6 @@ export default function LocationInput({ value, onChange, disabled }: LocationInp
             });
           },
           () => {
-            // Fall back to default location (Athens)
             initializeMap({ lat: 37.9838, lng: 23.7275 });
           }
         );
@@ -122,7 +114,7 @@ export default function LocationInput({ value, onChange, disabled }: LocationInp
         initializeMap({ lat: 37.9838, lng: 23.7275 });
       }
     }
-  }, [isLoaded, value]);
+  }, [isLoaded, value, initializeMap]);
 
   if (loadError) {
     return <div>Error loading maps</div>

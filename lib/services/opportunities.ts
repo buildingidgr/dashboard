@@ -1,7 +1,5 @@
 import { getAccessToken } from './auth'
 
-const OPPORTUNITY_API_URL = process.env.NEXT_PUBLIC_OPPORTUNITY_SERVICE_URL || 'https://opportunity-production.up.railway.app'
-
 export async function claimOpportunity(opportunityId: string): Promise<void> {
   const token = getAccessToken()
   if (!token) {

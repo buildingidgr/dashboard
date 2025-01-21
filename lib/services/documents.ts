@@ -54,41 +54,40 @@ export class DocumentsService {
     return response.json();
   }
 
-  static async getDocument(id: string): Promise<Document> {
+  static async getDocument(id: string): Promise<Document | null> {
     const token = await getAccessToken();
     if (!token) {
       throw new Error('No authentication token found');
     }
 
     console.log(`Fetching document ${id}...`);
-    const response = await fetch(`${this.API_URL}/document/${id}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Failed to fetch document:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText
+    try {
+      const response = await fetch(`${this.API_URL}/document/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
       });
-      throw new Error('Failed to fetch document');
-    }
 
-    const doc = await response.json();
-    console.log('Document fetched successfully:', {
-      id: doc.id,
-      title: doc.title,
-      contentType: doc.content?.type,
-      hasContent: !!doc.content,
-      contentLength: doc.content?.content?.length
-    });
-    
-    // Return the document as is - it already has the correct structure
-    return doc;
+      if (!response.ok) {
+        throw new Error(`Failed to fetch document: ${response.status}`);
+      }
+
+      const doc = await response.json();
+      console.log('Document fetched successfully:', {
+        id: doc.id,
+        title: doc.title,
+        contentType: doc.content?.type,
+        hasContent: !!doc.content,
+        contentLength: doc.content?.content?.length
+      });
+      
+      // Return the document as is - it already has the correct structure
+      return doc;
+    } catch (error: unknown) {
+      console.error('Error fetching document:', error instanceof Error ? error.message : 'Unknown error');
+      return null;
+    }
   }
 
   static async createDocument(title?: string): Promise<Document> {

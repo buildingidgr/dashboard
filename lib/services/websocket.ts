@@ -88,20 +88,17 @@ export class DocumentWebSocket {
     const now = Date.now();
     const timeSinceLastSave = now - this.lastSaveTime;
 
-    // Save if enough time has passed since last save and we have changes
-    // or if we've reached the force save interval
     if ((this.pendingChanges && timeSinceLastSave >= this.SAVE_INTERVAL) || 
         timeSinceLastSave >= this.FORCE_SAVE_INTERVAL) {
       await this.saveDocument();
     }
   }
 
-  private async saveDocument() {
-    if (!this.currentContent || !this.documentId) return;
+  private async saveDocument(): Promise<void> {
+    if (!this.currentContent) return;
 
+    this.saveInProgress = true;
     try {
-      this.saveInProgress = true;
-
       // Ensure content is properly structured without nesting
       const documentState = {
         title: "Untitled",
@@ -145,13 +142,8 @@ export class DocumentWebSocket {
         timestamp: new Date().toISOString()
       });
 
-    } catch (error) {
-      console.error('Save failed:', {
-        documentId: this.documentId,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      });
-      // Keep pendingChanges true so we retry on next interval
+    } catch (error: unknown) {
+      console.error('Error saving document:', error);
     } finally {
       this.saveInProgress = false;
     }

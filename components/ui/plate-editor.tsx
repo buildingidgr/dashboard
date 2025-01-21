@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { createEditor, Descendant, Element as SlateElement } from 'slate';
+import { createEditor, Descendant } from 'slate';
 import { withReact, Slate, Editable } from 'slate-react';
 import { withHistory } from 'slate-history';
+import { type TElement } from '@udecode/plate-common';
 
 type CustomElement = { type: 'paragraph'; children: { text: string }[] };
 type CustomText = { text: string };

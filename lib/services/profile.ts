@@ -103,37 +103,38 @@ export async function getMyProfile(): Promise<Profile> {
   return response.json()
 }
 
-export async function updateProfile(data: Partial<Omit<Profile, '_id' | 'clerkId' | 'emailVerified' | 'phoneVerified' | 'apiKey' | 'createdAt' | 'updatedAt'>>): Promise<Profile> {
-  const token = getAccessToken()
-  if (!token) {
-    throw new Error('No access token available')
-  }
+interface UpdateProfileData {
+  name?: string;
+  email?: string;
+  image?: string;
+  bio?: string;
+  location?: string;
+  website?: string;
+  github?: string;
+  linkedin?: string;
+  twitter?: string;
+}
 
-  // Clean up the data before sending
-  const cleanData = { ...data }
-  
-  // Remove any empty strings
-  Object.entries(cleanData).forEach(([key, value]) => {
-    if (typeof value === 'string' && value.trim() === '') {
-      delete cleanData[key as keyof typeof cleanData]
+export async function updateProfile(data: UpdateProfileData): Promise<Response> {
+  try {
+    const response = await fetch(`${PROFILE_API_URL}/api/profiles/me`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  })
 
-  const response = await fetch(`${PROFILE_API_URL}/api/profiles/me`, {
-    method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(cleanData)
-  })
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.message || 'Failed to update profile')
+    return response;
+  } catch (error: unknown) {
+    console.error('Error updating profile:', error);
+    throw error;
   }
-
-  return response.json()
 }
 
 export async function getMyPreferences(): Promise<ProfilePreferences> {

@@ -11,6 +11,8 @@ interface TokenResponse {
   error?: string;
 }
 
+const AUTH_API_URL = process.env.NEXT_PUBLIC_AUTH_API_URL || 'https://auth-service-production-16ee.up.railway.app';
+
 // Token storage functions
 export const setTokens = (accessToken: string, refreshToken: string) => {
   if (typeof window !== 'undefined') {
@@ -154,37 +156,24 @@ export const getAuthHeaders = () => {
 };
 
 // Token refresh
-export const refreshToken = async (token: string): Promise<TokenResponse> => {
+export async function refreshToken(): Promise<string | null> {
   try {
-    const authApiUrl = process.env.NEXT_PUBLIC_AUTH_API_URL || 'https://auth-service-production-16ee.up.railway.app';
-    if (!authApiUrl) {
-      throw new Error('Auth API URL is not configured');
-    }
-
-    console.log('Starting token refresh...');
-
-    const response = await fetch(`${authApiUrl}/v1/token/refresh`, {
+    const response = await fetch(`${AUTH_API_URL}/auth/refresh`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ token }),
+      credentials: 'include',
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || 'Failed to refresh token');
+      throw new Error('Failed to refresh token');
     }
 
-    const tokens = await response.json();
-    setTokens(tokens.access_token, tokens.refresh_token);
-
-    return tokens;
-  } catch (error) {
-    console.error('Token refresh failed:', error);
-    throw error;
+    const data = await response.json();
+    return data.accessToken;
+  } catch (error: unknown) {
+    console.error('Error refreshing token:', error instanceof Error ? error.message : 'Unknown error');
+    return null;
   }
-};
+}
 
 // Debug utility
 export const debugToken = () => {
