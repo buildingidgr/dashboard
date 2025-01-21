@@ -1,44 +1,38 @@
 "use client"
 
-import { ColumnDef } from "@tanstack/react-table"
-import { MapPin, Calendar, Phone, Mail, User, UserPlus } from 'lucide-react'
+import { Card } from "@/components/ui/card"
+import { Phone, Mail, MapPin, Calendar, ArrowUpRight, Clock, Tag, ArrowRight, Building2 } from "lucide-react"
+import { format } from "date-fns"
+import { useTheme } from "@/components/layouts/client-layout"
+import { cn } from "@/lib/utils"
+import { ProjectMap } from "@/components/maps/project-map"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { DataTable } from "@/components/contacts/data-table"
-import { toast } from "sonner"
-import { getAccessToken } from '@/src/utils/tokenManager'
-import { useRouter } from 'next/navigation'
+import Link from "next/link"
 
-function ToastLink({ href, children }: { href: string, children: React.ReactNode }) {
-  const router = useRouter()
-  return (
-    <span
-      onClick={() => router.push(href)}
-      className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
-    >
-      {children}
-    </span>
-  )
+interface AddressObject {
+  street: string
+  unit?: string
+  city: string
+  state: string
+  country: string
+  postalCode: string
 }
 
-interface Project {
+interface Opportunity {
   _id: string
   type: string
   data: {
+    id: string
+    projectType: string
     project: {
       category: {
         title: string
         description: string
       }
       location: {
-        address: {
-          street: string
-          unit: string
-          city: string
-          state: string
-          country: string
-          postalCode: string
-        }
+        address: string
         coordinates: {
           lat: number
           lng: number
@@ -57,6 +51,18 @@ interface Project {
         number: string
         primary: boolean
       }>
+      address: {
+        city: string
+        unit?: string
+        state: string
+        street: string
+        country: string
+        postalCode: string
+      }
+      company: {
+        name: string
+        title: string
+      }
     }
     metadata: {
       submittedAt: string
@@ -65,243 +71,158 @@ interface Project {
       version: string
     }
   }
-  status: 'public' | 'private'
-}
-
-interface ClaimedProjectsTableProps {
-  projects: Project[]
-  currentPage: number
-  totalPages: number
-  onPageChange: (page: number) => void
-}
-
-export default function ClaimedProjectsTable({ 
-  projects, 
-  currentPage,
-  totalPages,
-  onPageChange
-}: ClaimedProjectsTableProps) {
-  const router = useRouter()
-  const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
-
-  const formatPhoneNumber = (phones: Array<{ type: string, number: string, primary: boolean }> | undefined) => {
-    if (!phones?.length) return null
-    const primaryPhone = phones.find(phone => phone.primary) || phones[0]
-    return primaryPhone.number
+  status: string
+  lastStatusChange: {
+    from: string
+    to: string
+    changedBy: string
+    changedAt: string
   }
+  statusHistory: Array<{
+    from: string
+    to: string
+    changedBy: string
+    changedAt: string
+  }>
+}
 
-  const formatAddress = (address: {
-    street: string
-    unit: string
+interface ContactData {
+  firstName: string
+  lastName: string
+  email: string
+  phones: Array<{
+    type: string
+    number: string
+    primary: boolean
+  }>
+  address?: {
     city: string
+    unit?: string
     state: string
+    street: string
     country: string
     postalCode: string
-  }) => {
-    const parts = [
-      address.street,
-      address.unit && `Unit ${address.unit}`,
-      address.city,
-      address.state,
-      address.country,
-      address.postalCode
-    ].filter(Boolean)
-    return parts.join(', ')
   }
-
-  const handleAddContact = async (project: Project) => {
-    try {
-      // Log the exact values we're getting
-      console.log('Contact values:', {
-        firstName: project.data.contact.firstName,
-        lastName: project.data.contact.lastName,
-        email: project.data.contact.email,
-        phones: project.data.contact.phones
-      })
-
-      // Create the contact data directly from project.data.contact
-      const contactData = {
-        email: project.data.contact.email,
-        firstName: project.data.contact.firstName,
-        lastName: project.data.contact.lastName,
-        phones: project.data.contact.phones,
-        address: {
-          street: project.data.project.location.address.street,
-          unit: project.data.project.location.address.unit,
-          city: project.data.project.location.address.city,
-          state: project.data.project.location.address.state,
-          country: "GR",
-          postalCode: project.data.project.location.address.postalCode
-        },
-        opportunityIds: [project._id]
-      }
-
-      // Log the exact data we're sending
-      console.log('Request body:', JSON.stringify(contactData, null, 2))
-
-      const response = await fetch('/api/contacts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAccessToken()}`
-        },
-        body: JSON.stringify(contactData),
-      })
-
-      const responseText = await response.text()
-      console.log('Response status:', response.status)
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
-      console.log('Response body:', responseText)
-
-      if (!response.ok) {
-        const errorData = JSON.parse(responseText)
-        console.error('Validation error details:', errorData)
-        throw new Error(errorData.error || 'Failed to add contact')
-      }
-
-      const data = JSON.parse(responseText)
-      toast.success(`Successfully added ${project.data.contact.firstName} ${project.data.contact.lastName} to your contacts!`, {
-        description: (
-          <ToastLink href={`/contacts/${data.id}`}>
-            Click here to view contact details
-          </ToastLink>
-        ),
-        duration: 5000
-      })
-    } catch (error) {
-      console.error('Error adding contact:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to add contact. Please try again.')
-    }
+  company?: {
+    name: string
+    title: string
   }
+  opportunityIds: string[]
+}
 
-  const columns: ColumnDef<Project>[] = [
-    {
-      accessorKey: "map",
-      header: "Location",
-      cell: ({ row }) => {
-        const project = row.original
-        const { coordinates } = project.data.project.location
-        return (
-          <div className="relative h-32 w-48 overflow-hidden rounded-md">
-            <img
-              src={`https://maps.googleapis.com/maps/api/staticmap?center=${coordinates.lat},${coordinates.lng}&zoom=15&size=400x300&markers=color:red%7C${coordinates.lat},${coordinates.lng}&key=${googleApiKey}`}
-              alt="Project location map"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          </div>
-        )
-      }
-    },
-    {
-      accessorKey: "category",
-      header: "Category",
-      cell: ({ row }) => {
-        const category = row.original.data.project.category.title
-        return (
-          <Badge variant="secondary" className="bg-white/90 text-gray-900 border-none">
-            {category}
-          </Badge>
-        )
-      }
-    },
-    {
-      accessorKey: "location",
-      header: "Address",
-      cell: ({ row }) => {
-        const address = row.original.data.project.location.address
-        const formattedAddress = formatAddress(address)
-        return (
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-600">{formattedAddress}</span>
-          </div>
-        )
-      }
-    },
-    {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }) => {
-        const description = row.original.data.project.details.description
-        return (
-          <p className="text-sm text-gray-900 line-clamp-3">
-            {description}
-          </p>
-        )
-      }
-    },
-    {
-      accessorKey: "contact",
-      header: "Contact",
-      cell: ({ row }) => {
-        const { firstName, lastName, email, phones } = row.original.data.contact
-        const formattedPhone = formatPhoneNumber(phones)
+// Helper function to format address
+function formatAddress(address: string | AddressObject): string {
+  if (typeof address === 'string') {
+    return address;
+  }
+  
+  const parts = [
+    address.street,
+    address.unit ? `Unit ${address.unit}` : null,
+    `${address.city}, ${address.state} ${address.postalCode}`,
+    address.country
+  ].filter(Boolean);
+  
+  return parts.join('\n');
+}
 
-        return (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-gray-500" />
-              <span className="text-sm text-gray-900">{`${firstName} ${lastName}`}</span>
-            </div>
-            {email && (
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-gray-500" />
-                <a href={`mailto:${email}`} className="text-sm text-blue-600 hover:text-blue-800">
-                  {email}
-                </a>
-              </div>
-            )}
-            {formattedPhone && (
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-gray-500" />
-                <a href={`tel:${formattedPhone}`} className="text-sm text-blue-600 hover:text-blue-800">
-                  {formattedPhone}
-                </a>
-              </div>
-            )}
-            <Button
-              onClick={() => handleAddContact(row.original)}
-              variant="outline"
-              size="sm"
-              className="w-full mt-2"
-            >
-              <UserPlus className="w-4 h-4 mr-2" />
-              Add to Contacts
-            </Button>
-          </div>
-        )
-      }
-    },
-    {
-      accessorKey: "date",
-      header: "Submitted",
-      cell: ({ row }) => {
-        const date = new Date(row.original.data.metadata.submittedAt).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric'
-        })
-        return (
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-600">{date}</span>
-          </div>
-        )
-      }
-    }
-  ]
+interface ClaimedOpportunitiesProps {
+  projects: Opportunity[]
+  isLoading?: boolean
+}
+
+function OpportunitySkeleton() {
+  return (
+    <Card className="p-6">
+      <div className="flex flex-col space-y-4">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+
+        {/* Content Skeleton */}
+        <div className="space-y-3">
+          <Skeleton className="h-7 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>
+
+        {/* Footer Skeleton */}
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-9 w-28" />
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpportunitiesProps) {
+  if (isLoading) {
+    return (
+      <div className="grid gap-4">
+        <OpportunitySkeleton />
+        <OpportunitySkeleton />
+        <OpportunitySkeleton />
+      </div>
+    )
+  }
 
   return (
-    <DataTable 
-      columns={columns} 
-      data={projects}
-      pageCount={totalPages}
-      onPaginationChange={({ pageIndex }) => {
-        onPageChange(pageIndex + 1)
-      }}
-      searchPlaceholder="Search claimed projects..."
-      hideSearch={true}
-    />
+    <div className="grid gap-4">
+      {projects.map((project) => (
+        <Link key={project._id} href={`/opportunities/${project._id}`}>
+          <Card className="p-6 hover:shadow-md transition-all duration-200">
+            <div className="flex flex-col space-y-4">
+              {/* Header with Status and Date */}
+              <div className="flex items-center justify-between">
+                <Badge 
+                  variant="outline" 
+                  className={cn(
+                    "px-3 py-1 text-xs font-medium rounded-full border-2",
+                    project.status === 'active' && "bg-green-500/10 text-green-500 border-green-500/20",
+                    project.status === 'pending' && "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+                    project.status === 'closed' && "bg-red-500/10 text-red-500 border-red-500/20",
+                    project.status === 'private' && "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                  )}
+                >
+                  {project.status}
+                </Badge>
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                  <Clock className="h-4 w-4" />
+                  <span className="text-sm">
+                    {format(new Date(project.data.metadata.submittedAt), 'PP')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Main Content */}
+              <div className="space-y-3">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  {project.data.project.category.title}
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300 line-clamp-3">
+                  {project.data.project.details.description}
+                </p>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                  <Badge variant="secondary" className="text-xs">
+                    {project.data.projectType}
+                  </Badge>
+                </div>
+                <Button variant="ghost" size="sm" className="group">
+                  View Details
+                  <ArrowUpRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </Link>
+      ))}
+    </div>
   )
 } 

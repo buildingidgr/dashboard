@@ -2,22 +2,30 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { useSession, useUser } from "@clerk/nextjs"
 
 // Components
-import OpportunityTable from "@/components/opportunity-table"
 import { EmptyState } from "@/components/empty-state"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 // Icons
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, MapPin, Calendar, ArrowRight, Search } from 'lucide-react'
 
 // Utils
-import { getAccessToken, setAccessToken } from '@/src/utils/tokenManager'
-import { exchangeClerkToken } from "@/src/services/auth"
+import { exchangeClerkToken, getAccessToken, setAccessToken } from "@/lib/services/auth"
 
 // Constants
 const ITEMS_PER_PAGE = 15
@@ -102,8 +110,8 @@ export default function GridOpportunities() {
 
     try {
       const tokens = await exchangeClerkToken(session.id, user?.id as string)
-      setAccessToken(tokens.accessToken, tokens.expiresIn)
-      return tokens.accessToken
+      setAccessToken(tokens.access_token)
+      return tokens.access_token
     } catch (err) {
       console.error('Failed to initialize tokens:', err)
       setError('Authentication error. Please try logging in again.')
@@ -238,52 +246,192 @@ export default function GridOpportunities() {
     )
   }
 
+  // Error state
+  if (error) {
+    return (
+      <Alert variant="destructive" className="mb-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+        <Button 
+          onClick={() => fetchOpportunities(currentPage)} 
+          className="mt-2"
+          variant="outline"
+        >
+          Retry
+        </Button>
+      </Alert>
+    )
+  }
+
+  // Empty state
+  if (opportunities.length === 0) {
+    return (
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <EmptyState 
+          title="No opportunities found"
+          description="There are currently no public opportunities available in your area."
+          actionLabel="Reset filters"
+          actionOnClick={handleReset}
+          imagePath="/empty-opportunities.svg"
+        />
+      </div>
+    )
+  }
+
   // Main render
   return (
-    <main>
-      <Card className="border-none shadow-none px-4 sm:px-6 lg:px-8">
-        <CardHeader>
-          <CardTitle className="text-lg">Find public projects in your area</CardTitle>
-        </CardHeader>
-      </Card>
-
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-          <Button 
-            onClick={() => fetchOpportunities(currentPage)} 
-            className="mt-2"
-            variant="outline"
-          >
-            Retry
-          </Button>
-        </Alert>
-      )}
-
-      {opportunities.length === 0 ? (
-        <div className="flex justify-center items-center min-h-[50vh]">
-          <EmptyState 
-            title="No projects found"
-            description="There are currently no public projects available in your area."
-            actionLabel="Reset filters"
-            actionOnClick={handleReset}
-            imagePath="/empty-projects.svg"
+    <div className="container mx-auto py-8 px-4">
+      {/* Search and Filters */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search projects..."
+            className="pl-8"
           />
         </div>
-      ) : (
-        <div className="px-4 sm:px-6 lg:px-8">
-          <OpportunityTable 
-            opportunities={opportunities}
-            onClaim={handleClaimProject}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
+        <Button variant="outline">
+          Filters
+        </Button>
+      </div>
+
+      {/* Category Tabs */}
+      <Tabs defaultValue="all" className="mb-8">
+        <TabsList>
+          <TabsTrigger value="all">All Projects</TabsTrigger>
+          <TabsTrigger value="residential">Residential</TabsTrigger>
+          <TabsTrigger value="commercial">Commercial</TabsTrigger>
+          <TabsTrigger value="industrial">Industrial</TabsTrigger>
+          <TabsTrigger value="renovation">Renovation</TabsTrigger>
+          <TabsTrigger value="new">New Construction</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {/* Projects Grid */}
+      <div className="grid gap-6">
+        {opportunities.map((project) => (
+          <Card key={project._id}>
+            <div className="flex gap-6 p-6">
+              {/* Map Preview */}
+              <div className="w-24 h-24 rounded-lg shrink-0 overflow-hidden">
+                <img
+                  src={`https://maps.googleapis.com/maps/api/staticmap?center=${project.data.project.location.coordinates.lat},${project.data.project.location.coordinates.lng}&zoom=15&size=200x200&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&markers=color:red%7C${project.data.project.location.coordinates.lat},${project.data.project.location.coordinates.lng}`}
+                  alt="Location preview"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <CardHeader className="p-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      {project.data.project.category.title}
+                    </span>
+                  </div>
+                  <CardTitle className="text-xl">
+                    {project.data.project.details.description}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 py-2">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-4 w-4" />
+                      <span className="truncate">
+                        {formatAddress(project.data.project.location.address)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      <span>
+                        {new Date(project.data.metadata.submittedAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="p-0 pt-2">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <a 
+                      href={`mailto:${project.data.contact.email}`}
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      {project.data.contact.email}
+                    </a>
+                    {project.data.contact.phones?.[0] && (
+                      <a 
+                        href={`tel:${project.data.contact.phones[0].countryCode}${project.data.contact.phones[0].number}`}
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        +{project.data.contact.phones[0].countryCode} {project.data.contact.phones[0].number}
+                      </a>
+                    )}
+                  </div>
+                </CardFooter>
+              </div>
+
+              {/* Action */}
+              <div className="flex items-start">
+                <Button 
+                  onClick={() => handleClaimProject(project._id)}
+                  className="flex items-center gap-2"
+                >
+                  Claim Project
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-center">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  href="#" 
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setCurrentPage(page => Math.max(1, page - 1))
+                  }}
+                />
+              </PaginationItem>
+              {[...Array(totalPages)].map((_, i) => (
+                <PaginationItem key={i + 1}>
+                  <PaginationLink
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setCurrentPage(i + 1)
+                    }}
+                    isActive={currentPage === i + 1}
+                  >
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext 
+                  href="#" 
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setCurrentPage(page => Math.min(totalPages, page + 1))
+                  }}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
-    </main>
+    </div>
   )
 }
 

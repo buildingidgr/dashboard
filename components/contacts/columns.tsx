@@ -21,8 +21,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useState } from "react"
-import { getAccessToken } from "@/src/utils/tokenManager"
+import { getAccessToken } from "@/lib/services/auth"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 export interface Contact {
   id: string
@@ -59,32 +60,32 @@ const formatDate = (dateString: string) => {
   }).format(date)
 }
 
-export const columns: ColumnDef<Contact>[] = [
+export const columns: ColumnDef<Contact, unknown>[] = [
   {
     id: "name",
     accessorFn: (row) => `${row.firstName} ${row.lastName}`,
     header: "Name",
-    cell: ({ row }) => {
-      return (
-        <Link
-          href={`/contacts/${row.original.id}`}
-          className="font-medium hover:underline"
-        >
-          {row.original.firstName} {row.original.lastName}
-        </Link>
-      )
-    },
-    enableSorting: true,
+    cell: ({ row }) => (
+      <Link
+        href={`/contacts/${row.original.id}`}
+        className="font-medium hover:underline"
+      >
+        {row.original.firstName} {row.original.lastName}
+      </Link>
+    ),
   },
   {
-    accessorKey: "email",
+    id: "email",
+    accessorFn: (row) => row.email,
     header: "Email",
-    cell: ({ row }) => row.original.email,
-    enableSorting: true,
+    cell: ({ row }) => row.getValue("email"),
   },
   {
     id: "phone",
-    accessorFn: (row) => row.phones.find(p => p.primary)?.number || row.phones[0]?.number,
+    accessorFn: (row) => {
+      const phone = row.phones.find(p => p.primary) || row.phones[0]
+      return phone?.number || ''
+    },
     header: "Phone",
     cell: ({ row }) => {
       const phone = row.original.phones.find(p => p.primary) || row.original.phones[0]
@@ -93,45 +94,40 @@ export const columns: ColumnDef<Contact>[] = [
           <span>{phone.number}</span>
           <span className="text-sm text-muted-foreground ml-2">({phone.type})</span>
         </div>
-      ) : null
+      ) : "-"
     },
-    enableSorting: true,
   },
   {
-    accessorKey: "company.name",
+    id: "company",
+    accessorFn: (row) => row.company?.name,
     header: "Company",
-    cell: ({ row }) => row.original.company?.name || "-",
+    cell: ({ row }) => row.getValue("company") || "-",
   },
   {
+    id: "location",
     accessorFn: (row) => row.address ? `${row.address.city}, ${row.address.country}` : '',
     header: "Location",
-    cell: ({ row }) => {
-      return row.original.address ? 
-        `${row.original.address.city}, ${row.original.address.country}` : 
-        "-"
-    },
+    cell: ({ row }) => row.getValue("location") || "-",
   },
   {
     id: "createdAt",
-    accessorKey: "createdAt",
+    accessorFn: (row) => row.createdAt,
     header: "Created",
     cell: ({ row }) => (
       <span className="text-sm text-muted-foreground">
-        {formatDate(row.original.createdAt)}
+        {formatDate(row.getValue("createdAt"))}
       </span>
     ),
-    enableSorting: true,
   },
   {
     id: "updatedAt",
-    accessorKey: "updatedAt",
+    accessorFn: (row) => row.updatedAt,
     header: "Updated",
     cell: ({ row }) => (
       <span className="text-sm text-muted-foreground">
-        {formatDate(row.original.updatedAt)}
+        {formatDate(row.getValue("updatedAt"))}
       </span>
     ),
-    enableSorting: true,
   },
   {
     id: "actions",
@@ -139,6 +135,7 @@ export const columns: ColumnDef<Contact>[] = [
       const contact = row.original
       const [isDeleting, setIsDeleting] = useState(false)
       const [isLoading, setIsLoading] = useState(false)
+      const router = useRouter()
 
       const handleDelete = async () => {
         setIsLoading(true)
@@ -156,18 +153,16 @@ export const columns: ColumnDef<Contact>[] = [
           })
 
           if (!response.ok) {
-            const error = await response.json()
-            throw new Error(error.message || error.error || 'Failed to delete contact')
+            throw new Error('Failed to delete contact')
           }
 
           toast.success("Contact deleted successfully")
-          // Trigger a refresh of the contacts grid
-          window.location.reload()
+          router.refresh()
+          setIsDeleting(false)
         } catch (error) {
           toast.error(error instanceof Error ? error.message : 'Failed to delete contact')
         } finally {
           setIsLoading(false)
-          setIsDeleting(false)
         }
       }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { headers, cookies } from 'next/headers'
-import { refreshToken } from '@/src/services/auth'
+import { refreshToken } from '@/lib/services/auth'
 
 const CONTACTS_API_URL = process.env.CONTACTS_API_URL || 'https://contacts-production-ca50.up.railway.app'
 const OPPORTUNITY_API_URL = process.env.NEXT_PUBLIC_OPPORTUNITY_API_URL
@@ -61,7 +61,8 @@ async function handleTokenRefresh() {
 
   try {
     const tokens = await refreshToken(refreshTokenValue)
-    return tokens.accessToken
+    const newAccessToken = tokens.access_token;
+    return newAccessToken;
   } catch (error) {
     console.error('Token refresh failed:', error)
     throw new Error('Failed to refresh token')

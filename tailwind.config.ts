@@ -59,6 +59,14 @@ const config: Config = {
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
+  			},
+  			brand: {
+  				DEFAULT: 'hsl(var(--brand))',
+  				foreground: 'hsl(var(--brand-foreground))'
+  			},
+  			highlight: {
+  				DEFAULT: 'hsl(var(--highlight))',
+  				foreground: 'hsl(var(--highlight-foreground))'
   			}
   		},
   		borderRadius: {
@@ -84,14 +92,57 @@ const config: Config = {
   				}
   			},
   			move: {
-  				"0%": { transform: "translateX(-200px)" },
-  				"100%": { transform: "translateX(200px)" },
-  			},
+  				'0%': {
+  					transform: 'translateX(-200px)'
+  				},
+  				'100%': {
+  					transform: 'translateX(200px)'
+  				}
+  			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
-			'move': "move 5s linear infinite"
+  			move: 'move 5s linear infinite'
+  		},
+  		fontFamily: {
+  			heading: [
+  				'var(--font-heading)',
+  				'ui-sans-serif',
+  				'-apple-system',
+  				'BlinkMacSystemFont',
+  				'Segoe UI Variable Display',
+  				'Segoe UI',
+  				'Helvetica',
+  				'Apple Color Emoji',
+  				'Arial',
+  				'sans-serif',
+  				'Segoe UI Emoji',
+  				'Segoe UI Symbol',
+  				'Noto Color Emoji'
+  			],
+  			mono: [
+  				'var(--font-mono)',
+  				...require("tailwindcss/defaultTheme").fontFamily.mono
+  			],
+  			sans: [
+  				'var(--font-sans)',
+  				'ui-sans-serif',
+  				'-apple-system',
+  				'BlinkMacSystemFont',
+  				'Segoe UI Variable Display',
+  				'Segoe UI',
+  				'Helvetica',
+  				'Apple Color Emoji',
+  				'Arial',
+  				'sans-serif',
+  				'Segoe UI Emoji',
+  				'Segoe UI Symbol',
+  				'Noto Color Emoji'
+  			]
+  		},
+  		screens: {
+  			'main-hover': '@media (hover: hover)'
   		}
   	}
   },
@@ -103,8 +154,9 @@ const config: Config = {
 		c: -0.1745,
 		baseFontSize: 16,
 		importFontFace: true,
-	  })
-	]
+	  }),
+      require("tailwind-scrollbar-hide")
+]
   };
 export default config;
 

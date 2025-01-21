@@ -11,6 +11,8 @@ interface Project {
   _id: string
   type: string
   data: {
+    id: string
+    projectType: string
     project: {
       category: {
         title: string
@@ -28,11 +30,25 @@ interface Project {
       }
     }
     contact: {
-      fullName: string
+      firstName: string
+      lastName: string
       email: string
-      phone: {
-        countryCode: string
+      phones: Array<{
+        type: string
         number: string
+        primary: boolean
+      }>
+      address: {
+        city: string
+        unit?: string
+        state: string
+        street: string
+        country: string
+        postalCode: string
+      }
+      company: {
+        name: string
+        title: string
       }
     }
     metadata: {
@@ -42,7 +58,19 @@ interface Project {
       version: string
     }
   }
-  status: 'public' | 'private'
+  status: string
+  lastStatusChange: {
+    from: string
+    to: string
+    changedBy: string
+    changedAt: string
+  }
+  statusHistory: Array<{
+    from: string
+    to: string
+    changedBy: string
+    changedAt: string
+  }>
 }
 
 interface OpportunityTableProps {
@@ -145,9 +173,15 @@ export default function OpportunityTable({
       columns={columns} 
       data={opportunities}
       pageCount={totalPages}
-      onPaginationChange={({ pageIndex }) => onPageChange(pageIndex + 1)}
-      searchPlaceholder="Search projects..."
-      stickyHeader={true}
+      pageIndex={currentPage - 1}
+      onPaginationChange={(updater) => {
+        const newState = typeof updater === 'function' 
+          ? updater({ pageIndex: currentPage - 1, pageSize: 15 })
+          : updater
+        onPageChange(newState.pageIndex + 1)
+      }}
+      searchPlaceholder="Search by description..."
+      searchColumn="description"
     />
   )
 } 

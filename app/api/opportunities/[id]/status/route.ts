@@ -1,41 +1,41 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 
-const OPPORTUNITY_API_URL = process.env.NEXT_PUBLIC_OPPORTUNITY_API_URL
+const OPPORTUNITY_API_URL = process.env.NEXT_PUBLIC_OPPORTUNITY_SERVICE_URL || 'https://opportunity-production.up.railway.app'
 
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const headersList = await headers()
-    const token = headersList.get('authorization')
+    const headersList = headers()
+    const authHeader = headersList.get('authorization')
 
-    if (!token) {
-      return NextResponse.json(
-        { error: 'No authorization token provided' },
+    if (!authHeader) {
+      return new NextResponse(
+        JSON.stringify({ error: 'No authorization header provided' }),
         { status: 401 }
       )
     }
 
-    const body = await request.json()
-    const opportunityId = params.id
-    const url = `${OPPORTUNITY_API_URL}/opportunities/${opportunityId}/status`
-    console.log('Proxying request to:', url)
-
-    const response = await fetch(url, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token
-      },
-      body: JSON.stringify(body)
-    })
+    const response = await fetch(
+      `${OPPORTUNITY_API_URL}/opportunities/${params.id}/status`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: 'private'
+        })
+      }
+    )
 
     if (!response.ok) {
       const error = await response.text()
-      return NextResponse.json(
-        { error: error || response.statusText },
+      return new NextResponse(
+        JSON.stringify({ error: error || 'Failed to update opportunity status' }),
         { status: response.status }
       )
     }
@@ -43,9 +43,9 @@ export async function PATCH(
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error in opportunity status update:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
+    console.error('Error updating opportunity status:', error)
+    return new NextResponse(
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500 }
     )
   }

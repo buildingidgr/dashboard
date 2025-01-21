@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { ContactEditForm } from "./contact-edit-form"
 import { toast } from "sonner"
-import { getAccessToken } from '@/src/utils/tokenManager'
+import { getAccessToken } from "@/lib/services/auth"
 
 interface ContactCardProps {
   contact: {

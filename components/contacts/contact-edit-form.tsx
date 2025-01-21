@@ -21,8 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { toast } from "sonner"
-import { getAccessToken } from '@/src/utils/tokenManager'
+import { useAppToast } from "@/components/layouts/client-layout"
+import { getAccessToken } from '@/lib/services/auth'
 import { PhoneInput } from "@/components/ui/phone-input"
 import { CountryDropdown, Country } from "@/components/ui/country-dropdown"
 
@@ -30,30 +30,31 @@ import { CountryDropdown, Country } from "@/components/ui/country-dropdown"
 const phoneSchema = z.object({
   type: z.enum(["work", "mobile", "home"]),
   number: z.string()
-    .regex(/^\+[1-9]\d{7,19}$/, {
-      message: "Please select a country code and enter a valid phone number"
+    .min(1, "Phone number is required")
+    .regex(/^\+?[1-9][0-9\s-()]*$/, {
+      message: "Please enter a valid phone number"
     }),
   primary: z.boolean()
 })
 
 const addressSchema = z.object({
-  street: z.string().min(5).max(100),
+  street: z.string().min(1, "Street is required").max(100),
   unit: z.string().max(20).optional(),
-  city: z.string().min(2).max(50).regex(/^[a-zA-Z\s]+$/),
-  state: z.string().min(2).max(50),
-  country: z.string().length(2),
-  postalCode: z.string().regex(/^\d{5}(-\d{4})?$/).optional()
+  city: z.string().min(1, "City is required").max(50),
+  state: z.string().min(1, "State is required").max(50),
+  country: z.string().min(2).max(2),
+  postalCode: z.string().max(20).optional()
 }).optional()
 
 const companySchema = z.object({
-  name: z.string().min(2).max(100),
-  title: z.string().min(2).max(50).optional(),
-  type: z.string().min(2).max(50).optional()
+  name: z.string().min(1, "Company name is required").max(100),
+  title: z.string().max(50).optional(),
+  type: z.string().max(50).optional()
 }).optional()
 
 const formSchema = z.object({
-  firstName: z.string().min(2).max(50).regex(/^[a-zA-Z]+$/),
-  lastName: z.string().min(2).max(50).regex(/^[a-zA-Z]+$/),
+  firstName: z.string().min(1, "First name is required").max(50),
+  lastName: z.string().min(1, "Last name is required").max(50),
   email: z.string().email().max(100),
   phones: z.array(phoneSchema).min(1).refine(
     phones => phones.filter(p => p.primary).length === 1,
@@ -82,22 +83,47 @@ function formatToE164(phoneNumber: string | undefined): string {
 
 export function ContactEditForm({ contactId, initialData, onSuccess, onCancel }: ContactEditFormProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const toast = useAppToast()
+
+  // Transform initial data to ensure no null values
+  const sanitizedInitialData = initialData ? {
+    ...initialData,
+    firstName: initialData.firstName || '',
+    lastName: initialData.lastName || '',
+    email: initialData.email || '',
+    phones: initialData.phones.map(phone => ({
+      ...phone,
+      number: formatToE164(phone.number) || ''
+    })),
+    address: initialData.address ? {
+      street: initialData.address.street || '',
+      unit: initialData.address.unit || '',
+      city: initialData.address.city || '',
+      state: initialData.address.state || '',
+      country: initialData.address.country || 'GR',
+      postalCode: initialData.address.postalCode || ''
+    } : undefined,
+    company: initialData.company ? {
+      name: initialData.company.name || '',
+      title: initialData.company.title || '',
+      type: initialData.company.type || ''
+    } : undefined,
+    tags: initialData.tags || []
+  } : {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phones: [{
+      type: "mobile" as const,
+      number: '',
+      primary: true
+    }],
+    tags: []
+  }
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData ? {
-      ...initialData,
-      phones: initialData.phones.map(phone => ({
-        ...phone,
-        number: formatToE164(phone.number)
-      }))
-    } : {
-      phones: [{
-        type: "mobile",
-        number: "",
-        primary: true
-      }]
-    }
+    defaultValues: sanitizedInitialData
   })
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -108,24 +134,53 @@ export function ContactEditForm({ contactId, initialData, onSuccess, onCancel }:
         throw new Error("No access token available")
       }
 
+      // Clean up empty optional fields
+      const cleanedValues = {
+        ...values,
+        address: values.address && Object.keys(values.address).length > 0
+          ? {
+              ...values.address,
+              unit: values.address.unit || undefined,
+              postalCode: values.address.postalCode || undefined
+            }
+          : undefined,
+        company: values.company && Object.keys(values.company).length > 0
+          ? {
+              ...values.company,
+              title: values.company.title || undefined,
+              type: values.company.type || undefined
+            }
+          : undefined,
+        tags: values.tags?.length ? values.tags : undefined,
+        projectIds: values.projectIds?.length ? values.projectIds : undefined,
+        opportunityIds: values.opportunityIds?.length ? values.opportunityIds : undefined
+      }
+
       const response = await fetch(`/api/contacts/${contactId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`
         },
-        body: JSON.stringify(values)
+        body: JSON.stringify(cleanedValues)
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Failed to update contact')
+        const errorData = await response.json()
+        console.error('Failed to update contact:', errorData)
+        throw new Error(errorData.message || errorData.error || 'Failed to update contact')
       }
 
-      toast.success("Contact updated successfully")
+      const data = await response.json()
+      console.log('Contact updated successfully:', data)
       onSuccess?.()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update contact')
+    } catch (error: unknown) {
+      console.error('Error updating contact:', error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to update contact'
+      })
     } finally {
       setIsLoading(false)
     }
@@ -309,7 +364,7 @@ export function ContactEditForm({ contactId, initialData, onSuccess, onCancel }:
               <FormItem>
                 <FormLabel>Company Name</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -322,7 +377,7 @@ export function ContactEditForm({ contactId, initialData, onSuccess, onCancel }:
               <FormItem>
                 <FormLabel>Job Title</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -1,12 +1,12 @@
 import './globals.css'
 import { Metadata } from 'next'
-import localFont from 'next/font/local'
+import { Inter } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from '@/components/ui/toaster'
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: '--font-geist-sans',
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
@@ -21,8 +21,8 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <body className={geistSans.variable}>
+      <html lang="en" className={inter.className}>
+        <body>
           {children}
           <Toaster />
         </body>

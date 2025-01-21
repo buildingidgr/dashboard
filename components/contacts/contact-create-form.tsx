@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
-import { getAccessToken } from '@/src/utils/tokenManager'
+import { getAccessToken } from "@/lib/services/auth"
 import { PhoneInput } from "@/components/ui/phone-input"
 import { CountryDropdown, Country } from "@/components/ui/country-dropdown"
 

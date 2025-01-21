@@ -18,12 +18,20 @@ interface TimezoneSelectProps {
   value?: string;
   onChange?: (value: string) => void;
   placeholder?: string;
+  disabled?: boolean;
+}
+
+interface TimezoneOption {
+  value: string;
+  label: string;
+  numericOffset: number;
 }
 
 export default function TimezoneSelect({ 
   value, 
   onChange, 
-  placeholder = "Select timezone"
+  placeholder = "Select timezone",
+  disabled = false
 }: TimezoneSelectProps) {
   const [open, setOpen] = useState<boolean>(false);
   const [searchValue, setSearchValue] = useState("");
@@ -41,7 +49,7 @@ export default function TimezoneSelect({
     if (!timezones?.length) return [];
     
     return timezones
-      .map((timezone) => {
+      .map((timezone): TimezoneOption | null => {
         try {
           const formatter = new Intl.DateTimeFormat("en", {
             timeZone: timezone,
@@ -61,7 +69,7 @@ export default function TimezoneSelect({
           return null;
         }
       })
-      .filter(Boolean)
+      .filter((tz): tz is TimezoneOption => tz !== null)
       .sort((a, b) => a.numericOffset - b.numericOffset);
   }, [timezones]);
 
@@ -73,9 +81,18 @@ export default function TimezoneSelect({
   const selectedTimezone = value ? formattedTimezones.find((tz) => tz.value === value) : null;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={disabled ? false : open} onOpenChange={disabled ? undefined : setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between">
+        <Button 
+          variant="outline" 
+          role="combobox" 
+          aria-expanded={open} 
+          className={cn(
+            "w-full justify-between",
+            disabled && "opacity-50 cursor-not-allowed"
+          )}
+          disabled={disabled}
+        >
           {selectedTimezone ? selectedTimezone.label : placeholder}
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>

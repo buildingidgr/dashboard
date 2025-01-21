@@ -1,6 +1,6 @@
 "use client"
 
-import { useSignIn, useAuth, useSession } from "@clerk/nextjs";
+import { useSignIn, useAuth, useSession, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { RiAppleFill, RiFacebookFill, RiGoogleFill } from "@remixicon/react";
-import { exchangeClerkToken } from "@/src/services/auth";
-import { setTokens, getAccessToken, getRefreshToken } from "@/src/utils/auth";
+import { exchangeClerkToken, setTokens, getAccessToken, getRefreshToken } from "@/lib/services/auth";
 
 export function LoginForm() {
   const router = useRouter();
   const { signIn, isLoaded } = useSignIn();
   const { signOut } = useAuth();
+  const { user } = useUser();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const { toast } = useToast();
@@ -34,22 +34,17 @@ export function LoginForm() {
     }
   }, [session, router]);
 
-  const handleTokenExchange = async (sessionToken: string) => {
+  const handleTokenExchange = async (sessionId: string, userId: string) => {
     try {
-      const tokens = await exchangeClerkToken(sessionToken);
-      
-      // Store tokens in localStorage or secure cookie
-      localStorage.setItem('accessToken', tokens.accessToken);
-      localStorage.setItem('refreshToken', tokens.refreshToken);
-      localStorage.setItem('tokenExpiry', (Date.now() + tokens.expiresIn * 1000).toString());
-      
+      const tokens = await exchangeClerkToken(sessionId, userId);
+      setTokens(tokens.access_token, tokens.refresh_token);
       return true;
     } catch (err) {
       console.error('Token exchange error:', err);
       toast({
         variant: "destructive",
         title: "Authentication Error",
-        description: "Failed to complete authentication. Please try again.",
+        description: err instanceof Error ? err.message : "Failed to complete authentication. Please try again.",
       });
       return false;
     }
@@ -66,26 +61,16 @@ export function LoginForm() {
 
       if (result.status === "complete") {
         const sessionId = result.createdSessionId;
-        const userId = result.userData.userId;
         
-        if (sessionId && userId) {
-          try {
-            const tokens = await exchangeClerkToken(sessionId, userId);
-            setTokens(tokens.accessToken, tokens.refreshToken, tokens.expiresIn);
-            
+        if (sessionId && user?.id) {
+          const success = await handleTokenExchange(sessionId, user.id);
+          if (success) {
             localStorage.removeItem('loginEmail');
             localStorage.removeItem('signInId');
             window.location.href = '/dashboard';
-          } catch (err) {
-            console.error('Token exchange error:', err);
-            toast({
-              variant: "destructive",
-              title: "Authentication Error",
-              description: "Failed to complete authentication. Please try again.",
-            });
           }
         }
-      } else if (result.status === "needs_first_factor" || result.status === "needs_password") {
+      } else if (result.status === "needs_first_factor") {
         router.push('/password');
       }
     } catch (err: any) {

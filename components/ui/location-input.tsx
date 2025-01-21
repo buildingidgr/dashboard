@@ -2,20 +2,30 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Input } from "@/components/ui/input"
-import { FormControl, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Card } from "@/components/ui/card"
+import { useLoadScript } from '@react-google-maps/api'
+import { GOOGLE_MAPS_LIBRARIES } from '@/lib/google-maps'
 
 interface LocationInputProps {
   value: any
   onChange: (location: { address: string; coordinates: { lat: number; lng: number } }) => void
+  disabled?: boolean
 }
 
-export default function LocationInput({ value, onChange }: LocationInputProps) {
+export default function LocationInput({ value, onChange, disabled }: LocationInputProps) {
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    libraries: GOOGLE_MAPS_LIBRARIES
+  })
+
   const [map, setMap] = useState<google.maps.Map | null>(null)
   const [marker, setMarker] = useState<google.maps.Marker | null>(null)
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [inputValue, setInputValue] = useState(value?.address || '')
   const mapRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setInputValue(value?.address || '')
+  }, [value?.address])
 
   const initializeMap = (initialLocation: { lat: number; lng: number }) => {
     if (!mapRef.current || !isLoaded) return
@@ -50,6 +60,7 @@ export default function LocationInput({ value, onChange }: LocationInputProps) {
               lng: place.geometry.location.lng(),
             },
           }
+          setInputValue(place.formatted_address || '')
           onChange(location)
           mapInstance.setCenter(place.geometry.location)
           markerInstance.setPosition(place.geometry.location)
@@ -70,10 +81,8 @@ export default function LocationInput({ value, onChange }: LocationInputProps) {
                 lng: position.lng(),
               },
             }
+            setInputValue(results[0].formatted_address)
             onChange(location)
-            if (inputRef.current) {
-              inputRef.current.value = results[0].formatted_address
-            }
           }
         })
       }
@@ -81,40 +90,11 @@ export default function LocationInput({ value, onChange }: LocationInputProps) {
   }
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-    if (!googleApiKey) {
-      console.error('Google Maps API key is missing')
-      return
-    }
-
-    if (window.google?.maps) {
-      setIsLoaded(true)
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&libraries=places`
-    script.async = true
-    script.defer = true
-    script.onload = () => setIsLoaded(true)
-    document.head.appendChild(script)
-
-    return () => {
-      document.head.removeChild(script)
-    }
-  }, [])
-
-  useEffect(() => {
     if (!isLoaded) return;
 
     // Only initialize with stored value or get browser location if no value exists
     if (value?.coordinates && value?.address) {
       initializeMap(value.coordinates);
-      if (inputRef.current) {
-        inputRef.current.value = value.address;
-      }
     } else {
       // Get user's location only if no stored value exists
       if (navigator.geolocation) {
@@ -136,13 +116,23 @@ export default function LocationInput({ value, onChange }: LocationInputProps) {
     }
   }, [isLoaded, value]);
 
+  if (loadError) {
+    return <div>Error loading maps</div>
+  }
+
+  if (!isLoaded) {
+    return <div>Loading maps...</div>
+  }
+
   return (
     <div className="space-y-2">
       <Input
         ref={inputRef}
         type="text"
         placeholder="Enter a location"
-        defaultValue={value?.address || ''}
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        disabled={disabled}
       />
       <div 
         ref={mapRef} 
