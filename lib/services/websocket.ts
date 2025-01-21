@@ -236,7 +236,18 @@ export class DocumentWebSocket {
       console.log(`Connecting to Socket.IO (attempt ${this.reconnectAttempts + 1}/${this.MAX_RECONNECT_ATTEMPTS})`);
 
       // Create Socket.IO manager with exact specifications
-      const config = {
+      const config: {
+        transports: string[];
+        auth: { token: string };
+        timeout: number;
+        forceNew: boolean;
+        autoConnect: boolean;
+        withCredentials: boolean;
+        pingInterval: number;
+        pingTimeout: number;
+        maxHttpBufferSize: number;
+        reconnection: boolean;
+      } = {
         transports: ['polling', 'websocket'],
         auth: {
           token: `Bearer ${this.token}`

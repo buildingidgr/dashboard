@@ -138,7 +138,7 @@ export class DocumentsService {
         const errorData = JSON.parse(errorText);
         errorMessage = errorData.error || errorData.message || errorMessage;
       } catch (parseError) {
-        console.error('Failed to parse error response:', errorText);
+        console.error('Failed to parse error response:', errorText, 'Error:', parseError);
       }
       throw new Error(errorMessage);
     }

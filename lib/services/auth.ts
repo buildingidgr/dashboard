@@ -116,7 +116,7 @@ export const exchangeClerkToken = async (sessionId: string, userId: string): Pro
     try {
       parsedData = JSON.parse(responseData);
     } catch (parseError) {
-      console.error('Failed to parse auth service response:', responseData);
+      console.error('Failed to parse auth service response:', responseData, 'Error:', parseError);
       throw new Error('Invalid response from auth service');
     }
 
