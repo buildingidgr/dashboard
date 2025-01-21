@@ -3,7 +3,6 @@
 import { Card } from "@/components/ui/card"
 import { RecentActivity } from "@/components/recent-activity"
 import OpportunityTable from "@/components/opportunity-table"
-import { ContactsTable } from "@/components/contacts-table"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts"
 import { Building2, Users, FileText } from "lucide-react"
@@ -137,14 +136,6 @@ export default function DashboardPage() {
             onPageChange={() => {}}
             onClaim={() => {}}
           />
-        </div>
-      </Card>
-
-      {/* Recent Contacts */}
-      <Card>
-        <div className="p-6">
-          <h3 className="font-semibold mb-4">Recent Contacts</h3>
-          <ContactsTable />
         </div>
       </Card>
     </div>
