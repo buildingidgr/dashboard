@@ -10,10 +10,7 @@ interface DocumentUpdate {
   type: 'update' | 'cursor' | 'presence';
   documentId: string;
   userId: string;
-  content?: {
-    type: 'doc';
-    content: TElement[];
-  };
+  content?: PlateContent;
   position?: { line: number; ch: number };
   status?: 'online' | 'offline' | 'idle';
 }
@@ -85,9 +82,9 @@ export class DocumentWebSocket {
   private closeRequested = false;
 
   // Autosave related properties
-  private lastSaveTime: number = 0;
-  private pendingChanges: boolean = false;
-  private saveInProgress: boolean = false;
+  private lastSaveTime = 0;
+  private pendingChanges = false;
+  private saveInProgress = false;
   private readonly SAVE_INTERVAL = 3000; // Save after 3 seconds of changes
   private readonly FORCE_SAVE_INTERVAL = 30000; // Force save every 30 seconds
   private currentContent: TElement[] | null = null;

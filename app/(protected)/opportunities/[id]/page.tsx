@@ -9,7 +9,7 @@ import { ArrowLeft, MapPin, Phone, Building2, Calendar, Clock, Mail, History, Ar
 import Link from "next/link"
 import { usePageTitle } from "@/components/layouts/client-layout"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import { OpportunityLocationMap } from "@/components/maps/opportunity-location-map"

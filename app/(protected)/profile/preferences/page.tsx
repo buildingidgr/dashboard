@@ -17,7 +17,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useToast } from '@/hooks/use-toast'
 
 const LANGUAGES = [
   { value: 'en-US', label: 'English (US)' },
@@ -28,7 +27,6 @@ export default function PreferencesPage() {
   const { preferences, isLoading, updatePreferences } = usePreferences()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState<ProfilePreferences | null>(null)
-  const { toast } = useToast()
 
   const resetFormData = useCallback(() => {
     setFormData(preferences)

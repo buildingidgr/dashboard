@@ -7,8 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { Plate } from '@udecode/plate-common/react';
-import { type TElement, type TText, type TDescendant } from '@udecode/plate-common';
-import { ParagraphPlugin } from '@udecode/plate-common/react';
+import { type TElement } from '@udecode/plate-common';
 
 import { useCreateEditor } from '@/components/editor/use-create-editor';
 import { Editor, EditorContainer } from '@/components/plate-ui/editor';
@@ -18,7 +17,6 @@ import { DocumentsService } from '@/lib/services/documents';
 import { DocumentWebSocket } from '@/lib/services/websocket';
 import { getAccessToken } from '@/lib/services/auth';
 import { Skeleton } from "@/components/ui/skeleton";
-import { TableOfContents } from '@/components/editor/table-of-contents';
 import { DocumentMetadata } from '@/components/document-metadata';
 
 export function PlateEditor() {
@@ -32,53 +30,56 @@ export function PlateEditor() {
   const [isLoading, setIsLoading] = React.useState(!!documentId);
 
   // Track last saved content by block ID
-  const lastContentRef = React.useRef<Record<string, any>>({});
+  const lastContentRef = React.useRef<Record<string, unknown>>({});
 
   // Initialize last content state when document is loaded
   React.useEffect(() => {
-    if (documentId && editor) {
-      setIsLoading(true);
-      DocumentsService.getDocument(documentId)
-        .then((doc) => {
-          setTitle(doc.title);
+    if (!documentId || !editor) return;
 
-          if (doc.content?.content) {
-            // Initialize the last content state with the loaded blocks
-            lastContentRef.current.lastSavedContent = JSON.stringify(doc.content.content);
-            
-            // Ensure each block has the required children property
-            const validContent = doc.content.content.map((block: any) => ({
-              ...block,
-              children: block.children || [{ text: '' }]
-            }));
-            
-            editor.children = validContent;
-            editor.onChange();
-          } else {
-            // Set default content with proper structure
-            editor.children = [{
-              type: 'h1',
-              children: [{ text: '' }]
-            }, {
-              type: 'paragraph',
-              children: [{ text: '' }]
-            }];
-            editor.onChange();
-          }
-        })
-        .catch((error) => {
-          console.error('Failed to load document:', error);
-          if (error.message === 'No authentication token found') {
-            toast.error('Authentication required. Please log in again.');
-            router.push('/login');
-          } else {
-            toast.error('Failed to load document. Please try again.');
-          }
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    }
+    setIsLoading(true);
+    DocumentsService.getDocument(documentId)
+      .then((doc) => {
+        if (!doc) throw new Error('Document not found');
+        
+        setTitle(doc.title);
+
+        if (doc.content?.content) {
+          // Initialize the last content state with the loaded blocks
+          lastContentRef.current.lastSavedContent = JSON.stringify(doc.content.content);
+          
+          // Convert document content to editor format
+          const content = doc.content.content.map(block => ({
+            type: 'p',
+            children: Array.isArray(block.children) 
+              ? block.children.map(child => ({ 
+                  text: typeof child === 'object' && child !== null ? (child.text || '') : ''
+                }))
+              : [{ text: '' }]
+          }));
+          
+          editor.children = content;
+          editor.onChange();
+        } else {
+          // Set default content
+          editor.children = [
+            { type: 'p', children: [{ text: '' }] },
+            { type: 'p', children: [{ text: '' }] }
+          ];
+          editor.onChange();
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load document:', error);
+        if (error.message === 'No authentication token found') {
+          toast.error('Authentication required. Please log in again.');
+          router.push('/login');
+        } else {
+          toast.error('Failed to load document. Please try again.');
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, [documentId, editor, router]);
 
   // Handle content changes for real-time collaboration only

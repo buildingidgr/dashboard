@@ -4,7 +4,6 @@ import { useEffect, useCallback, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { exchangeClerkToken, getAccessToken, setAccessToken } from "@/lib/services/auth"
 import { useSession, useUser } from "@clerk/nextjs"
-import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Pencil } from "lucide-react"
 import Link from "next/link"
@@ -129,16 +128,11 @@ export default function ContactDetailsPage() {
       setError(null)
     } catch (error) {
       console.error("Error fetching contact:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch contact",
-        variant: "destructive"
-      })
       setError(error instanceof Error ? error.message : "Failed to fetch contact")
     } finally {
       setIsLoading(false)
     }
-  }, [toast])
+  }, [])
 
   useEffect(() => {
     const id = params?.id;
@@ -166,18 +160,13 @@ export default function ContactDetailsPage() {
         }
       } catch (error) {
         console.error('Failed to initialize token:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to initialize session',
-          variant: 'destructive'
-        });
         setError('Failed to initialize session');
         setIsLoading(false);
       }
     }
 
     initializeTokenAndFetch();
-  }, [params?.id, fetchContact, toast, session?.id, user?.id]);
+  }, [params?.id, fetchContact, session?.id, user?.id]);
 
   useEffect(() => {
     if (contact) {

@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
 export interface DocumentsListRef {
   refresh: () => Promise<void>;
@@ -43,6 +43,7 @@ export function DocumentsList({ onRefresh }: { onRefresh?: () => void }) {
   const [documentToDelete, setDocumentToDelete] = React.useState<Document | null>(null);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editingTitle, setEditingTitle] = React.useState('');
+  const { toast } = useToast();
 
   const loadDocuments = React.useCallback(async () => {
     try {
@@ -67,61 +68,91 @@ export function DocumentsList({ onRefresh }: { onRefresh?: () => void }) {
   }, [loadDocuments]);
 
   const handleCopyLink = (id: string) => {
-    const url = `${window.location.origin}/editor?id=${id}`;
-    navigator.clipboard.writeText(url);
-    toast.success('Link copied to clipboard');
+    try {
+      const url = `${window.location.origin}/editor?id=${id}`;
+      navigator.clipboard.writeText(url);
+      toast({
+        title: "Success",
+        description: "Link copied to clipboard"
+      });
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      toast({
+        title: "Error",
+        description: "Failed to copy link to clipboard",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleOpenInNewTab = (id: string) => {
     window.open(`/editor?id=${id}`, '_blank');
   };
 
-  const handleDelete = async () => {
-    if (!documentToDelete) return;
-
+  const handleDelete = async (id: string) => {
+    if (!id) return;
+    
     try {
-      await DocumentsService.deleteDocument(documentToDelete.id);
-      
-      if (documentToDelete.id === currentDocumentId) {
-        const currentIndex = documents.findIndex(d => d.id === currentDocumentId);
-        const previousDoc = documents[currentIndex - 1] || documents[currentIndex + 1];
-        
-        if (previousDoc) {
-          router.push(`/editor?id=${previousDoc.id}`);
-        } else {
-          router.push('/editor');
-        }
-      }
-
-      setDocuments(docs => docs.filter(d => d.id !== documentToDelete.id));
-      toast.success('Document moved to trash');
-    } catch (err) {
-      console.error('Failed to delete document:', err);
-      toast.error('Failed to move document to trash');
-    } finally {
+      await DocumentsService.deleteDocument(id);
+      await loadDocuments();
       setDocumentToDelete(null);
+      toast({
+        title: 'Success',
+        description: 'Document moved to trash'
+      });
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to move document to trash',
+        variant: 'destructive'
+      });
     }
   };
 
-  const handleRename = async (id: string) => {
+  const handleUpdateTitle = async (id: string, newTitle: string) => {
     try {
-      await DocumentsService.updateDocument(id, { title: editingTitle });
-      setDocuments(docs => docs.map(doc => 
-        doc.id === id ? { ...doc, title: editingTitle } : doc
-      ));
-      setEditingId(null);
-      setEditingTitle('');
-      toast.success('Document renamed');
-    } catch (err) {
-      console.error('Failed to rename document:', err);
-      toast.error('Failed to rename document');
+      await DocumentsService.updateDocument(id, { title: newTitle });
+      await loadDocuments();
+      toast({
+        title: 'Success',
+        description: 'Document title updated'
+      });
+    } catch (error) {
+      console.error('Failed to update document title:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update document title',
+        variant: 'destructive'
+      });
     }
+    setEditingId(null);
   };
 
   const startRenaming = (doc: Document) => {
     setEditingId(doc.id);
     setEditingTitle(doc.title);
     setOpenMenuId(null);
+  };
+
+  const handleCreateDocument = async () => {
+    try {
+      const doc = await DocumentsService.createDocument();
+      if (doc) {
+        router.push(`/documents/${doc.id}`);
+        toast({
+          title: 'Success',
+          description: 'New document created'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to create document:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create document',
+        variant: 'destructive'
+      });
+    }
   };
 
   if (isLoading) {
@@ -167,7 +198,7 @@ export function DocumentsList({ onRefresh }: { onRefresh?: () => void }) {
                   className="flex w-full items-center gap-2 px-2"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    handleRename(doc.id);
+                    handleUpdateTitle(doc.id, editingTitle);
                   }}
                 >
                   <Input
@@ -176,7 +207,7 @@ export function DocumentsList({ onRefresh }: { onRefresh?: () => void }) {
                     onChange={(e) => setEditingTitle(e.target.value)}
                     onBlur={() => {
                       if (editingTitle !== doc.title) {
-                        handleRename(doc.id);
+                        handleUpdateTitle(doc.id, editingTitle);
                       } else {
                         setEditingId(null);
                         setEditingTitle('');
@@ -278,8 +309,17 @@ export function DocumentsList({ onRefresh }: { onRefresh?: () => void }) {
             </div>
           ))}
           {documents.length === 0 && (
-            <div className="flex items-center justify-center py-4">
-              <div className="text-sm text-muted-foreground">No documents found</div>
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">
+                You don&apos;t have any documents yet.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={handleCreateDocument}
+              >
+                Create your first document
+              </Button>
             </div>
           )}
         </div>
@@ -300,7 +340,7 @@ export function DocumentsList({ onRefresh }: { onRefresh?: () => void }) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={handleDelete}
+              onClick={() => handleDelete(documentToDelete?.id || '')}
             >
               Move to trash
             </AlertDialogAction>

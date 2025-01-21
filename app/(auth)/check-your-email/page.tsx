@@ -54,6 +54,15 @@ export default function CheckYourEmail() {
       return;
     }
 
+    if (!signIn) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Authentication service not available.",
+      });
+      return;
+    }
+
     try {
       const result = await signIn.attemptFirstFactor({
         strategy: "reset_password_email_code",
@@ -121,7 +130,7 @@ export default function CheckYourEmail() {
               </Button>
 
               <div className="text-center text-sm taxt-gray-800 mt-4">
-                <span>Didn't receive a code? </span>
+                <span>Didn&apos;t receive a code? </span>
                 <Button
                   type="button"
                   variant="link"

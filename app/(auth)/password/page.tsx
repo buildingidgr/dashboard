@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSignIn, useSession, useUser } from "@clerk/nextjs";
+import { useSignIn, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,6 +18,12 @@ import { Eye, EyeOff } from "lucide-react";
 import { exchangeClerkToken, setTokens } from "@/lib/services/auth";
 import { redirect } from "next/navigation";
 import { Command } from "@/components/ui/command";
+
+interface AuthError {
+  errors?: Array<{ message: string; code: string }>;
+  message?: string;
+  code?: string;
+}
 
 export default function PasswordPage() {
   const searchParams = useSearchParams();
@@ -51,7 +57,6 @@ function LoginFormPassword({ token }: { token: string }) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { session } = useSession();
   const { user } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,6 +75,15 @@ function LoginFormPassword({ token }: { token: string }) {
           description: "Session expired. Please try signing in again.",
         });
         router.push('/');
+        return;
+      }
+
+      if (!signIn) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Authentication service not available.",
+        });
         return;
       }
 
@@ -98,11 +112,12 @@ function LoginFormPassword({ token }: { token: string }) {
           }
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Password verification error:', err);
       
-      const errorMessage = err?.errors?.[0]?.message || err?.message;
-      const errorCode = err?.errors?.[0]?.code || err?.code;
+      const error = err as AuthError;
+      const errorMessage = error?.errors?.[0]?.message || error?.message;
+      const errorCode = error?.errors?.[0]?.code || error?.code;
 
       switch(errorCode) {
         case "form_password_incorrect":
