@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { usePageTitle } from "@/components/layouts/client-layout"
+import { PublicProjectsTable } from "@/components/public-projects-table"
 import { GreeceOpportunitiesMap } from "@/components/maps/greece-opportunities-map"
 import { GoogleMapsProvider } from "@/components/maps/google-maps-provider"
 import { useTheme } from "@/components/layouts/client-layout"

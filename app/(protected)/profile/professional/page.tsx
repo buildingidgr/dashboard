@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from 'react'
+import { useProfile } from '@/hooks/use-profile'
+import { usePreferences } from '@/hooks/use-preferences'
 import { useProfessionalInfo } from '@/hooks/use-professional-info'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
