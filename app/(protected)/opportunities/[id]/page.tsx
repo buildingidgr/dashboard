@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { exchangeClerkToken, getAccessToken, setAccessToken } from "@/lib/services/auth"
 import { useSession, useUser } from "@clerk/nextjs"
@@ -107,14 +107,55 @@ export default function OpportunityDetailsPage() {
   const [isUnclaimDialogOpen, setIsUnclaimDialogOpen] = useState(false)
   const [isUnclaiming, setIsUnclaiming] = useState(false)
 
+  const fetchOpportunity = useCallback(async (id: string) => {
+    try {
+      const accessToken = getAccessToken()
+      if (!accessToken) {
+        throw new Error('Authentication required')
+      }
+
+      const response = await fetch(`/api/opportunities/${id}`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch opportunity')
+      }
+
+      const data = await response.json()
+      return data
+    } catch (error) {
+      console.error('Error fetching opportunity:', error)
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to fetch opportunity',
+        variant: 'destructive'
+      })
+    }
+  }, [toast])
+
   useEffect(() => {
-    const initializeTokenAndFetch = async () => {
+    if (params?.id && typeof params.id === 'string') {
+      fetchOpportunity(params.id)
+    }
+  }, [params?.id, fetchOpportunity])
+
+  useEffect(() => {
+    async function initializeTokenAndFetch() {
       if (!session) {
         setIsLoading(false)
         return
       }
 
       try {
+        const id = params?.id
+        if (!id || typeof id !== 'string') {
+          throw new Error('Invalid opportunity ID')
+        }
+
         let accessToken = getAccessToken()
         
         if (!accessToken && user?.id && session?.id) {
@@ -124,14 +165,14 @@ export default function OpportunityDetailsPage() {
         }
 
         if (accessToken) {
-          await fetchOpportunity()
+          await fetchOpportunity(id)
         }
       } catch (error) {
         console.error('Failed to initialize token:', error)
         toast({
-          title: "Error",
-          description: "Failed to initialize session",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to initialize session',
+          variant: 'destructive'
         })
         setError('Failed to initialize session')
         setIsLoading(false)
@@ -139,7 +180,7 @@ export default function OpportunityDetailsPage() {
     }
 
     initializeTokenAndFetch()
-  }, [session, user])
+  }, [session, user, params?.id, fetchOpportunity, toast])
 
   useEffect(() => {
     if (opportunity) {
@@ -148,77 +189,26 @@ export default function OpportunityDetailsPage() {
     }
   }, [opportunity, setTitle, setDescription])
 
-  async function fetchOpportunity() {
-    try {
-      const accessToken = getAccessToken()
-      if (!accessToken) {
-        throw new Error("No access token available")
-      }
-
-      if (!params?.id) {
-        throw new Error("Opportunity ID is required")
-      }
-
-      console.log('Fetching opportunity:', params.id)
-      const response = await fetch(`/api/opportunities/${params.id}`, {
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        }
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Error response:', {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText
-        })
-        let errorData
-        try {
-          errorData = JSON.parse(errorText)
-        } catch (e) {
-          errorData = { message: errorText }
-        }
-        throw new Error(errorData.message || errorData.error || 'Failed to fetch opportunity')
-      }
-
-      const data = await response.json()
-      console.log('Opportunity data:', data)
-      setOpportunity(data)
-      setError(null)
-    } catch (error) {
-      console.error('Error fetching opportunity:', error)
-      setError(error instanceof Error ? error.message : 'Failed to fetch opportunity')
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to fetch opportunity',
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   const handleClaimOpportunity = async () => {
-    if (!params?.id) {
+    const id = params?.id
+    if (!id || typeof id !== 'string') {
       toast({
-        title: "Error",
-        description: "Invalid opportunity ID",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Invalid opportunity ID',
+        variant: 'destructive'
       })
       return
     }
 
     try {
       setIsClaiming(true)
-      await claimOpportunity(params.id)
+      await claimOpportunity(id)
       toast({
         title: "Success!",
         description: "Opportunity has been claimed successfully. You can now find it in your claimed opportunities.",
       })
       // Refresh the opportunity data to show updated status
-      await fetchOpportunity()
+      await fetchOpportunity(id)
       // Redirect to claimed opportunities page
       router.push('/claimed')
     } catch (error) {
@@ -234,11 +224,12 @@ export default function OpportunityDetailsPage() {
   }
 
   const handleUnclaimOpportunity = async () => {
-    if (!params?.id) {
+    const id = params?.id
+    if (!id || typeof id !== 'string') {
       toast({
-        title: "Error",
-        description: "Invalid opportunity ID",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Invalid opportunity ID',
+        variant: 'destructive'
       })
       return
     }
@@ -250,7 +241,7 @@ export default function OpportunityDetailsPage() {
         throw new Error("No access token available")
       }
 
-      const response = await fetch(`/api/opportunities/${params.id}/status`, {
+      const response = await fetch(`/api/opportunities/${id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -270,7 +261,7 @@ export default function OpportunityDetailsPage() {
         description: "Opportunity has been unclaimed successfully.",
       })
       // Refresh the opportunity data to show updated status
-      await fetchOpportunity()
+      await fetchOpportunity(id)
       // Redirect to opportunities page after unclaiming
       router.push('/opportunities')
     } catch (error) {

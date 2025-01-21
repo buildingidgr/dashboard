@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { type ProfilePreferences } from '@/lib/services/profile'
 import TimezoneSelect from '@/components/ui/timezone'
 import { HelpCircle } from 'lucide-react'
@@ -17,6 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useToast } from '@/hooks/use-toast'
 
 const LANGUAGES = [
   { value: 'en-US', label: 'English (US)' },
@@ -27,18 +28,15 @@ export default function PreferencesPage() {
   const { preferences, isLoading, updatePreferences } = usePreferences()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState<ProfilePreferences | null>(null)
+  const { toast } = useToast()
 
-  // Update form data when preferences are loaded or when canceling
-  const resetFormData = () => {
+  const resetFormData = useCallback(() => {
     setFormData(preferences)
-  }
-
-  // Initialize form data when preferences are loaded
-  useEffect(() => {
-    if (preferences) {
-      resetFormData()
-    }
   }, [preferences])
+
+  useEffect(() => {
+    resetFormData()
+  }, [resetFormData])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

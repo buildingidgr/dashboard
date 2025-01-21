@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useCallback, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { usePageTitle } from "@/components/layouts/client-layout"
 import { Button } from "@/components/ui/button"
@@ -20,18 +20,77 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { format } from "date-fns"
+import { useToast } from '@/hooks/use-toast'
+import { getAccessToken } from '@/lib/services/auth'
 
-// Import the mock data and types
-import { mockProjects, type Project } from "../page"
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  details: {
+    budget: string;
+    timeline: string;
+    requirements: string;
+    totalArea: string;
+    estimatedDuration: string;
+    constructionType: string;
+  };
+  createdAt: string;
+  location: {
+    address: string;
+    city: string;
+    state: string;
+    coordinates: {
+      lat: number;
+      lng: number;
+    };
+  };
+}
 
 export default function ProjectDetailsPage() {
   const params = useParams()
   const projectId = params?.id as string
   const router = useRouter()
   const { setTitle, setDescription } = usePageTitle()
-  const [project, setProject] = useState<Project | undefined>(
-    mockProjects.find(p => p.id === projectId)
-  )
+  const { toast } = useToast()
+  const [project, setProject] = useState<Project | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchProject = useCallback(async (id: string) => {
+    try {
+      const accessToken = getAccessToken()
+      if (!accessToken) {
+        throw new Error('Authentication required')
+      }
+
+      const response = await fetch(`/api/projects/${id}`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch project')
+      }
+
+      const data = await response.json()
+      setProject(data)
+      setError(null)
+    } catch (error) {
+      console.error('Error fetching project:', error)
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to fetch project',
+        variant: 'destructive'
+      })
+      setError(error instanceof Error ? error.message : 'Failed to fetch project')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [toast])
 
   useEffect(() => {
     if (!project) {
@@ -39,9 +98,24 @@ export default function ProjectDetailsPage() {
       return
     }
 
-    setTitle(project.name)
-    setDescription(`${project.type.charAt(0).toUpperCase() + project.type.slice(1)} Project`)
+    setTitle(project.title)
+    setDescription(project.description)
   }, [project, setTitle, setDescription, router])
+
+  useEffect(() => {
+    const id = params?.id
+    if (id && typeof id === 'string') {
+      fetchProject(id)
+    }
+  }, [params?.id, fetchProject])
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>
+  }
 
   if (!project) return null
 
@@ -79,7 +153,7 @@ export default function ProjectDetailsPage() {
         <CardHeader>
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <CardTitle className="text-2xl">{project.name}</CardTitle>
+              <CardTitle className="text-2xl">{project.title}</CardTitle>
               <p className="text-muted-foreground">{project.description}</p>
             </div>
             <Badge 

@@ -388,7 +388,9 @@ export class DocumentWebSocket {
     });
     this.isConnecting = false;
     this.isAuthenticated = false;
-    this.handleReconnection();
+    if (!this.closeRequested) {
+      this.handleReconnection();
+    }
   }
 
   private handleError(error: Error) {
@@ -397,7 +399,9 @@ export class DocumentWebSocket {
       name: error.name,
       stack: error.stack
     });
-    this.handleReconnection();
+    if (!this.closeRequested) {
+      this.handleReconnection();
+    }
   }
 
   private handleConnectionError(error: Error) {
@@ -405,11 +409,13 @@ export class DocumentWebSocket {
       message: error.message,
       name: error.name,
       stack: error.stack,
-      token: this.token ? 'Bearer [REDACTED]' : 'no token'
+      hasToken: Boolean(this.token)
     });
     this.isConnecting = false;
     this.isAuthenticated = false;
-    this.handleReconnection();
+    if (!this.closeRequested) {
+      this.handleReconnection();
+    }
   }
 
   private handleReconnection() {

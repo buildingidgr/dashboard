@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useCallback, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { exchangeClerkToken, getAccessToken, setAccessToken } from "@/lib/services/auth"
 import { useSession, useUser } from "@clerk/nextjs"
@@ -10,6 +10,7 @@ import { ArrowLeft, Pencil } from "lucide-react"
 import Link from "next/link"
 import { usePageTitle } from "@/components/layouts/client-layout"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from '@/hooks/use-toast'
 
 // Add country codes mapping
 const COUNTRY_CODES: { [key: string]: { code: string, flag: string } } = {
@@ -99,56 +100,20 @@ export default function ContactDetailsPage() {
   const { user } = useUser()
   const { setTitle, setDescription } = usePageTitle()
   const router = useRouter()
+  const { toast } = useToast()
 
-  useEffect(() => {
-    const initializeTokenAndFetch = async () => {
-      if (!session) {
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        let accessToken = getAccessToken()
-        
-        if (!accessToken && user?.id && session?.id) {
-          const tokens = await exchangeClerkToken(session.id, user.id)
-          setAccessToken(tokens.access_token)
-          accessToken = tokens.access_token
-        }
-
-        if (accessToken) {
-          await fetchContact()
-        }
-      } catch (error) {
-        console.error('Failed to initialize token:', error)
-        toast.error('Failed to initialize session')
-        setError('Failed to initialize session')
-        setIsLoading(false)
-      }
-    }
-
-    initializeTokenAndFetch()
-  }, [session, user])
-
-  useEffect(() => {
-    if (contact) {
-      setTitle(`${contact.firstName} ${contact.lastName}`)
-      setDescription(contact.company?.title || "Contact Details")
-    }
-  }, [contact, setTitle, setDescription])
-
-  async function fetchContact() {
+  const fetchContact = useCallback(async (id: string) => {
     try {
       const accessToken = getAccessToken()
       if (!accessToken) {
-        throw new Error("No access token available")
+        throw new Error("Authentication required")
       }
 
-      if (!params?.id) {
+      if (!id) {
         throw new Error("Contact ID is required")
       }
 
-      const response = await fetch(`/api/contacts/${params.id}`, {
+      const response = await fetch(`/api/contacts/${id}`, {
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${accessToken}`
@@ -156,21 +121,70 @@ export default function ContactDetailsPage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || errorData.error || 'Failed to fetch contact')
+        throw new Error("Failed to fetch contact")
       }
 
       const data = await response.json()
       setContact(data)
       setError(null)
     } catch (error) {
-      console.error('Error fetching contact:', error)
-      setError(error instanceof Error ? error.message : 'Failed to fetch contact')
-      toast.error(error instanceof Error ? error.message : 'Failed to fetch contact')
+      console.error("Error fetching contact:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fetch contact",
+        variant: "destructive"
+      })
+      setError(error instanceof Error ? error.message : "Failed to fetch contact")
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    const id = params?.id;
+    if (id && typeof id === 'string') {
+      fetchContact(id);
+    }
+  }, [params?.id, fetchContact]);
+
+  useEffect(() => {
+    async function initializeTokenAndFetch() {
+      try {
+        const id = params?.id;
+        if (!id || typeof id !== 'string') {
+          throw new Error('Invalid contact ID');
+        }
+
+        if (!session?.id || !user?.id) {
+          throw new Error('Authentication required');
+        }
+
+        const tokens = await exchangeClerkToken(session.id, user.id);
+        if (tokens.access_token) {
+          setAccessToken(tokens.access_token);
+          await fetchContact(id);
+        }
+      } catch (error) {
+        console.error('Failed to initialize token:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to initialize session',
+          variant: 'destructive'
+        });
+        setError('Failed to initialize session');
+        setIsLoading(false);
+      }
+    }
+
+    initializeTokenAndFetch();
+  }, [params?.id, fetchContact, toast, session?.id, user?.id]);
+
+  useEffect(() => {
+    if (contact) {
+      setTitle(`${contact.firstName} ${contact.lastName}`)
+      setDescription(contact.company?.title || "Contact Details")
+    }
+  }, [contact, setTitle, setDescription])
 
   const getCountryFlag = (phoneNumber: string) => {
     // Remove any spaces, dashes, or parentheses
