@@ -95,11 +95,10 @@ export default function ContactDetailsPage() {
   const [contact, setContact] = useState<Contact | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { session } = useSession()
+  const { isLoaded, session } = useSession()
   const { user } = useUser()
   const { setTitle, setDescription } = usePageTitle()
   const router = useRouter()
-  const { toast } = useToast()
 
   const fetchContact = useCallback(async (id: string) => {
     try {
