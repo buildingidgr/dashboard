@@ -31,7 +31,7 @@ export async function GET(
       let errorData
       try {
         errorData = JSON.parse(errorText)
-      } catch (e) {
+      } catch {
         errorData = { message: errorText }
       }
 

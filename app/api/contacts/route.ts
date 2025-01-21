@@ -4,49 +4,6 @@ import { refreshToken } from '@/lib/services/auth'
 
 const CONTACTS_API_URL = process.env.CONTACTS_API_URL || 'https://contacts-production-ca50.up.railway.app'
 
-interface AddressComponents {
-  street?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-}
-
-function parseGreekAddress(addressString: string): AddressComponents {
-  const components: AddressComponents = {};
-  
-  // Split the address by commas
-  const parts = addressString.split(',').map(part => part.trim());
-  
-  if (parts.length >= 1) {
-    // First part is usually the street address
-    components.street = parts[0];
-    
-    // Look for postal code in the street (if it exists)
-    const postalMatch = components.street.match(/\b\d{5}\b/);
-    if (postalMatch) {
-      components.postalCode = postalMatch[0];
-      // Remove postal code from street
-      components.street = components.street.replace(postalMatch[0], '').trim();
-    }
-  }
-  
-  if (parts.length >= 2) {
-    // Second part usually contains city
-    components.city = parts[1].replace(/\b\d{5}\b/, '').trim(); // Remove postal code if present
-    
-    // Check for postal code in city part
-    const cityPostalMatch = parts[1].match(/\b\d{5}\b/);
-    if (cityPostalMatch && !components.postalCode) {
-      components.postalCode = cityPostalMatch[0];
-    }
-  }
-  
-  // Default state for Greek addresses if not provided
-  components.state = 'Macedonia';
-  
-  return components;
-}
-
 async function getRefreshTokenFromCookies(): Promise<string | null> {
   const cookieStore = await cookies()
   return cookieStore.get('refreshToken')?.value || null

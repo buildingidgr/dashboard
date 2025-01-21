@@ -83,7 +83,11 @@ export async function PUT(
 
     interface DocumentContent {
       content?: DocumentContent | DocumentContent[];
-      [key: string]: any;
+      title?: string;
+      type?: string;
+      text?: string;
+      children?: DocumentContent[];
+      [key: string]: string | DocumentContent | DocumentContent[] | undefined;
     }
 
     // Helper function to find the actual content array if it exists
