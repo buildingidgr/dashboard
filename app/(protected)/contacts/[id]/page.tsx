@@ -9,7 +9,6 @@ import { ArrowLeft, Pencil } from "lucide-react"
 import Link from "next/link"
 import { usePageTitle } from "@/components/layouts/client-layout"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useToast } from '@/hooks/use-toast'
 
 // Add country codes mapping
 const COUNTRY_CODES: { [key: string]: { code: string, flag: string } } = {
@@ -95,7 +94,7 @@ export default function ContactDetailsPage() {
   const [contact, setContact] = useState<Contact | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { isLoaded, session } = useSession()
+  const { session } = useSession()
   const { user } = useUser()
   const { setTitle, setDescription } = usePageTitle()
   const router = useRouter()

@@ -22,7 +22,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from '@/lib/utils'
-import { ProfilePreferences } from '@/lib/services/profile'
 import { useUploadFile } from '@/lib/hooks/use-upload-file'
 import { toast } from 'sonner'
 
@@ -62,6 +61,29 @@ interface TempValues {
 }
 
 type EmailNotificationKey = keyof TempValues['preferences']['notifications']['email']
+
+interface ProfessionalChanges {
+  profession?: {
+    current: string;
+    allowedValues: string[];
+  };
+  amtee?: string;
+  areaOfOperation?: {
+    primary: string;
+    address: string;
+    coordinates: {
+      latitude: number;
+      longitude: number;
+    };
+    radius: number;
+  };
+}
+
+interface FieldValue {
+  key?: string;
+  checked?: boolean;
+  [key: string]: unknown;
+}
 
 export default function ProfilePage() {
   const { profile, isLoading: isProfileLoading, updateProfile } = useProfile()
@@ -148,7 +170,7 @@ export default function ProfilePage() {
       }
 
       // Update professional info
-      const professionalChanges: any = {}
+      const professionalChanges: ProfessionalChanges = {}
       if (tempValues.profession !== professionalInfo?.profession.current) {
         professionalChanges.profession = {
           current: tempValues.profession,
@@ -190,8 +212,10 @@ export default function ProfilePage() {
       }
 
       setIsEditing(false)
+      toast.success('Profile updated successfully')
     } catch (error) {
       console.error('Failed to save changes:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to save changes')
     }
   }
 
@@ -208,12 +232,12 @@ export default function ProfilePage() {
     }))
   }
 
-  const handleFieldChange = (field: string, value: any) => {
+  const handleFieldChange = (field: string, value: FieldValue | string | boolean) => {
     setTempValues(prev => {
       if (field.includes('.')) {
         const [section, subfield, subsubfield] = field.split('.')
         if (subsubfield) {
-          if (section === 'preferences' && subfield === 'notifications' && subsubfield === 'email') {
+          if (section === 'preferences' && subfield === 'notifications' && subsubfield === 'email' && typeof value === 'object' && 'key' in value && 'checked' in value) {
             return {
               ...prev,
               preferences: {
@@ -233,7 +257,7 @@ export default function ProfilePage() {
         return {
           ...prev,
           [sectionKey]: {
-            ...(prev[sectionKey] as any),
+            ...(prev[sectionKey] as Record<string, unknown>),
             [subfield]: value
           }
         }

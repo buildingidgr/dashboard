@@ -126,14 +126,19 @@ export default function OpportunityDetailsPage() {
       }
 
       const data = await response.json()
+      setOpportunity(data)
+      setError(null)
       return data
     } catch (error) {
       console.error('Error fetching opportunity:', error)
+      setError(error instanceof Error ? error.message : 'Failed to fetch opportunity')
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to fetch opportunity',
         variant: 'destructive'
       })
+    } finally {
+      setIsLoading(false)
     }
   }, [toast])
 

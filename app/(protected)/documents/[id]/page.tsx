@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { getAccessToken } from '@/lib/services/auth';
-import { PlateEditor, type PlateEditorProps } from '@/components/ui/plate-editor';
+import { PlateEditor } from '@/components/ui/plate-editor';
 import { Skeleton } from '@/components/ui/skeleton';
 import { type Descendant } from 'slate';
 

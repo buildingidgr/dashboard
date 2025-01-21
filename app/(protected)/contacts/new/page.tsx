@@ -33,6 +33,12 @@ interface ContactFormData {
   opportunityIds: string[]
 }
 
+interface ParsedPhoneData {
+  type: string;
+  number: string;
+  primary: boolean;
+}
+
 export default function NewContactPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -63,7 +69,7 @@ export default function NewContactPage() {
 
       try {
         console.log('Checking token state before initialization...')
-        let accessToken = getAccessToken()
+        const accessToken = getAccessToken()
         
         if (!accessToken) {
           console.log('No token found, initializing...')
@@ -87,7 +93,7 @@ export default function NewContactPage() {
     if (data) {
       try {
         const parsedData = JSON.parse(decodeURIComponent(data))
-        const phones = parsedData.phones?.map((phone: any) => ({
+        const phones = parsedData.phones?.map((phone: ParsedPhoneData) => ({
           type: phone.type === 'work' || phone.type === 'home' ? phone.type : 'mobile',
           number: phone.number || '',
           primary: phone.primary || false

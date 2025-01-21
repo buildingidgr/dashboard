@@ -27,9 +27,7 @@ interface AuthError {
 
 export default function PasswordPage() {
   const searchParams = useSearchParams();
-  const token = searchParams?.get('token');
-
-  if (!token) {
+  if (!searchParams?.get('token')) {
     redirect('/login');
   }
 
@@ -43,7 +41,7 @@ export default function PasswordPage() {
       </div>
       <div className="lg:p-8">
         <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-          <LoginFormPassword token={token} />
+          <LoginFormPassword token={searchParams.get('token')!} />
         </div>
       </div>
     </div>
