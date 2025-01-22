@@ -3,7 +3,7 @@ export const commentsData = {
     id: 'c1',
     userId: '1',
     value: 'Example comment',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   },
 }; 

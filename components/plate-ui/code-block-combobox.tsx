@@ -10,6 +10,7 @@ import {
 import { Check, ChevronsUpDown } from 'lucide-react';
 
 // Prism must be imported before all language files
+import type { default as PrismType } from 'prismjs';
 import Prism from 'prismjs';
 
 import { Button } from './button';

@@ -164,6 +164,7 @@
     "@types/js-cookie": "^3.0.6",
     "@types/lodash": "^4.17.14",
     "@types/node": "20.17.10",
+    "@types/prismjs": "^1.26.5",
     "@types/react": "18.3.18",
     "@types/react-dom": "^18",
     "@types/zxcvbn": "^4.4.5",
