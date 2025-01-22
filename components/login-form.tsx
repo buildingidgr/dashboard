@@ -1,6 +1,6 @@
 "use client"
 
-import { useSignIn, useAuth, useSession, useUser } from "@clerk/nextjs";
+import { useSignIn, useSignUp, useAuth, useSession, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,8 @@ import { exchangeClerkToken, setTokens } from "@/lib/services/auth";
 
 export function LoginForm() {
   const router = useRouter();
-  const { signIn, isLoaded } = useSignIn();
+  const { signIn, isLoaded: isSignInLoaded } = useSignIn();
+  const { signUp, isLoaded: isSignUpLoaded } = useSignUp();
   const { user } = useUser();
   const [email, setEmail] = useState("");
   const { toast } = useToast();
@@ -50,7 +51,7 @@ export function LoginForm() {
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoaded) return;
+    if (!isSignInLoaded) return;
 
     try {
       const result = await signIn.create({
@@ -84,18 +85,32 @@ export function LoginForm() {
 
   const handleSocialLogin = async (provider: 'oauth_google' | 'oauth_facebook' | 'oauth_apple') => {
     try {
-      if (!isLoaded) return;
+      if (!isSignInLoaded || !isSignUpLoaded) return;
       
       if (session?.status === 'active') {
         router.push('/dashboard');
         return;
       }
 
-      await signIn.authenticateWithRedirect({
-        strategy: provider,
-        redirectUrl: `${window.location.origin}/auth/callback`,
-        redirectUrlComplete: '/dashboard'
-      });
+      // Try sign in first
+      try {
+        await signIn.authenticateWithRedirect({
+          strategy: provider,
+          redirectUrl: `${window.location.origin}/auth/callback`,
+          redirectUrlComplete: '/dashboard'
+        });
+      } catch (signInErr: any) {
+        // If sign in fails due to user not existing, try sign up
+        if (signInErr.message?.includes('user not found') || signInErr.code === 'user_not_found') {
+          await signUp.authenticateWithRedirect({
+            strategy: provider,
+            redirectUrl: `${window.location.origin}/auth/callback`,
+            redirectUrlComplete: '/dashboard'
+          });
+        } else {
+          throw signInErr;
+        }
+      }
     } catch (err) {
       console.error('Social login error:', err);
       if (err instanceof Error && err.message.includes('single session mode')) {
