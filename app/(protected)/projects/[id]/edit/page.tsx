@@ -4,16 +4,15 @@ import { useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { usePageTitle } from "@/components/layouts/client-layout"
 import { ProjectForm } from "@/components/projects/project-form"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { mockProjects } from "../../page"
+import { Project, mockProjects } from "../../mock-data"
 
 export default function EditProjectPage() {
   const params = useParams()
   const router = useRouter()
-  const { setTitle } = usePageTitle()
+  const { setTitle, setDescription } = usePageTitle()
   const projectId = params?.id as string
+
+  // Find the project by ID
   const project = mockProjects.find(p => p.id === projectId)
 
   useEffect(() => {
@@ -22,51 +21,41 @@ export default function EditProjectPage() {
       return
     }
 
-    setTitle(`Edit ${project.name}`)
-  }, [project, setTitle, router])
+    setTitle("Edit Project")
+    setDescription(`Edit details for ${project.name}`)
+  }, [project, router, setTitle, setDescription])
 
-  if (!project) return null
+  if (!project) {
+    return null
+  }
 
   return (
-    <div className="space-y-6">
-      <Button
-        variant="outline"
-        className="flex items-center gap-2"
-        asChild
-      >
-        <Link href={`/projects/${projectId}`}>
-          <ArrowLeft className="h-4 w-4" />
-          Back to Project
-        </Link>
-      </Button>
-
-      <ProjectForm 
-        mode="edit"
-        projectId={projectId}
-        initialData={{
-          name: project.name,
-          type: project.type,
-          description: project.description,
-          location: {
-            address: project.location.address,
-            city: project.location.city,
-            state: project.location.state,
-            postalCode: "", // Add this to your mock data if needed
-          },
-          details: {
-            totalArea: project.details.totalArea.toString(),
-            estimatedDuration: project.details.estimatedDuration.toString(),
-            constructionType: project.details.constructionType,
-            budget: "", // Add this to your mock data if needed
-          },
-          permits: {
-            required: [],
-            status: "pending",
-            notes: "",
-          },
-          contactId: undefined, // Add this to your mock data if needed
-        }}
-      />
-    </div>
+    <ProjectForm 
+      mode="edit"
+      projectId={projectId}
+      initialData={{
+        name: project.name,
+        type: project.type,
+        description: project.description,
+        location: {
+          address: project.location.address,
+          city: project.location.city,
+          state: project.location.state,
+          postalCode: "", // Add default value
+        },
+        details: {
+          totalArea: project.details.totalArea.toString(),
+          estimatedDuration: project.details.estimatedDuration.toString(),
+          constructionType: project.details.constructionType,
+          budget: "", // Add default value
+        },
+        permits: {
+          required: [],
+          status: "pending",
+          notes: "",
+        },
+        contactId: undefined,
+      }}
+    />
   )
 } 

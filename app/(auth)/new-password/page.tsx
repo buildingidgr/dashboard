@@ -26,7 +26,7 @@ export default function SetNewPassword() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [signOutDevices, setSignOutDevices] = useState(false);
-  const [strength, setStrength] = useState("");
+  const [strength, setStrength] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
 
   const handlePasswordChange = (password: string) => {

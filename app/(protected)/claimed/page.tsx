@@ -189,6 +189,66 @@ export default function ClaimedProjectsPage() {
     },
   ]
 
+  // Map Project objects to Opportunity format
+  const opportunities = projects.map(project => {
+    // Format address as a string
+    const address = project.data.project.location.address;
+    const addressStr = [
+      address.street,
+      address.unit,
+      address.city,
+      address.state,
+      address.country,
+      address.postalCode
+    ].filter(Boolean).join(', ');
+
+    return {
+      _id: project._id,
+      type: project.type,
+      data: {
+        id: project._id,
+        projectType: project.type,
+        project: {
+          ...project.data.project,
+          location: {
+            address: addressStr,
+            coordinates: project.data.project.location.coordinates
+          }
+        },
+        contact: {
+          ...project.data.contact,
+          // Add missing fields required by Opportunity interface
+          address: {
+            city: address.city,
+            unit: address.unit,
+            state: address.state,
+            street: address.street,
+            country: address.country,
+            postalCode: address.postalCode
+          },
+          company: {
+            name: "N/A",
+            title: "N/A"
+          }
+        },
+        metadata: project.data.metadata
+      },
+      status: project.currentStatus,
+      lastStatusChange: {
+        from: project.lastChange.from,
+        to: project.lastChange.to,
+        changedBy: project.lastChange.changedBy,
+        changedAt: project.lastChange.changedAt
+      },
+      statusHistory: project.myChanges.map(change => ({
+        from: change.from,
+        to: change.to,
+        changedBy: project.lastChange.changedBy, // Using lastChange.changedBy since myChanges doesn't have it
+        changedAt: change.changedAt
+      }))
+    }
+  })
+
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-16">
       <div className="space-y-8">
@@ -254,7 +314,7 @@ export default function ClaimedProjectsPage() {
 
         {/* Projects */}
         <ClaimedOpportunities
-          projects={projects}
+          projects={opportunities}
           isLoading={isLoading}
         />
       </div>

@@ -43,13 +43,13 @@ const alignItems: AlignmentItem[] = [
 ];
 
 export function AlignDropdownMenu(props: DropdownMenuProps) {
-  const openState = useOpenState();
+  const { isOpen, toggle } = useOpenState();
   const [value, setValue] = React.useState<AlignmentItem['value']>('left');
 
   return (
-    <DropdownMenu modal={false} {...openState} {...props}>
+    <DropdownMenu modal={false} open={isOpen} onOpenChange={toggle} {...props}>
       <DropdownMenuTrigger asChild>
-        <ToolbarButton pressed={openState.isOpen} tooltip="Align">
+        <ToolbarButton pressed={isOpen} tooltip="Align">
           <AlignLeftIcon />
         </ToolbarButton>
       </DropdownMenuTrigger>
