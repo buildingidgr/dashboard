@@ -91,7 +91,7 @@ export async function PUT(
     }
 
     // Helper function to find the actual content array if it exists
-    const findContentArray = (obj: DocumentContent): DocumentContent[] | undefined => {
+    const findContentArray = (obj: DocumentContent | DocumentContent[]): DocumentContent[] | undefined => {
       if (!obj) return undefined;
       if (Array.isArray(obj)) return obj;
       if (obj?.content) return findContentArray(obj.content);

@@ -10,6 +10,9 @@ if (!JWT_SECRET) {
   throw new Error('JWT_SECRET or CLERK_SECRET_KEY environment variable is not set')
 }
 
+// After the check, we know JWT_SECRET is defined
+const secret: string = JWT_SECRET
+
 export async function POST(request: NextRequest) {
   try {
     console.log('Token exchange request received')
@@ -46,7 +49,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Using secret:', JWT_SECRET.substring(0, 10) + '...')
+    console.log('Using secret:', secret.substring(0, 10) + '...')
 
     // Create access token
     const accessToken = await new SignJWT({
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest) {
       .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
       .setIssuedAt()
       .setExpirationTime('1h')
-      .sign(new TextEncoder().encode(JWT_SECRET))
+      .sign(new TextEncoder().encode(secret))
 
     // Create refresh token
     const refreshToken = await new SignJWT({
@@ -70,7 +73,7 @@ export async function POST(request: NextRequest) {
       .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
       .setIssuedAt()
       .setExpirationTime('7d')
-      .sign(new TextEncoder().encode(JWT_SECRET))
+      .sign(new TextEncoder().encode(secret))
 
     console.log('Tokens generated successfully')
 

@@ -156,11 +156,15 @@ export const getAuthHeaders = () => {
 };
 
 // Token refresh
-export async function refreshToken(): Promise<string | null> {
+export async function refreshToken(token?: string): Promise<TokenResponse> {
   try {
-    const response = await fetch(`${AUTH_API_URL}/auth/refresh`, {
+    const response = await fetch(`${AUTH_API_URL}/v1/token/refresh`, {
       method: 'POST',
-      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ refreshToken: token || getRefreshToken() }),
     });
 
     if (!response.ok) {
@@ -168,10 +172,16 @@ export async function refreshToken(): Promise<string | null> {
     }
 
     const data = await response.json();
-    return data.accessToken;
+    
+    // Store the new tokens
+    if (data.access_token) {
+      setAccessToken(data.access_token);
+    }
+    
+    return data;
   } catch (error: unknown) {
     console.error('Error refreshing token:', error instanceof Error ? error.message : 'Unknown error');
-    return null;
+    throw error;
   }
 }
 

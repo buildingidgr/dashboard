@@ -20,9 +20,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DocumentMetadata } from '@/components/document-metadata';
 
 interface NormalizedBlock {
-  type: "p"
-  children: { text: string }[]
+  type: "p";
+  children: { text: string }[];
 }
+
+type EditorValue = Value & { type: "p"; children: { text: string }[] }[];
 
 function normalizeContent(content: TElement[]): NormalizedBlock[] {
   return content.map(block => ({
@@ -65,22 +67,22 @@ export function PlateEditor() {
           
           // Convert document content to editor format
           const content = doc.content.content.map(block => ({
-            type: 'p',
+            type: 'p' as const,
             children: Array.isArray(block.children) 
               ? block.children.map(child => ({ 
                   text: typeof child === 'object' && child !== null ? (child.text || '') : ''
                 }))
               : [{ text: '' }]
-          }));
+          })) as EditorValue;
           
           editor.children = content;
           editor.onChange();
         } else {
           // Set default content
           editor.children = [
-            { type: 'p', children: [{ text: '' }] },
-            { type: 'p', children: [{ text: '' }] }
-          ];
+            { type: 'p' as const, children: [{ text: '' }] },
+            { type: 'p' as const, children: [{ text: '' }] }
+          ] as EditorValue;
           editor.onChange();
         }
       })
@@ -152,7 +154,7 @@ export function PlateEditor() {
         const payload = {
           content: {
             type: 'doc',
-            content: editor.children as TElement[]
+            content: normalizeContent(editor.children)
           }
         };
         await DocumentsService.updateDocument(documentId, payload);
@@ -195,10 +197,11 @@ export function PlateEditor() {
             if (editor && data.content?.content) {
               try {
                 const mappedContent = data.content.content.map(node => ({
-                  ...node,
-                  type: node.type === 'paragraph' ? 'p' : node.type,
-                  children: Array.isArray(node.children) ? node.children : [{ text: '' }]
-                }));
+                  type: 'p' as const,
+                  children: Array.isArray(node.children) ? node.children.map(child => ({
+                    text: typeof child === 'object' && child !== null ? (child.text || '') : ''
+                  })) : [{ text: '' }]
+                })) as EditorValue;
                 console.log('Setting editor content:', mappedContent);
                 editor.children = mappedContent;
                 editor.onChange();

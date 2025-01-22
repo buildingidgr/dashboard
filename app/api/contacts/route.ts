@@ -16,9 +16,11 @@ async function handleTokenRefresh() {
   }
 
   try {
-    const tokens = await refreshToken(refreshTokenValue)
-    const newAccessToken = tokens.access_token;
-    return newAccessToken;
+    const response = await refreshToken(refreshTokenValue)
+    if (!response.access_token) {
+      throw new Error('No access token in refresh response')
+    }
+    return response.access_token
   } catch (error) {
     console.error('Token refresh failed:', error)
     throw new Error('Failed to refresh token')
