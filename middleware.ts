@@ -11,6 +11,11 @@ export default authMiddleware({
   afterAuth(auth, req) {
     // Handle API routes differently
     if (req.nextUrl.pathname.startsWith('/api/')) {
+      // Allow token exchange endpoint without Bearer token
+      if (req.nextUrl.pathname === '/api/auth/exchange') {
+        return NextResponse.next()
+      }
+
       // Check for Bearer token in Authorization header
       const authHeader = req.headers.get('authorization')
       if (!authHeader?.startsWith('Bearer ')) {

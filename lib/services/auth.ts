@@ -89,12 +89,11 @@ const validateToken = (token: string | null): boolean => {
 
 // Token exchange with Clerk
 export async function exchangeClerkToken(sessionId: string, userId: string): Promise<TokenResponse> {
-  const response = await fetch('/api/auth/exchange', {
+  const response = await fetch(`${AUTH_API_URL}/v1/token/clerk/exchange`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({
       sessionId,
       userId,
