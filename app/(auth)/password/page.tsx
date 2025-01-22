@@ -88,8 +88,7 @@ function LoginFormPassword() {
         const sessionId = result.createdSessionId;
         if (sessionId && user) {
           try {
-            const tokens = await exchangeClerkToken(sessionId, user.id);
-            setTokens(tokens.access_token, tokens.refresh_token);
+            await exchangeClerkToken(sessionId, user.id);
             
             localStorage.removeItem('loginEmail');
             localStorage.removeItem('signInId');

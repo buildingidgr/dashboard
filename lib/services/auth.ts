@@ -88,7 +88,7 @@ const validateToken = (token: string | null): boolean => {
 };
 
 // Token exchange with Clerk
-export async function exchangeClerkToken(sessionId: string, userId: string): Promise<{ access_token: string }> {
+export async function exchangeClerkToken(sessionId: string, userId: string): Promise<TokenResponse> {
   const response = await fetch('/api/auth/exchange', {
     method: 'POST',
     headers: {
@@ -105,7 +105,14 @@ export async function exchangeClerkToken(sessionId: string, userId: string): Pro
     throw new Error(`Failed to exchange token: ${error}`)
   }
 
-  return response.json()
+  const data = await response.json()
+  
+  // Store tokens
+  if (data.access_token && data.refresh_token) {
+    setTokens(data.access_token, data.refresh_token)
+  }
+
+  return data
 }
 
 // Auth headers for API requests
