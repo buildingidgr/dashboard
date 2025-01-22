@@ -182,8 +182,8 @@ export default function NewContactPage() {
   if (isLoading) {
     return (
       <div className="flex flex-1 flex-col gap-4">
-        <div className="flex justify-center items-center h-full">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <div className="flex h-full items-center justify-center">
+          <div className="animate-spin rounded-full size-8 border-b-2 border-gray-900"></div>
         </div>
       </div>
     )
@@ -194,7 +194,7 @@ export default function NewContactPage() {
       <div className="flex items-center gap-2">
         <Button asChild variant="outline">
           <Link href="/contacts">
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="size-4 mr-2" />
             Back to Contacts
           </Link>
         </Button>
@@ -204,7 +204,7 @@ export default function NewContactPage() {
         {/* Basic Info Section */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-lg font-medium">
-            <Building className="h-5 w-5" />
+            <Building className="size-5" />
             Basic Information
           </div>
           
@@ -232,7 +232,7 @@ export default function NewContactPage() {
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
+              <Mail className="size-4 text-muted-foreground" />
               <Input
                 id="email"
                 type="email"
@@ -248,7 +248,7 @@ export default function NewContactPage() {
         {/* Phone Numbers Section */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-lg font-medium">
-            <Phone className="h-5 w-5" />
+            <Phone className="size-5" />
             Phone Numbers
           </div>
           
@@ -286,7 +286,7 @@ export default function NewContactPage() {
                   onClick={() => removePhone(index)}
                   className="mt-8"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="size-5" />
                 </Button>
               )}
             </div>
@@ -298,7 +298,7 @@ export default function NewContactPage() {
             onClick={addPhone}
             className="w-full"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="size-4" />
             Add Phone Number
           </Button>
         </div>
@@ -306,7 +306,7 @@ export default function NewContactPage() {
         {/* Address Section */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-lg font-medium">
-            <MapPin className="h-5 w-5" />
+            <MapPin className="size-4" />
             Address
           </div>
           

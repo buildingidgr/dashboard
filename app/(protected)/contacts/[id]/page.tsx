@@ -190,17 +190,17 @@ export default function ContactDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-10">
+      <div className="mx-auto max-w-3xl px-4 py-10">
         {/* Header Skeleton */}
-        <div className="space-y-6 mb-8">
+        <div className="mb-8 space-y-6">
           <div className="flex items-center justify-between">
-            <Skeleton className="h-12 w-12 rounded-full" /> {/* Flag skeleton */}
+            <Skeleton className="size-12 rounded-full" />
             <div className="flex gap-2">
-              <Skeleton className="h-10 w-24" /> {/* Back button skeleton */}
-              <Skeleton className="h-10 w-24" /> {/* Edit button skeleton */}
+              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-10 w-24" />
             </div>
           </div>
-          <Skeleton className="h-14 w-2/3" /> {/* Name skeleton */}
+          <Skeleton className="h-14 w-2/3" />
         </div>
 
         {/* Properties Skeleton */}
@@ -208,20 +208,20 @@ export default function ContactDetailsPage() {
           {/* Email */}
           <div className="flex items-start gap-4">
             <Skeleton className="h-6 w-24" />
-            <Skeleton className="h-6 w-[60%]" />
+            <Skeleton className="h-6 w-3/5" />
           </div>
 
           {/* Location */}
           <div className="flex items-start gap-4">
             <Skeleton className="h-6 w-24" />
-            <Skeleton className="h-6 w-[75%]" />
+            <Skeleton className="h-6 w-3/4" />
           </div>
 
           {/* Phone */}
           <div className="flex items-start gap-4">
             <Skeleton className="h-6 w-24" />
             <div className="flex-1 space-y-2">
-              <Skeleton className="h-6 w-[40%]" />
+              <Skeleton className="h-6 w-2/5" />
               <Skeleton className="h-6 w-[35%]" />
             </div>
           </div>
@@ -244,13 +244,13 @@ export default function ContactDetailsPage() {
 
   if (error || !contact) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-10">
+      <div className="mx-auto max-w-3xl px-4 py-10">
         <div className="flex flex-col items-center justify-center h-32 space-y-4">
           <h1 className="text-2xl font-bold">Contact Not Found</h1>
           <p className="text-muted-foreground">The requested contact could not be found.</p>
-          <Button variant="outline" asChild>
+          <Button variant="outline" className="flex items-center gap-2" asChild>
             <Link href="/contacts">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className="size-4" />
               Back to Contacts
             </Link>
           </Button>
@@ -273,9 +273,9 @@ export default function ContactDetailsPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div className="mx-auto max-w-3xl px-4 py-10">
       {/* Header */}
-      <div className="space-y-6 mb-8">
+      <div className="mb-8 space-y-6">
         <div className="flex items-center justify-between">
           <div className="text-3xl">
             {contact.phones.length > 0 
@@ -284,13 +284,17 @@ export default function ContactDetailsPage() {
             }
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.back()}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+            <Button variant="outline" className="flex items-center gap-2" asChild>
+              <Link href="/contacts">
+                <ArrowLeft className="size-4" />
+                Back to Contacts
+              </Link>
             </Button>
-            <Button onClick={() => router.push(`/contacts/${contact.id}/edit`)}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit
+            <Button variant="outline" className="flex items-center gap-2" asChild>
+              <Link href={`/contacts/${contact.id}/edit`}>
+                <Pencil className="size-4" />
+                Edit Contact
+              </Link>
             </Button>
           </div>
         </div>

@@ -3,6 +3,8 @@
 import React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { DndProvider } from 'react-dnd';
 
 import { Plate } from '@udecode/plate-common/react';
 import { type Value, type TElement, type TDescendant } from '@udecode/plate-common';
@@ -28,6 +30,20 @@ function safeStringify(value: unknown): string {
       seen.add(val);
     }
     return val;
+  });
+}
+
+function validateContent(content: unknown): content is TElement[] {
+  if (!Array.isArray(content)) return false;
+  return content.every(node => {
+    if (!node || typeof node !== 'object') return false;
+    if (!('type' in node) || typeof node.type !== 'string') return false;
+    if (!('children' in node) || !Array.isArray(node.children)) return false;
+    return node.children.every((child: unknown) => {
+      if (!child || typeof child !== 'object') return false;
+      if ('text' in child && typeof (child as { text: unknown }).text === 'string') return true;
+      return validateContent([child]);
+    });
   });
 }
 
@@ -57,8 +73,13 @@ export function PlateEditor() {
 
         if (doc.content?.content) {
           try {
-            // Use editor transform to set content
+            // Validate content structure
             const content = doc.content.content;
+            if (!validateContent(content)) {
+              throw new Error('Invalid document content structure');
+            }
+
+            // Use editor transform to set content
             editor.insertFragment(content);
             
             // Initialize the last content state
@@ -268,31 +289,33 @@ export function PlateEditor() {
   }
 
   return (
-    <Plate editor={editor} onChange={handleContentChange}>
-      <div className="flex h-screen flex-col">
-        {/* Sticky header section */}
-        <div className="sticky top-0 z-50 bg-background">
-          <DocumentMetadata
-            title={title}
-            editedAt="Just now"
-            editedBy="You"
-            createdBy="You"
-            createdAt="Today"
-            onTitleChange={setTitle}
-          />
-          <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-            <FixedToolbar>
-              <FixedToolbarButtons />
-            </FixedToolbar>
+    <DndProvider backend={HTML5Backend}>
+      <Plate editor={editor} onChange={handleContentChange}>
+        <div className="flex h-screen flex-col">
+          {/* Sticky header section */}
+          <div className="sticky top-0 z-50 bg-background">
+            <DocumentMetadata
+              title={title}
+              editedAt="Just now"
+              editedBy="You"
+              createdBy="You"
+              createdAt="Today"
+              onTitleChange={setTitle}
+            />
+            <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+              <FixedToolbar>
+                <FixedToolbarButtons />
+              </FixedToolbar>
+            </div>
+          </div>
+
+          {/* Content section */}
+          <div className="flex-1 overflow-auto">
+            <Editor />
           </div>
         </div>
-
-        {/* Content section */}
-        <div className="flex-1 overflow-auto">
-          <Editor />
-        </div>
-      </div>
-    </Plate>
+      </Plate>
+    </DndProvider>
   );
 }
 
