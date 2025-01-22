@@ -1,41 +1,25 @@
 "use client"
 
-import { SignIn } from "@clerk/nextjs";
-import { Command } from "@/components/ui/command";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Get the current origin for the redirect URL
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    
+    // Redirect to Clerk's hosted sign-in page with redirect parameters
+    window.location.href = `https://flowing-lamb-6.accounts.dev/sign-in?redirect_url=${origin}/auth/callback&after_sign_in_url=${origin}/dashboard`;
+  }, []);
+
   return (
-    <div className="container relative flex h-[800px] flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
-        <div className="absolute inset-0 bg-zinc-900" />
-        <div className="relative z-20 flex items-center text-lg font-medium">
-          <Command className="mr-2 size-8" /> MechLabs
-        </div>
-        <div className="relative z-20 mt-auto">
-          <blockquote className="space-y-2">
-            <p className="text-lg">
-              &ldquo;This platform has transformed how we manage our mechanical projects, making collaboration seamless and efficient.&rdquo;
-            </p>
-            <footer className="text-sm">Sofia Davis</footer>
-          </blockquote>
-        </div>
-      </div>
-      <div className="lg:p-8">
-        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-          <SignIn 
-            appearance={{
-              elements: {
-                rootBox: "mx-auto w-full",
-                card: "shadow-none",
-                header: "hidden",
-                footer: "hidden"
-              }
-            }}
-            redirectUrl="/auth/callback"
-            afterSignInUrl="/dashboard"
-          />
-        </div>
+    // Show loading state while redirecting
+    <div className="container flex h-[800px] items-center justify-center">
+      <div className="text-center">
+        <p className="text-lg text-muted-foreground">Redirecting to sign in...</p>
       </div>
     </div>
-  )
+  );
 } 

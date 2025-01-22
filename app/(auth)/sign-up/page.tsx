@@ -7,8 +7,11 @@ export default function SignUpPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to Clerk's hosted sign-up page
-    window.location.href = "https://flowing-lamb-6.accounts.dev/sign-up";
+    // Get the current origin for the redirect URL
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    
+    // Redirect to Clerk's hosted sign-up page with redirect parameters
+    window.location.href = `https://flowing-lamb-6.accounts.dev/sign-up?redirect_url=${origin}/auth/callback&after_sign_up_url=${origin}/dashboard`;
   }, []);
 
   return (
