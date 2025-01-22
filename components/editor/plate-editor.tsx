@@ -39,22 +39,58 @@ interface NormalizedBlock {
 
 type EditorValue = Value & { type: "p"; children: { text: string }[] }[];
 
+function safeStringify(obj: any): string {
+  const seen = new WeakSet();
+  return JSON.stringify(obj, (key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return undefined; // Remove circular reference
+      }
+      seen.add(value);
+    }
+    return value;
+  });
+}
+
 function normalizeContent(content: TElement[]): NormalizedBlock[] {
-  return content.map(block => ({
-    ...block,
-    type: block.type || "p",
-    children: Array.isArray(block.children) 
-      ? block.children.map(child => {
-          if (typeof child === 'object' && child !== null) {
-            return {
-              ...child,
-              text: (child as any).text || ''
-            } as StyledText;
-          }
-          return { text: String(child) };
-        })
-      : [{ text: '' }]
-  }));
+  // Create a clean version of the content without circular references
+  return content.map(block => {
+    const cleanBlock = {
+      type: block.type || "p",
+      children: Array.isArray(block.children) 
+        ? block.children.map(child => {
+            if (typeof child === 'object' && child !== null) {
+              // Only keep essential text properties
+              const cleanChild = {
+                text: (child as any).text || '',
+                bold: (child as any).bold,
+                italic: (child as any).italic,
+                underline: (child as any).underline,
+                strikethrough: (child as any).strikethrough,
+                code: (child as any).code,
+                subscript: (child as any).subscript,
+                superscript: (child as any).superscript
+              };
+              // Remove undefined properties
+              Object.keys(cleanChild).forEach(key => 
+                (cleanChild as any)[key] === undefined && delete (cleanChild as any)[key]
+              );
+              return cleanChild;
+            }
+            return { text: String(child) };
+          })
+        : [{ text: '' }]
+    };
+    
+    // Copy any additional properties from the block that aren't type or children
+    Object.keys(block).forEach(key => {
+      if (key !== 'type' && key !== 'children' && typeof (block as any)[key] !== 'function') {
+        (cleanBlock as any)[key] = (block as any)[key];
+      }
+    });
+    
+    return cleanBlock;
+  });
 }
 
 export function PlateEditor() {
@@ -162,12 +198,12 @@ export function PlateEditor() {
 
       // Store the last saved content string on first run
       if (!lastContentRef.current.lastSavedContent) {
-        lastContentRef.current.lastSavedContent = JSON.stringify(normalizedContent);
+        lastContentRef.current.lastSavedContent = safeStringify(normalizedContent);
         return;
       }
 
       // Compare with last saved content
-      const currentContentString = JSON.stringify(normalizedContent);
+      const currentContentString = safeStringify(normalizedContent);
       if (currentContentString === lastContentRef.current.lastSavedContent) {
         console.log('No changes detected in content, skipping save');
         return;
@@ -182,7 +218,7 @@ export function PlateEditor() {
         const payload = {
           content: {
             type: 'doc',
-            content: normalizeContent(editor.children)
+            content: normalizedContent
           }
         };
         await DocumentsService.updateDocument(documentId, payload);
