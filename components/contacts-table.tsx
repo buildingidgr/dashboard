@@ -1,6 +1,23 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { useEffect, useId, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useSession, useUser } from "@clerk/nextjs"
+import Link from "next/link"
+import { cn } from "@/lib/utils"
+import { getAccessToken, exchangeClerkToken, setAccessToken } from '@/lib/services/auth'
+import { toast } from "sonner"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuGroup,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
+import { MoreHorizontal } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,22 +30,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  DropdownMenu,
   DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuPortal,
-  DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,11 +93,6 @@ import {
   Phone,
   Mail,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useSession, useUser } from "@clerk/nextjs"
-import { getAccessToken, setAccessToken, exchangeClerkToken } from '@/lib/services/auth'
-import { toast } from "sonner"
 
 interface Contact {
   id: string;

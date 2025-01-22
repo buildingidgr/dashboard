@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { getAccessToken, setAccessToken, exchangeClerkToken } from '@/lib/services/auth'
+import { getAccessToken, exchangeClerkToken } from '@/lib/services/auth'
 import { toast } from "sonner"
 import { useSession, useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"

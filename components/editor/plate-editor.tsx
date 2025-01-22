@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { Plate } from '@udecode/plate-common/react';
-import { type TElement } from '@udecode/plate-common';
+import { type TElement, type Value } from '@udecode/plate-common';
 
 import { useCreateEditor } from '@/components/editor/use-create-editor';
 import { Editor, EditorContainer } from '@/components/plate-ui/editor';
@@ -18,6 +18,22 @@ import { DocumentWebSocket } from '@/lib/services/websocket';
 import { getAccessToken } from '@/lib/services/auth';
 import { Skeleton } from "@/components/ui/skeleton";
 import { DocumentMetadata } from '@/components/document-metadata';
+
+interface NormalizedBlock {
+  type: "p"
+  children: { text: string }[]
+}
+
+function normalizeContent(content: TElement[]): NormalizedBlock[] {
+  return content.map(block => ({
+    type: "p",
+    children: Array.isArray(block.children) 
+      ? block.children.map(child => ({
+          text: typeof child.text === 'string' ? child.text : ''
+        }))
+      : [{ text: '' }]
+  }))
+}
 
 export function PlateEditor() {
   const editor = useCreateEditor();
@@ -100,16 +116,6 @@ export function PlateEditor() {
       }
 
       // Normalize the content by removing unstable properties and cleaning up the structure
-      const normalizeContent = (content: TElement[]) => {
-        return content.map(node => {
-          const { children, ...rest } = node;
-          return {
-            ...rest,
-            children: children ? normalizeContent(children) : []
-          };
-        });
-      };
-
       const normalizedContent = normalizeContent(editor.children);
 
       // Check if content is just empty paragraphs

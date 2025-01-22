@@ -29,7 +29,6 @@ export function NavUser() {
   const { signOut } = useClerk()
   const { isMobile } = useSidebar()
   const router = useRouter()
-  const { isDarkMode } = useTheme()
   const { toast } = useToast()
 
   if (!user) {

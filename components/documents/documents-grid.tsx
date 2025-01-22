@@ -9,16 +9,6 @@ import { useRouter } from 'next/navigation';
 import { DocumentsService, type Document } from '@/lib/services/documents';
 import { PlusIcon } from '@heroicons/react/24/outline';
 
-interface DocumentContent {
-  type: string;
-  children: Array<{
-    type: string;
-    text?: string;
-    children?: DocumentContent[];
-    [key: string]: unknown;
-  }>;
-}
-
 export function DocumentsGrid() {
   const { toast } = useToast();
   const [documents, setDocuments] = useState<Document[]>([]);

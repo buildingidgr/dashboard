@@ -2,6 +2,7 @@
 
 import { useTheme } from "@/components/layouts/client-layout"
 import { lightStyle, darkStyle } from "@/constants/map-styles"
+import Image from 'next/image'
 
 interface ProjectMapProps {
   coordinates: {
@@ -30,11 +31,13 @@ export function ProjectMap({ coordinates }: ProjectMapProps) {
   }).join('&')
 
   return (
-    <div className="w-full h-[250px] overflow-hidden rounded-lg mt-4">
-      <img
+    <div className="relative w-full h-64 rounded-lg overflow-hidden">
+      <Image
         src={`https://maps.googleapis.com/maps/api/staticmap?center=${coordinates.lat},${coordinates.lng}&zoom=15&size=600x400&scale=2&markers=color:red%7C${coordinates.lat},${coordinates.lng}&key=${apiKey}&${styleParam}`}
         alt="Location map"
-        className="w-full h-full object-cover"
+        fill
+        className="object-cover"
+        unoptimized
       />
     </div>
   )

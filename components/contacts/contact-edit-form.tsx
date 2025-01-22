@@ -24,7 +24,7 @@ import {
 import { useAppToast } from "@/components/layouts/client-layout"
 import { getAccessToken } from '@/lib/services/auth'
 import { PhoneInput } from "@/components/ui/phone-input"
-import { CountryDropdown, Country } from "@/components/ui/country-dropdown"
+import { CountryDropdown } from "@/components/ui/country-dropdown"
 
 // Validation schema based on API documentation
 const phoneSchema = z.object({

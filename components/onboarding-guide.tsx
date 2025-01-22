@@ -478,7 +478,7 @@ export function OnboardingGuide() {
               <DialogHeader>
                 <DialogTitle>Welcome to the Platform</DialogTitle>
                 <DialogDescription>
-                  Let's explore the key features and capabilities of our engineering management platform.
+                  Let&apos;s explore the key features and capabilities of our engineering management platform.
                 </DialogDescription>
               </DialogHeader>
               <div className="py-4 space-y-6">

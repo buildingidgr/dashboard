@@ -6,6 +6,9 @@ import { MapPin, Calendar, ArrowRight } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/contacts/data-table"
+import { useRouter } from "next/navigation"
+import Image from 'next/image'
+import { format } from "date-fns"
 
 interface Project {
   _id: string
@@ -98,13 +101,14 @@ export default function OpportunityTable({
         const project = row.original
         const { coordinates } = project.data.project.location
         return (
-          <div className="relative h-32 w-48 overflow-hidden rounded-md">
-            <img
-              src={`https://maps.googleapis.com/maps/api/staticmap?center=${coordinates.lat},${coordinates.lng}&zoom=13&size=400x300&key=${googleApiKey}`}
-              alt="Project location map"
-              className="w-full h-full object-cover"
+          <div className="relative w-16 h-16 rounded-lg overflow-hidden">
+            <Image
+              src={`https://maps.googleapis.com/maps/api/staticmap?center=${coordinates.lat},${coordinates.lng}&zoom=15&size=200x200&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&markers=color:red%7C${coordinates.lat},${coordinates.lng}`}
+              alt="Location preview"
+              fill
+              className="object-cover"
+              unoptimized
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
           </div>
         )
       }
@@ -182,6 +186,10 @@ export default function OpportunityTable({
       }}
       searchPlaceholder="Search by description..."
       searchColumn="description"
+      pagination={{
+        pageIndex: currentPage - 1,
+        pageSize: 15
+      }}
     />
   )
 } 

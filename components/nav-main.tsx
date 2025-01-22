@@ -46,7 +46,6 @@ interface NavMainProps {
 
 export function NavMain({ items, onCreateDocument, documentListKey }: NavMainProps) {
   const pathname = usePathname()
-  const { isDarkMode } = useTheme()
 
   return (
     <SidebarGroup>

@@ -24,6 +24,12 @@ import {
   useOpenState,
 } from './dropdown-menu';
 import { ToolbarButton } from './toolbar';
+import { usePlateEditorState } from '@udecode/plate-core';
+import { getPluginOptions } from '@udecode/plate-core';
+import { ELEMENT_ALIGN } from '@udecode/plate-core';
+import { Button } from '@/components/ui/button';
+import { Icons } from '@/components/icons';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
 const items = [
   {
@@ -44,31 +50,30 @@ const items = [
   },
 ];
 
-export function AlignDropdownMenu({ children, ...props }: DropdownMenuProps) {
-  const state = useAlignDropdownMenuState();
-  const { radioGroupProps } = useAlignDropdownMenu(state);
-
-  const openState = useOpenState();
-  const IconValue =
-    items.find((item) => item.value === radioGroupProps.value)?.icon ??
-    AlignLeftIcon;
+export function AlignDropdownMenu() {
+  const editor = usePlateEditorState();
+  const value = getPluginOptions(editor, ELEMENT_ALIGN).align.default;
 
   return (
-    <DropdownMenu modal={false} {...openState} {...props}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <ToolbarButton pressed={openState.open} tooltip="Align" isDropdown>
-          <IconValue />
-        </ToolbarButton>
+        <Button variant="ghost" size="sm">
+          <Icons.alignLeft className="h-4 w-4" />
+        </Button>
       </DropdownMenuTrigger>
-
-      <DropdownMenuContent className="min-w-0" align="start">
-        <DropdownMenuRadioGroup {...radioGroupProps}>
-          {items.map(({ icon: Icon, value: itemValue }) => (
-            <DropdownMenuRadioItem key={itemValue} value={itemValue} hideIcon>
-              <Icon />
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
+      <DropdownMenuContent>
+        <DropdownMenuItem>
+          <Icons.alignLeft className="mr-2 h-4 w-4" />
+          <span>Left</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <Icons.alignCenter className="mr-2 h-4 w-4" />
+          <span>Center</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <Icons.alignRight className="mr-2 h-4 w-4" />
+          <span>Right</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

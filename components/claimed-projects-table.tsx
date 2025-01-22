@@ -108,6 +108,36 @@ interface ContactData {
   opportunityIds: string[]
 }
 
+interface Project {
+  _id: string
+  type: string
+  data: {
+    project: {
+      category: {
+        title: string
+        description: string
+      }
+      location: {
+        address: string
+        coordinates: {
+          lat: number
+          lng: number
+        }
+      }
+      details: {
+        description: string
+      }
+    }
+    metadata: {
+      submittedAt: string
+      locale: string
+      source: string
+      version: string
+    }
+  }
+  status: 'public' | 'private'
+}
+
 // Helper function to format address
 function formatAddress(address: string | AddressObject): string {
   if (typeof address === 'string') {

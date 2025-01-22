@@ -57,12 +57,8 @@ const staticComponents = {
   [HEADING_KEYS.h3]: withProps(HeadingElementStatic, { variant: 'h3' }),
 };
 
-export const AIChatEditor = memo(
-  ({
-    aiEditorRef,
-  }: {
-    aiEditorRef: React.MutableRefObject<SlateEditor | null>;
-  }) => {
+const AIChatEditor = React.forwardRef<HTMLDivElement, { aiEditorRef: React.MutableRefObject<SlateEditor | null> }>(
+  ({ aiEditorRef }, ref) => {
     const { getOptions } = useEditorPlugin(AIChatPlugin);
     const lastAssistantMessage = useLastAssistantMessage();
     const content = lastAssistantMessage?.content ?? '';
@@ -91,11 +87,17 @@ export const AIChatEditor = memo(
     if (!content) return null;
 
     return (
-      <EditorStatic
-        variant="aiChat"
-        components={staticComponents}
-        editor={aiEditor}
-      />
+      <div ref={ref} className="ai-chat-editor">
+        <EditorStatic
+          variant="aiChat"
+          components={staticComponents}
+          editor={aiEditor}
+        />
+      </div>
     );
   }
 );
+
+AIChatEditor.displayName = 'AIChatEditor';
+
+export { AIChatEditor };
