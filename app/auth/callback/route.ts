@@ -8,6 +8,12 @@ export async function GET(request: Request) {
   const createdSessionId = searchParams.get("__clerk_created_session");
   
   try {
+    console.log('Auth callback received:', {
+      userId,
+      createdSessionId,
+      searchParams: Object.fromEntries(searchParams.entries())
+    });
+
     // If we have both userId and session, exchange tokens
     if (userId && createdSessionId) {
       try {

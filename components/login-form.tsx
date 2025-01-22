@@ -1,6 +1,6 @@
 "use client"
 
-import { useSignIn, useSignUp, useAuth, useSession, useUser } from "@clerk/nextjs";
+import { useSignIn, useSession, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,15 +16,15 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { RiAppleFill, RiFacebookFill, RiGoogleFill } from "@remixicon/react";
 import { exchangeClerkToken, setTokens } from "@/lib/services/auth";
+import Link from "next/link";
 
 export function LoginForm() {
   const router = useRouter();
-  const { signIn, isLoaded: isSignInLoaded } = useSignIn();
-  const { signUp, isLoaded: isSignUpLoaded } = useSignUp();
+  const { signIn, isLoaded } = useSignIn();
+  const { session } = useSession();
   const { user } = useUser();
   const [email, setEmail] = useState("");
   const { toast } = useToast();
-  const { session } = useSession();
 
   useEffect(() => {
     if (session?.status === 'active') {
@@ -51,7 +51,7 @@ export function LoginForm() {
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isSignInLoaded) return;
+    if (!isLoaded) return;
 
     try {
       const result = await signIn.create({
@@ -85,28 +85,24 @@ export function LoginForm() {
 
   const handleSocialLogin = async (provider: 'oauth_google' | 'oauth_facebook' | 'oauth_apple') => {
     try {
-      if (!isSignInLoaded || !signIn) return;
+      if (!isLoaded || !signIn) return;
       
       if (session?.status === 'active') {
         router.push('/dashboard');
         return;
       }
 
-      // For development, we'll use signIn directly
-      const result = await signIn.authenticateWithRedirect({
+      await signIn.authenticateWithRedirect({
         strategy: provider,
         redirectUrl: '/auth/callback',
         redirectUrlComplete: '/dashboard'
       });
-
-      // The token exchange will be handled in the callback route
-      
     } catch (err) {
       console.error('Social login error:', err);
       toast({
         variant: "destructive",
-        title: "Social Login Error",
-        description: "An error occurred while trying to log in with social provider."
+        title: "Sign In Error",
+        description: "An error occurred while trying to sign in. Please try again."
       });
     }
   };
@@ -175,6 +171,14 @@ export function LoginForm() {
                 Continue with Apple
               </Button>
             </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Don&apos;t have an account?
+              </span>
+            </div>
+            <Button variant="ghost" asChild>
+              <Link href="/sign-up">Sign up</Link>
+            </Button>
           </div>
         </CardContent>
       </Card>

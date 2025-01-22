@@ -1,9 +1,9 @@
 "use client"
 
-import { SignIn } from "@clerk/nextjs";
+import { SignUp } from "@clerk/nextjs";
 import { Command } from "@/components/ui/command";
 
-export default function LoginPage() {
+export default function SignUpPage() {
   return (
     <div className="container relative flex h-[800px] flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
       <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
@@ -22,7 +22,7 @@ export default function LoginPage() {
       </div>
       <div className="lg:p-8">
         <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-          <SignIn 
+          <SignUp 
             appearance={{
               elements: {
                 rootBox: "mx-auto w-full",
@@ -32,7 +32,7 @@ export default function LoginPage() {
               }
             }}
             redirectUrl="/auth/callback"
-            afterSignInUrl="/dashboard"
+            afterSignUpUrl="/dashboard"
           />
         </div>
       </div>
