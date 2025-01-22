@@ -19,22 +19,42 @@ import { getAccessToken } from '@/lib/services/auth';
 import { Skeleton } from "@/components/ui/skeleton";
 import { DocumentMetadata } from '@/components/document-metadata';
 
+interface StyledText {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
+  code?: boolean;
+  subscript?: boolean;
+  superscript?: boolean;
+  [key: string]: unknown;
+}
+
 interface NormalizedBlock {
-  type: "p";
-  children: { text: string }[];
+  type: string;
+  children: StyledText[];
+  [key: string]: unknown;
 }
 
 type EditorValue = Value & { type: "p"; children: { text: string }[] }[];
 
 function normalizeContent(content: TElement[]): NormalizedBlock[] {
   return content.map(block => ({
-    type: "p",
+    ...block,
+    type: block.type || "p",
     children: Array.isArray(block.children) 
-      ? block.children.map(child => ({
-          text: typeof child.text === 'string' ? child.text : ''
-        }))
+      ? block.children.map(child => {
+          if (typeof child === 'object' && child !== null) {
+            return {
+              ...child,
+              text: (child as any).text || ''
+            } as StyledText;
+          }
+          return { text: String(child) };
+        })
       : [{ text: '' }]
-  }))
+  }));
 }
 
 export function PlateEditor() {
@@ -205,10 +225,19 @@ export function PlateEditor() {
             if (editor && data.content?.content) {
               try {
                 const mappedContent = data.content.content.map(node => ({
-                  type: 'p' as const,
-                  children: Array.isArray(node.children) ? node.children.map(child => ({
-                    text: typeof child === 'object' && child !== null ? (child.text || '') : ''
-                  })) : [{ text: '' }]
+                  ...node,
+                  type: node.type || 'p',
+                  children: Array.isArray(node.children) 
+                    ? node.children.map(child => {
+                        if (typeof child === 'object' && child !== null) {
+                          return {
+                            ...child,
+                            text: (child as any).text || ''
+                          } as StyledText;
+                        }
+                        return { text: String(child) };
+                      })
+                    : [{ text: '' }]
                 })) as EditorValue;
                 console.log('Setting editor content:', mappedContent);
                 editor.children = mappedContent;
