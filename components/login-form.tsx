@@ -108,6 +108,9 @@ export function LoginForm() {
         err.message?.includes('identifier already exists')
       )) {
         try {
+          if (!signIn) {
+            throw new Error('Sign in is not initialized');
+          }
           await signIn.authenticateWithRedirect({
             strategy: provider,
             redirectUrl: `${window.location.origin}/auth/callback`,
