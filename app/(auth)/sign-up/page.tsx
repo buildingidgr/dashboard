@@ -4,6 +4,9 @@ import { SignUp } from "@clerk/nextjs";
 import { Command } from "@/components/ui/command";
 
 export default function SignUpPage() {
+  // Get the current origin for dynamic callback URLs
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+
   return (
     <div className="container relative flex h-[800px] flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
       <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
@@ -31,8 +34,8 @@ export default function SignUpPage() {
                 footer: "hidden"
               }
             }}
-            redirectUrl="/auth/callback"
-            afterSignUpUrl="/dashboard"
+            redirectUrl={`${origin}/auth/callback`}
+            afterSignUpUrl={`${origin}/dashboard`}
           />
         </div>
       </div>
