@@ -1,61 +1,43 @@
-import { getAuth } from '@clerk/nextjs/server'
-import { NextRequest, NextResponse } from 'next/server'
-import { SignJWT } from 'jose'
-import { nanoid } from 'nanoid'
+import { NextResponse } from 'next/server'
 
-// This would typically come from your environment variables
-const JWT_SECRET = process.env.CLERK_SECRET_KEY || 'your-secret-key'
+const AUTH_API_URL = process.env.NEXT_PUBLIC_AUTH_API_URL || 'https://auth-service-production-16ee.up.railway.app'
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    // Get the authenticated user from Clerk
-    const { userId, sessionId } = getAuth(request)
-    
-    if (!userId || !sessionId) {
+    const { sessionId, userId } = await request.json()
+
+    if (!sessionId || !userId) {
       return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
+        { error: 'Missing required parameters' },
+        { status: 400 }
       )
     }
 
-    // Create a JWT token
-    const accessToken = await new SignJWT({
-      sub: userId,
-      jti: nanoid(),
-      type: 'access_token'
+    const response = await fetch(`${AUTH_API_URL}/v1/token/clerk/exchange`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sessionId,
+        userId,
+      }),
     })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('1h')
-      .sign(new TextEncoder().encode(JWT_SECRET))
 
-    const refreshToken = await new SignJWT({
-      sub: userId,
-      jti: nanoid(),
-      type: 'refresh_token'
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('7d')
-      .sign(new TextEncoder().encode(JWT_SECRET))
-
-    return NextResponse.json({
-      accessToken,
-      refreshToken,
-      expiresIn: 3600 // 1 hour
-    })
-  } catch (error) {
-    console.error('Token exchange error:', error)
-    if (error instanceof Error) {
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      })
+    if (!response.ok) {
+      const error = await response.text()
+      return NextResponse.json(
+        { error: `Token exchange failed: ${error}` },
+        { status: response.status }
+      )
     }
 
+    const data = await response.json()
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('Token exchange error:', error)
     return NextResponse.json(
-      { message: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

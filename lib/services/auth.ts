@@ -88,61 +88,25 @@ const validateToken = (token: string | null): boolean => {
 };
 
 // Token exchange with Clerk
-export const exchangeClerkToken = async (sessionId: string, userId: string): Promise<TokenResponse> => {
-  if (!sessionId || !userId) {
-    throw new Error('Session ID and User ID are required for token exchange');
+export async function exchangeClerkToken(sessionId: string, userId: string): Promise<{ access_token: string }> {
+  const response = await fetch('/api/auth/exchange', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sessionId,
+      userId,
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.text()
+    throw new Error(`Failed to exchange token: ${error}`)
   }
 
-  try {
-    const authApiUrl = process.env.NEXT_PUBLIC_AUTH_API_URL || 'https://auth-service-production-16ee.up.railway.app';
-    
-    if (!authApiUrl) {
-      throw new Error('Auth API URL is not configured');
-    }
-
-    const url = `${authApiUrl}/v1/token/clerk/exchange`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ sessionId, userId }),
-    });
-
-    const responseData = await response.text();
-    let parsedData: TokenResponse;
-
-    try {
-      parsedData = JSON.parse(responseData);
-    } catch (parseError) {
-      console.error('Failed to parse auth service response:', responseData, 'Error:', parseError);
-      throw new Error('Invalid response from auth service');
-    }
-
-    if (!response.ok) {
-      throw new Error(parsedData.error || `Token exchange failed: ${response.statusText}`);
-    }
-
-    if (!parsedData.access_token || !parsedData.refresh_token) {
-      throw new Error('Invalid token response from auth service');
-    }
-
-    // Store tokens
-    setTokens(parsedData.access_token, parsedData.refresh_token);
-    
-    // Verify token was stored and is valid
-    const storedToken = getAccessToken();
-    if (!validateToken(storedToken)) {
-      throw new Error('Failed to store valid access token');
-    }
-
-    return parsedData;
-  } catch (error) {
-    console.error('Token exchange failed:', error);
-    throw error;
-  }
-};
+  return response.json()
+}
 
 // Auth headers for API requests
 export const getAuthHeaders = () => {
