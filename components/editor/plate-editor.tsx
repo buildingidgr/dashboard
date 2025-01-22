@@ -89,18 +89,30 @@ export function PlateEditor() {
             toast.error('Failed to load document content properly.');
             
             // Set default content as fallback
-            const defaultContent: TElement[] = [{
-              type: ParagraphPlugin.key,
-              children: [{ text: '' }]
-            }];
+            const defaultContent: TElement[] = [
+              {
+                type: 'h1',
+                children: [{ text: '' }]
+              },
+              {
+                type: ParagraphPlugin.key,
+                children: [{ text: '' }]
+              }
+            ];
             editor.insertFragment(defaultContent);
           }
         } else {
           // Set default content
-          const defaultContent: TElement[] = [{
-            type: ParagraphPlugin.key,
-            children: [{ text: '' }]
-          }];
+          const defaultContent: TElement[] = [
+            {
+              type: 'h1',
+              children: [{ text: '' }]
+            },
+            {
+              type: ParagraphPlugin.key,
+              children: [{ text: '' }]
+            }
+          ];
           editor.insertFragment(defaultContent);
         }
       })
