@@ -268,34 +268,31 @@ export function PlateEditor() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
-      {/* Sticky header section */}
-      <div className="sticky top-0 z-50 bg-background">
-        <DocumentMetadata
-          title={title}
-          editedAt="Just now"
-          editedBy="You"
-          createdBy="You"
-          createdAt="Today"
-          onTitleChange={setTitle}
-        />
-        <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-          <FixedToolbar>
-            <FixedToolbarButtons />
-          </FixedToolbar>
+    <Plate editor={editor} onChange={handleContentChange}>
+      <div className="flex h-screen flex-col">
+        {/* Sticky header section */}
+        <div className="sticky top-0 z-50 bg-background">
+          <DocumentMetadata
+            title={title}
+            editedAt="Just now"
+            editedBy="You"
+            createdBy="You"
+            createdAt="Today"
+            onTitleChange={setTitle}
+          />
+          <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+            <FixedToolbar>
+              <FixedToolbarButtons />
+            </FixedToolbar>
+          </div>
+        </div>
+
+        {/* Content section */}
+        <div className="flex-1 overflow-auto">
+          <Editor />
         </div>
       </div>
-
-      {/* Content section */}
-      <div className="flex-1 overflow-auto">
-        <Plate
-          editor={editor}
-          onChange={handleContentChange}
-        >
-          <Editor />
-        </Plate>
-      </div>
-    </div>
+    </Plate>
   );
 }
 
