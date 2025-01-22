@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useEditorRef, useEditorState } from '@udecode/plate-common/react'
-import { findNode, getNodeString, getNodeEntries } from '@udecode/plate-common'
-import { type TNode, type TEditor, type TNodeEntry, type TElement } from '@udecode/plate-common'
+import { getNodeString, getNodeEntries } from '@udecode/plate-common'
+import { type TElement } from '@udecode/plate-common'
 import { HEADING_KEYS, isHeading } from '@udecode/plate-heading'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'

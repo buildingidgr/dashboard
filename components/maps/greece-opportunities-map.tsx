@@ -1,7 +1,6 @@
 "use client"
 
-import { GoogleMap, Marker } from '@react-google-maps/api'
-import { ArrowRight, Phone, MapPin, Clock } from "lucide-react"
+import { ArrowRight, Clock } from "lucide-react"
 import Link from "next/link"
 import {
   Drawer,
@@ -15,14 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
 import { MapLegend } from './map-legend'
-import { categoryColors } from '@/constants/map-categories'
-import { 
-  mapContainerStyle, 
-  defaultCenter, 
-  lightStyle, 
-  darkStyle 
-} from '@/constants/map-styles'
-import { useMapData } from '@/hooks/use-map-data'
+import { defaultCenter } from '@/constants/map-styles'
 import { OpportunityLocationMap } from './opportunity-location-map'
 import { useLoadScript } from '@react-google-maps/api'
 import { useOpportunities } from '@/hooks/use-opportunities'

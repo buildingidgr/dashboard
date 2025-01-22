@@ -15,15 +15,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { RiAppleFill, RiFacebookFill, RiGoogleFill } from "@remixicon/react";
-import { exchangeClerkToken, setTokens, getAccessToken, getRefreshToken } from "@/lib/services/auth";
+import { exchangeClerkToken, setTokens } from "@/lib/services/auth";
 
 export function LoginForm() {
   const router = useRouter();
   const { signIn, isLoaded } = useSignIn();
-  const { signOut } = useAuth();
   const { user } = useUser();
   const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
   const { toast } = useToast();
   const { session } = useSession();
 

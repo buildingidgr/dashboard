@@ -1,4 +1,4 @@
-import React, { ReactNode, useState, useEffect } from 'react'
+import React, { ReactNode } from 'react'
 import { useLoadScript } from '@react-google-maps/api'
 
 interface GoogleMapsProviderProps {

@@ -23,9 +23,8 @@ import { Sun, Moon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toaster"
 import { useToast } from "@/hooks/use-toast"
-import { useAuth, useSession, useUser } from '@clerk/nextjs'
+import { useSession, useUser } from '@clerk/nextjs'
 import { getAccessToken, setAccessToken } from '@/lib/services/auth'
-import { Clock } from '@/components/clock'
 import { OnboardingGuide } from "@/components/onboarding-guide"
 
 interface ClientLayoutProps {

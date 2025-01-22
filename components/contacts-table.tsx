@@ -3,7 +3,6 @@
 import { useEffect, useId, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, useUser } from "@clerk/nextjs"
-import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { getAccessToken, exchangeClerkToken, setAccessToken } from '@/lib/services/auth'
 import { toast } from "sonner"
@@ -17,7 +16,6 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,16 +31,11 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenuCheckboxItem,
-  DropdownMenuPortal,
   DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,

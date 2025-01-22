@@ -23,7 +23,6 @@ export interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   pageCount?: number
-  pageIndex?: number
   onPaginationChange?: OnChangeFn<PaginationState>
   searchPlaceholder?: string
   searchColumn?: string
@@ -35,7 +34,6 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   pageCount = 1,
-  pageIndex = 0,
   onPaginationChange,
   searchPlaceholder = "Search...",
   searchColumn,

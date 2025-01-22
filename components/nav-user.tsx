@@ -4,7 +4,6 @@ import { useUser, useClerk } from "@clerk/nextjs"
 import { ChevronsUpDown } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { useTheme } from "@/components/layouts/client-layout"
 import { clearTokens } from "@/lib/services/auth"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"

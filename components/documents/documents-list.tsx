@@ -333,7 +333,7 @@ export function DocumentsList({ onRefresh }: { onRefresh?: () => void }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will move "{documentToDelete?.title}" to trash. You can restore it later from the trash.
+              This will move &quot;{documentToDelete?.title}&quot; to trash. You can restore it later from the trash.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
