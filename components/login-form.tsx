@@ -92,37 +92,44 @@ export function LoginForm() {
         return;
       }
 
-      // Try sign in first
-      try {
-        await signIn.authenticateWithRedirect({
-          strategy: provider,
-          redirectUrl: `${window.location.origin}/auth/callback`,
-          redirectUrlComplete: '/dashboard'
-        });
-      } catch (signInErr: any) {
-        // If sign in fails due to user not existing, try sign up
-        if (signInErr.message?.includes('user not found') || signInErr.code === 'user_not_found') {
-          await signUp.authenticateWithRedirect({
+      // Always try to sign up first for new users
+      await signUp.authenticateWithRedirect({
+        strategy: provider,
+        redirectUrl: `${window.location.origin}/auth/callback`,
+        redirectUrlComplete: '/dashboard'
+      });
+      
+    } catch (err) {
+      console.error('Social login error:', err);
+      
+      // If sign up fails because user exists, try sign in
+      if (err instanceof Error && (
+        err.message?.includes('user already exists') || 
+        err.message?.includes('identifier already exists')
+      )) {
+        try {
+          await signIn.authenticateWithRedirect({
             strategy: provider,
             redirectUrl: `${window.location.origin}/auth/callback`,
             redirectUrlComplete: '/dashboard'
           });
-        } else {
-          throw signInErr;
+        } catch (signInErr) {
+          console.error('Sign in error:', signInErr);
+          toast({
+            variant: "destructive",
+            title: "Sign In Error",
+            description: "Failed to sign in with social provider."
+          });
         }
-      }
-    } catch (err) {
-      console.error('Social login error:', err);
-      if (err instanceof Error && err.message.includes('single session mode')) {
+      } else if (err instanceof Error && err.message.includes('single session mode')) {
         router.push('/dashboard');
-        return;
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Social Login Error",
+          description: "An error occurred while trying to log in with social provider."
+        });
       }
-      
-      toast({
-        variant: "destructive",
-        title: "Social Login Error",
-        description: "An error occurred while trying to log in with social provider."
-      });
     }
   };
 
