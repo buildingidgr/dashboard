@@ -29,7 +29,7 @@ const stats = [
 
 export default function DashboardPage() {
   return (
-    <div className="container py-8 space-y-8">
+    <div className="container space-y-8 py-8">
       {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-3">
         {stats.map((stat) => {
@@ -61,7 +61,7 @@ export default function DashboardPage() {
       {/* Recent Opportunities */}
       <Card>
         <div className="p-6">
-          <h3 className="font-semibold mb-4">Recent Opportunities</h3>
+          <div className="mb-4 font-semibold">Recent Opportunities</div>
           <OpportunityTable 
             opportunities={[]} 
             currentPage={1}

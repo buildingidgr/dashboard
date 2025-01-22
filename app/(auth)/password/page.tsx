@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
-import { exchangeClerkToken, setTokens } from "@/lib/services/auth";
+import { exchangeClerkToken } from "@/lib/services/auth";
 import { Command } from "@/components/ui/command";
 
 interface AuthError {
