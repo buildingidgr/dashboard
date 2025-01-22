@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card"
 import OpportunityTable from "@/components/opportunity-table"
 import { Building2, Users, FileText } from "lucide-react"
 import { RecentDocuments } from "@/components/recent-documents"
+import { Command } from "@/components/ui/command"
 
 // Sample data - replace with real data fetching
 const stats = [
@@ -38,7 +39,7 @@ export default function DashboardPage() {
             <Card key={stat.label} className="p-6">
               <div className="flex items-center gap-4">
                 <div className="rounded-lg bg-muted p-2">
-                  <Icon className="h-6 w-6" />
+                  <Icon className="size-6" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">

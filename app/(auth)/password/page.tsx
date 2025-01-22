@@ -27,10 +27,10 @@ interface AuthError {
 export default function PasswordPage() {
   return (
     <div className="container relative flex h-[800px] flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
+      <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
         <div className="absolute inset-0 bg-zinc-900" />
         <div className="relative z-20 flex items-center text-lg font-medium">
-          <Command className="mr-2 h-6 w-6" /> MechLabs
+          <Command className="mr-2 size-6" /> MechLabs
         </div>
       </div>
       <div className="lg:p-8">
@@ -172,9 +172,9 @@ function LoginFormPassword() {
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  <EyeOff className="size-4 text-muted-foreground" />
                 ) : (
-                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <Eye className="size-4 text-muted-foreground" />
                 )}
                 <span className="sr-only">
                   {showPassword ? "Hide password" : "Show password"}

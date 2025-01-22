@@ -190,7 +190,7 @@ export default function ContactDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-10">
+      <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
         {/* Header Skeleton */}
         <div className="mb-8 space-y-6">
           <div className="flex items-center justify-between">
@@ -244,7 +244,7 @@ export default function ContactDetailsPage() {
 
   if (error || !contact) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-10">
+      <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
         <div className="flex flex-col items-center justify-center h-32 space-y-4">
           <h1 className="text-2xl font-bold">Contact Not Found</h1>
           <p className="text-muted-foreground">The requested contact could not be found.</p>
@@ -273,7 +273,7 @@ export default function ContactDetailsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
       {/* Header */}
       <div className="mb-8 space-y-6">
         <div className="flex items-center justify-between">

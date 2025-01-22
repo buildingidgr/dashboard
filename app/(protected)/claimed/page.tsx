@@ -85,8 +85,8 @@ function PageSkeleton() {
           </div>
           <div className="flex gap-2">
             <Skeleton className="h-10 w-[200px]" /> {/* Search */}
-            <Skeleton className="h-10 w-10" /> {/* Filter */}
-            <Skeleton className="h-10 w-10" /> {/* Sort */}
+            <Skeleton className="size-10" /> {/* Filter */}
+            <Skeleton className="size-10" /> {/* Sort */}
           </div>
         </div>
         
@@ -258,7 +258,7 @@ export default function ClaimedProjectsPage() {
   })
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 py-16">
+    <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
       <div className="space-y-8">
         {/* Header */}
         <div className="space-y-6">
@@ -273,7 +273,7 @@ export default function ClaimedProjectsPage() {
             </div>
             <div className="flex items-center gap-2">
               <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <Search className="size-4 text-muted-foreground" />
                 <Input
                   placeholder="Search opportunities..."
                   className="pl-8 w-[250px] bg-white dark:bg-gray-900"
@@ -282,10 +282,10 @@ export default function ClaimedProjectsPage() {
                 />
               </div>
               <Button variant="outline" size="icon" className="shrink-0">
-                <Filter className="h-4 w-4" />
+                <Filter className="size-4" />
               </Button>
               <Button variant="outline" size="icon" className="shrink-0">
-                <ArrowUpDown className="h-4 w-4" />
+                <ArrowUpDown className="size-4" />
               </Button>
             </div>
           </div>

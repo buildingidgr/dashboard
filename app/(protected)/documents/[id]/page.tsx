@@ -113,7 +113,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
 
   if (isLoading) {
     return (
-      <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
         <div className="flex items-center justify-between">
           <Skeleton className="h-8 w-[200px]" />
           <div className="flex items-center gap-2">
@@ -127,7 +127,7 @@ export default function DocumentPage({ params }: DocumentPageProps) {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
+    <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
