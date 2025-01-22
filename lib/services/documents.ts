@@ -1,19 +1,12 @@
 import { getAccessToken } from '@/lib/services/auth';
-
-interface DocumentContent {
-  type: string;
-  children: Array<{
-    text: string;
-    [key: string]: unknown;
-  }>;
-}
+import { type TElement } from '@udecode/plate-common';
 
 export interface Document {
   id: string;
   title: string;
   content?: {
     type: string;
-    content: DocumentContent[];
+    content: TElement[];
   };
   createdAt: string;
   updatedAt: string;

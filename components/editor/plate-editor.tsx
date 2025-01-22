@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useCallback, useEffect } from 'react';
+import React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { Plate } from '@udecode/plate-common/react';
-import { type TElement, type TText, type Value } from '@udecode/plate-common';
+import { type Value, type TElement, type TDescendant } from '@udecode/plate-common';
 import { ParagraphPlugin } from '@udecode/plate-common/react';
 
 import { useCreateEditor } from '@/components/editor/use-create-editor';
@@ -18,18 +18,16 @@ import { getAccessToken } from '@/lib/services/auth';
 import { Skeleton } from "@/components/ui/skeleton";
 import { DocumentMetadata } from '@/components/document-metadata';
 
-type EditorValue = Value & { type: string; children: { text: string; }[]; }[];
-
-function safeStringify(obj: any): string {
+function safeStringify(value: unknown): string {
   const seen = new WeakSet();
-  return JSON.stringify(obj, (key, value) => {
-    if (typeof value === 'object' && value !== null) {
-      if (seen.has(value)) {
+  return JSON.stringify(value, (key, val) => {
+    if (typeof val === 'object' && val !== null) {
+      if (seen.has(val)) {
         return undefined; // Remove circular reference
       }
-      seen.add(value);
+      seen.add(val);
     }
-    return value;
+    return val;
   });
 }
 
@@ -59,11 +57,9 @@ export function PlateEditor() {
 
         if (doc.content?.content) {
           try {
-            // Set the editor content directly
+            // Use editor transform to set content
             const content = doc.content.content;
-            // @ts-ignore - The content structure is compatible with Plate's internal types
-            editor.children = content;
-            editor.onChange();
+            editor.insertFragment(content);
             
             // Initialize the last content state
             lastContentRef.current.lastSavedContent = safeStringify(content);
@@ -72,23 +68,19 @@ export function PlateEditor() {
             toast.error('Failed to load document content properly.');
             
             // Set default content as fallback
-            const defaultContent = [{
+            const defaultContent: TElement[] = [{
               type: ParagraphPlugin.key,
               children: [{ text: '' }]
             }];
-            // @ts-ignore - The content structure is compatible with Plate's internal types
-            editor.children = defaultContent;
-            editor.onChange();
+            editor.insertFragment(defaultContent);
           }
         } else {
           // Set default content
-          const defaultContent = [{
+          const defaultContent: TElement[] = [{
             type: ParagraphPlugin.key,
             children: [{ text: '' }]
           }];
-          // @ts-ignore - The content structure is compatible with Plate's internal types
-          editor.children = defaultContent;
-          editor.onChange();
+          editor.insertFragment(defaultContent);
         }
       })
       .catch((error) => {
@@ -109,7 +101,7 @@ export function PlateEditor() {
   const handleContentChange = React.useCallback(() => {
     // Currently only used for triggering editor updates
     // No need to call onChange() here as it will create an infinite loop
-  }, [editor]);
+  }, []); // Removed editor dependency as it's not used
 
   // Save document periodically via HTTP API
   React.useEffect(() => {
@@ -160,7 +152,7 @@ export function PlateEditor() {
         const payload = {
           content: {
             type: 'doc',
-            content: editor.children
+            content: editor.children as TElement[]
           }
         };
         await DocumentsService.updateDocument(documentId, payload);
@@ -170,15 +162,14 @@ export function PlateEditor() {
       }
     };
 
-    // Save every 5 seconds if there are changes
-    const interval = setInterval(saveDocument, 5000);
+    const interval = setInterval(saveDocument, 2000);
     return () => clearInterval(interval);
   }, [documentId, editor]);
 
   // Initialize WebSocket connection
   React.useEffect(() => {
-    let websocket: DocumentWebSocket | null = null;
     let isInitializing = false;
+    let websocket: DocumentWebSocket | null = null;
 
     const initializeWebSocket = async () => {
       if (isInitializing || !documentId) return;
@@ -202,11 +193,9 @@ export function PlateEditor() {
             console.log('WebSocket update received:', data);
             if (editor && data.content?.content) {
               try {
-                // Set the editor content directly
+                // Use editor transform to set content
                 const content = data.content.content;
-                // @ts-ignore - The content structure is compatible with Plate's internal types
-                editor.children = content;
-                editor.onChange();
+                editor.insertFragment(content);
               } catch (error) {
                 console.error('Failed to update editor content:', error);
               }
@@ -237,7 +226,6 @@ export function PlateEditor() {
         websocket.disconnect();
         setWs(null);
       }
-      isInitializing = false;
     };
   }, [documentId, editor, router]);
 
@@ -265,22 +253,22 @@ export function PlateEditor() {
 
   if (isLoading) {
     return (
-      <div className="relative w-full h-full px-16 py-16 space-y-4">
-        <Skeleton className="h-7 w-[200px] mb-8" />
-        <Skeleton className="h-4 w-[80%]" />
+      <div className="size-full p-16 space-y-4">
+        <Skeleton className="mb-8 h-7 w-3/4" />
+        <Skeleton className="h-4 w-4/5" />
         <Skeleton className="h-4 w-[90%]" />
-        <Skeleton className="h-4 w-[75%]" />
+        <Skeleton className="h-4 w-3/4" />
         <div className="mt-8 space-y-4">
           <Skeleton className="h-4 w-[85%]" />
           <Skeleton className="h-4 w-[90%]" />
-          <Skeleton className="h-4 w-[60%]" />
+          <Skeleton className="h-4 w-3/5" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative flex flex-col h-screen">
+    <div className="flex h-screen flex-col">
       {/* Sticky header section */}
       <div className="sticky top-0 z-50 bg-background">
         <DocumentMetadata
