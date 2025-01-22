@@ -17,8 +17,7 @@ export async function POST(request: Request) {
     const corsHeaders = {
       'Access-Control-Allow-Origin': origin || '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Allow-Credentials': 'true'
+      'Access-Control-Allow-Headers': 'Content-Type',
     }
 
     if (!sessionId || !userId) {
@@ -86,8 +85,7 @@ export async function POST(request: Request) {
         headers: {
           'Access-Control-Allow-Origin': origin || '*',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Credentials': 'true'
+          'Access-Control-Allow-Headers': 'Content-Type'
         }
       }
     )
@@ -103,9 +101,7 @@ export async function OPTIONS(request: Request) {
     headers: {
       'Access-Control-Allow-Origin': origin || '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Max-Age': '86400'
+      'Access-Control-Allow-Headers': 'Content-Type',
     },
   })
 } 
