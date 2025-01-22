@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { File, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
-import { DocumentsService, type Document, type GetDocumentsResponse } from '@/lib/services/documents';
+import { File, MoreHorizontal, Plus, Trash2, Search, Pencil } from 'lucide-react';
+import { DocumentsService, type Document } from '@/lib/services/documents';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -234,7 +234,7 @@ export function DocumentsList({ onRefresh }: { onRefresh?: () => void }) {
                     )}
                     onClick={() => router.push(`/editor?id=${doc.id}`)}
                   >
-                    <File className="h-4 w-4 text-muted-foreground" />
+                    <File className="size-6" />
                     <span className="truncate">{doc.title}</span>
                   </Button>
                   {(hoveredId === doc.id || openMenuId === doc.id) && (
@@ -245,13 +245,9 @@ export function DocumentsList({ onRefresh }: { onRefresh?: () => void }) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 hover:bg-muted"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Handle duplicate
-                        }}
+                        className="flex h-6 w-6 items-center justify-center hover:bg-muted"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="size-4" />
                       </Button>
                       <DropdownMenu
                         open={openMenuId === doc.id}
@@ -266,9 +262,9 @@ export function DocumentsList({ onRefresh }: { onRefresh?: () => void }) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 hover:bg-muted"
+                            className="flex h-6 w-6 items-center justify-center hover:bg-muted"
                           >
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal className="size-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent 
@@ -297,7 +293,7 @@ export function DocumentsList({ onRefresh }: { onRefresh?: () => void }) {
                               setOpenMenuId(null);
                             }}
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
+                            <Trash2 className="size-4" />
                             Move to trash
                           </DropdownMenuItem>
                         </DropdownMenuContent>

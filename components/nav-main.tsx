@@ -20,8 +20,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
-  SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar"
 
 interface NavMainProps {
@@ -42,9 +42,10 @@ interface NavMainProps {
   }[]
   onCreateDocument?: () => void
   documentListKey?: number
+  className?: string
 }
 
-export function NavMain({ items, onCreateDocument, documentListKey }: NavMainProps) {
+export function NavMain({ items, onCreateDocument, documentListKey, className }: NavMainProps) {
   const pathname = usePathname()
 
   return (
@@ -61,7 +62,7 @@ export function NavMain({ items, onCreateDocument, documentListKey }: NavMainPro
                     tooltip={item.title}
                     className="hover:bg-secondary hover:text-secondary-foreground"
                   >
-                    {item.icon && <item.icon className="h-4 w-4 text-muted-foreground" />}
+                    {item.icon && <item.icon className="size-4 text-muted-foreground" />}
                     <span>{item.title}</span>
                   </SidebarMenuButton>
                 </Link>
@@ -81,7 +82,7 @@ export function NavMain({ items, onCreateDocument, documentListKey }: NavMainPro
                       pathname === item.url && "bg-secondary text-secondary-foreground"
                     )}
                   >
-                    {item.icon && <item.icon className="h-4 w-4 text-muted-foreground" />}
+                    {item.icon && <item.icon className="size-4 text-muted-foreground" />}
                     <span>{item.title}</span>
                   </SidebarMenuButton>
                 </Link>
@@ -103,9 +104,9 @@ export function NavMain({ items, onCreateDocument, documentListKey }: NavMainPro
                     tooltip={item.title}
                     className="hover:bg-secondary hover:text-secondary-foreground"
                   >
-                    {item.icon && <item.icon className="h-4 w-4 text-muted-foreground" />}
+                    {item.icon && <item.icon className="size-4 text-muted-foreground" />}
                     <span>{item.title}</span>
-                    <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    <ChevronRight className="ml-auto size-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
                 <CollapsibleContent>

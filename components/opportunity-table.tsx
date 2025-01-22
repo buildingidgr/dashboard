@@ -2,13 +2,14 @@
 
 import { useState } from "react"
 import { ColumnDef } from "@tanstack/react-table"
-import { MapPin, Calendar, ArrowRight } from 'lucide-react'
+import { Calendar, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/contacts/data-table"
 import { useRouter } from "next/navigation"
 import Image from 'next/image'
 import { format } from "date-fns"
+import { cn } from "@/lib/utils"
 
 interface Project {
   _id: string
@@ -91,7 +92,7 @@ export default function OpportunityTable({
   totalPages,
   onPageChange
 }: OpportunityTableProps) {
-  const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''
+  const _googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
   const columns: ColumnDef<Project>[] = [
     {
@@ -148,8 +149,10 @@ export default function OpportunityTable({
         })
         return (
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-600">{date}</span>
+            <div className="size-16 rounded-lg bg-muted" />
+            <div className="flex flex-col gap-1">
+              <span className="text-sm text-gray-600">{date}</span>
+            </div>
           </div>
         )
       }
@@ -164,7 +167,7 @@ export default function OpportunityTable({
           >
             <span className="relative z-10 flex items-center gap-2">
               Claim Project
-              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover/button:translate-x-1" />
+              <ArrowRight className="size-4 transition-transform duration-300 group-hover/button:translate-x-1" />
             </span>
           </Button>
         )
