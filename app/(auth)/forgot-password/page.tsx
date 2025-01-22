@@ -17,7 +17,7 @@ export default function ForgotPassword() {
   const router = useRouter();
   const { isLoaded, signIn } = useSignIn();
   const searchParams = useSearchParams();
-  const email = searchParams.get('email');
+  const email = searchParams?.get('email') ?? null;
 
   const handleResetPassword = async () => {
     if (!email) {
