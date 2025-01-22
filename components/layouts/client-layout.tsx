@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useSession, useUser } from '@clerk/nextjs'
 import { getAccessToken, setAccessToken } from '@/lib/services/auth'
 import { OnboardingGuide } from "@/components/onboarding-guide"
+import { exchangeClerkToken } from "@/lib/services/auth"
 
 interface ClientLayoutProps {
   children: React.ReactNode
@@ -141,17 +142,7 @@ function ClientLayout({ children }: ClientLayoutProps) {
         }
 
         // Exchange the Clerk token with our auth service
-        const response = await fetch('https://auth-service-production-16ee.up.railway.app/v1/token/clerk/exchange', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({ 
-            sessionId: session.id,
-            userId: user.id 
-          })
-        }).then(res => res.json())
+        const response = await exchangeClerkToken(session.id, user.id)
 
         if (response?.access_token) {
           setAccessToken(response.access_token)
