@@ -359,7 +359,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 pb-24 relative z-10">
+      <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
         {/* Profile Header */}
         <div className="-mt-20 mb-12 flex items-end">
           <div className="relative group">

@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card"
 import OpportunityTable from "@/components/opportunity-table"
 import { Building2, Users, FileText } from "lucide-react"
 import { RecentDocuments } from "@/components/recent-documents"
-import { Command } from "@/components/ui/command"
 
 // Sample data - replace with real data fetching
 const stats = [
@@ -30,7 +29,7 @@ const stats = [
 
 export default function DashboardPage() {
   return (
-    <div className="container space-y-8 py-8">
+    <div className="container py-8 space-y-8">
       {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-3">
         {stats.map((stat) => {

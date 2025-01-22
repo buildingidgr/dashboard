@@ -1,7 +1,6 @@
 "use client"
 
 import { LoginForm } from "@/components/login-form"
-import { Logo } from "@/components/ui/logo"
 import { Command } from "@/components/ui/command"
 
 export default function LoginPage() {
@@ -10,7 +9,7 @@ export default function LoginPage() {
       <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
         <div className="absolute inset-0 bg-zinc-900" />
         <div className="relative z-20 flex items-center text-lg font-medium">
-          <Command className="size-8 mr-2" /> MechLabs
+          <Command className="mr-2 size-8" /> MechLabs
         </div>
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">

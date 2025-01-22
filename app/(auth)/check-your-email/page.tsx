@@ -129,7 +129,7 @@ export default function CheckYourEmail() {
                 Continue
               </Button>
 
-              <div className="text-center text-sm taxt-gray-800 mt-4">
+              <div className="mt-4 text-center text-sm text-gray-800">
                 <span>Didn&apos;t receive a code? </span>
                 <Button
                   type="button"
@@ -142,7 +142,7 @@ export default function CheckYourEmail() {
               </div>
             </div>
           </CardContent>
-          <div className="flex justify-center mb-4">
+          <div className="mb-4 flex justify-center">
             <Button variant="link" onClick={() => router.push('/')}>
               Back to Login
             </Button>

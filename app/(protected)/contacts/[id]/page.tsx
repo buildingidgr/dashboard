@@ -3,12 +3,13 @@
 import { useEffect, useCallback, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { exchangeClerkToken, getAccessToken, setAccessToken } from "@/lib/services/auth"
-import { useSession, useUser } from "@clerk/nextjs"
+import { useUser, useSession } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Pencil } from "lucide-react"
 import Link from "next/link"
 import { usePageTitle } from "@/components/layouts/client-layout"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/hooks/use-toast"
 
 // Add country codes mapping
 const COUNTRY_CODES: { [key: string]: { code: string, flag: string } } = {
@@ -90,14 +91,14 @@ interface Contact {
 }
 
 export default function ContactDetailsPage() {
-  const params = useParams<{ id: string }>()
   const [contact, setContact] = useState<Contact | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const { session } = useSession()
+  const [error, setError] = useState<Error | null>(null)
+  const { toast } = useToast()
+  const params = useParams()
   const { user } = useUser()
+  const { session } = useSession()
   const { setTitle, setDescription } = usePageTitle()
-  const router = useRouter()
 
   const fetchContact = useCallback(async (id: string) => {
     try {
@@ -126,7 +127,7 @@ export default function ContactDetailsPage() {
       setError(null)
     } catch (error) {
       console.error("Error fetching contact:", error)
-      setError(error instanceof Error ? error.message : "Failed to fetch contact")
+      setError(error instanceof Error ? error : new Error("Failed to fetch contact"))
     } finally {
       setIsLoading(false)
     }
@@ -158,7 +159,7 @@ export default function ContactDetailsPage() {
         }
       } catch (error) {
         console.error('Failed to initialize token:', error);
-        setError('Failed to initialize session');
+        setError(error instanceof Error ? error : new Error('Failed to initialize session'));
         setIsLoading(false);
       }
     }
@@ -304,7 +305,7 @@ export default function ContactDetailsPage() {
       {/* Properties */}
       <div className="space-y-4">
         <div className="flex items-start gap-4 group">
-          <div className="w-24 flex items-center gap-2 text-gray-500">
+          <div className="flex w-24 items-center gap-2 text-gray-500">
             Email
           </div>
           <div className="flex-1">
@@ -316,7 +317,7 @@ export default function ContactDetailsPage() {
 
         {contact.address && (
           <div className="flex items-start gap-4 group">
-            <div className="w-24 flex items-center gap-2 text-gray-500">
+            <div className="flex w-24 items-center gap-2 text-gray-500">
               Location
             </div>
             <div className="flex-1">{getFullAddress()}</div>
@@ -325,7 +326,7 @@ export default function ContactDetailsPage() {
 
         {contact.phones.length > 0 && (
           <div className="flex items-start gap-4 group">
-            <div className="w-24 flex items-center gap-2 text-gray-500">
+            <div className="flex w-24 items-center gap-2 text-gray-500">
               Phone
             </div>
             <div className="flex-1">
@@ -344,7 +345,7 @@ export default function ContactDetailsPage() {
         )}
 
         <div className="flex items-start gap-4 group">
-          <div className="w-24 flex items-center gap-2 text-gray-500">
+          <div className="flex w-24 items-center gap-2 text-gray-500">
             Updated
           </div>
           <div className="flex-1">
@@ -353,7 +354,7 @@ export default function ContactDetailsPage() {
         </div>
 
         <div className="flex items-start gap-4 group">
-          <div className="w-24 flex items-center gap-2 text-gray-500">
+          <div className="flex w-24 items-center gap-2 text-gray-500">
             Company
           </div>
           <div className="flex-1 text-gray-400">
