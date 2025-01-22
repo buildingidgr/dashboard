@@ -97,7 +97,7 @@ export function useMapData(): UseMapDataReturn {
 
   const handleMarkerClick = (point: MapPoint) => {
     setSelectedPoint(point)
-    fetchOpportunityDetails(point.id)
+    fetchOpportunityDetails(point._id)
   }
 
   return {

@@ -104,18 +104,15 @@ export async function getMyProfile(): Promise<Profile> {
 }
 
 interface UpdateProfileData {
-  name?: string;
-  email?: string;
-  image?: string;
-  bio?: string;
-  location?: string;
-  website?: string;
-  github?: string;
-  linkedin?: string;
-  twitter?: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string | null;
+  username?: string | null;
+  avatarUrl?: string;
+  coverPhoto?: string;
 }
 
-export async function updateProfile(data: UpdateProfileData): Promise<Response> {
+export async function updateProfile(data: UpdateProfileData): Promise<Profile> {
   try {
     const response = await fetch(`${PROFILE_API_URL}/api/profiles/me`, {
       method: 'PATCH',
@@ -130,7 +127,7 @@ export async function updateProfile(data: UpdateProfileData): Promise<Response> 
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return response;
+    return response.json();
   } catch (error: unknown) {
     console.error('Error updating profile:', error);
     throw error;
