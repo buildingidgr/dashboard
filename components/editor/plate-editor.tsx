@@ -1,18 +1,15 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import React, { useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { Plate } from '@udecode/plate-common/react';
-import { type TElement, type Value, type TText } from '@udecode/plate-common';
+import { type TElement, type TText, type Value } from '@udecode/plate-common';
 import { ParagraphPlugin } from '@udecode/plate-common/react';
-import { type MyValue, type MyRootBlock, type RichText } from '@/components/editor/plate-types';
 
 import { useCreateEditor } from '@/components/editor/use-create-editor';
-import { Editor, EditorContainer } from '@/components/plate-ui/editor';
+import { Editor } from '@/components/plate-ui/editor';
 import { FixedToolbar } from '@/components/plate-ui/fixed-toolbar';
 import { FixedToolbarButtons } from '@/components/plate-ui/fixed-toolbar-buttons';
 import { DocumentsService } from '@/lib/services/documents';
@@ -283,38 +280,34 @@ export function PlateEditor() {
   }
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <Plate
-        editor={editor}
-        onChange={handleContentChange}
-      >
-        <div className="relative flex flex-col h-screen">
-          {/* Sticky header section */}
-          <div className="sticky top-0 z-50 bg-background">
-            <DocumentMetadata
-              title={title}
-              editedAt="Just now"
-              editedBy="You"
-              createdBy="You"
-              createdAt="Today"
-              onTitleChange={setTitle}
-            />
-            <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-              <FixedToolbar>
-                <FixedToolbarButtons />
-              </FixedToolbar>
-            </div>
-          </div>
-
-          {/* Content section */}
-          <div className="flex-1 overflow-auto">
-            <EditorContainer>
-              <Editor />
-            </EditorContainer>
-          </div>
+    <div className="relative flex flex-col h-screen">
+      {/* Sticky header section */}
+      <div className="sticky top-0 z-50 bg-background">
+        <DocumentMetadata
+          title={title}
+          editedAt="Just now"
+          editedBy="You"
+          createdBy="You"
+          createdAt="Today"
+          onTitleChange={setTitle}
+        />
+        <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+          <FixedToolbar>
+            <FixedToolbarButtons />
+          </FixedToolbar>
         </div>
-      </Plate>
-    </DndProvider>
+      </div>
+
+      {/* Content section */}
+      <div className="flex-1 overflow-auto">
+        <Plate
+          editor={editor}
+          onChange={handleContentChange}
+        >
+          <Editor />
+        </Plate>
+      </div>
+    </div>
   );
 }
 
