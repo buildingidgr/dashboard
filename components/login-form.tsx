@@ -85,52 +85,49 @@ export function LoginForm() {
 
   const handleSocialLogin = async (provider: 'oauth_google' | 'oauth_facebook' | 'oauth_apple') => {
     try {
-      if (!isSignInLoaded || !isSignUpLoaded) return;
+      if (!isSignInLoaded || !isSignUpLoaded || !signUp) return;
       
       if (session?.status === 'active') {
         router.push('/dashboard');
         return;
       }
 
-      // First try sign in for existing users
-      try {
-        if (!signIn) {
-          throw new Error('Sign in is not initialized');
-        }
-        await signIn.authenticateWithRedirect({
-          strategy: provider,
-          redirectUrl: '/auth/callback',
-          redirectUrlComplete: '/dashboard'
-        });
-      } catch (signInErr: any) {
-        // If user doesn't exist, create a new sign up
-        if (signInErr.message?.includes('user not found') || 
-            signInErr.code === 'user_not_found') {
-          // Create a new sign up
-          const signUpAttempt = await signUp.create({
-            strategy: provider
-          });
-
-          // Start the OAuth flow for sign up
-          await signUpAttempt.authenticateWithRedirect({
-            strategy: provider,
-            redirectUrl: '/auth/callback',
-            redirectUrlComplete: '/dashboard'
-          });
-        } else {
-          throw signInErr;
-        }
-      }
+      // Create a new sign up attempt first
+      const signUpAttempt = await signUp.create({
+        strategy: provider,
+        redirectUrl: '/auth/callback'
+      });
+      
+      // Then start the OAuth flow
+      await signUpAttempt.authenticateWithRedirect({
+        strategy: provider,
+        redirectUrl: '/auth/callback',
+        redirectUrlComplete: '/dashboard'
+      });
+      
     } catch (err) {
       console.error('Social login error:', err);
       if (err instanceof Error && err.message.includes('single session mode')) {
         router.push('/dashboard');
       } else {
-        toast({
-          variant: "destructive",
-          title: "Social Login Error",
-          description: "An error occurred while trying to log in with social provider."
-        });
+        // If user already exists, try sign in
+        try {
+          if (!signIn) {
+            throw new Error('Sign in is not initialized');
+          }
+          await signIn.authenticateWithRedirect({
+            strategy: provider,
+            redirectUrl: '/auth/callback',
+            redirectUrlComplete: '/dashboard'
+          });
+        } catch (signInErr) {
+          console.error('Sign in error:', signInErr);
+          toast({
+            variant: "destructive",
+            title: "Sign In Error",
+            description: "Failed to sign in with social provider."
+          });
+        }
       }
     }
   };
