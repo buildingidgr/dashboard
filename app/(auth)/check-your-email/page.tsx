@@ -96,7 +96,7 @@ export default function CheckYourEmail() {
 
   return (
     <>
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="container relative flex h-[800px] flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
         <Card className="mx-auto max-w-sm">
           <CardHeader>
             <CardTitle className="text-2xl">Check Your Email</CardTitle>

@@ -276,7 +276,7 @@ export default function ClaimedProjectsPage() {
                 <Search className="size-4 text-muted-foreground" />
                 <Input
                   placeholder="Search opportunities..."
-                  className="pl-8 w-[250px] bg-white dark:bg-gray-900"
+                  className="w-[250px] bg-white pl-8 dark:bg-gray-900"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -293,7 +293,7 @@ export default function ClaimedProjectsPage() {
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {stats.map((stat, index) => (
-              <Card key={index} className="p-6 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 border-gray-100 dark:border-gray-800">
+              <Card key={index} className="border-gray-100 bg-gradient-to-br from-gray-50 to-white p-6 dark:border-gray-800 dark:from-gray-900 dark:to-gray-800">
                 <div className="space-y-1">
                   <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                     {stat.value}
