@@ -110,9 +110,11 @@ export class DocumentsService {
               }
             ]
           }
-        ]
+        ] as TElement[]
       }
     };
+
+    console.debug('Creating document with data:', JSON.stringify(documentData, null, 2));
 
     const response = await fetch(`${this.API_URL}/document/create`, {
       method: 'POST',

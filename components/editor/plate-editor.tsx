@@ -34,15 +34,55 @@ function safeStringify(value: unknown): string {
 }
 
 function validateContent(content: unknown): content is TElement[] {
-  if (!Array.isArray(content)) return false;
+  if (!Array.isArray(content)) {
+    console.debug('Content is not an array:', content);
+    return false;
+  }
+
   return content.every(node => {
-    if (!node || typeof node !== 'object') return false;
-    if (!('type' in node) || typeof node.type !== 'string') return false;
-    if (!('children' in node) || !Array.isArray(node.children)) return false;
-    return node.children.every((child: unknown) => {
-      if (!child || typeof child !== 'object') return false;
-      if ('text' in child && typeof (child as { text: unknown }).text === 'string') return true;
-      return validateContent([child]);
+    // Basic node validation
+    if (!node || typeof node !== 'object') {
+      console.debug('Node is not an object:', node);
+      return false;
+    }
+
+    // Type validation - accept any string type
+    if (!('type' in node) || typeof node.type !== 'string') {
+      console.debug('Node has invalid type:', node);
+      return false;
+    }
+
+    // Children validation - ensure it's an array
+    if (!('children' in node)) {
+      console.debug('Node has no children:', node);
+      return false;
+    }
+
+    const children = node.children;
+    if (!Array.isArray(children)) {
+      console.debug('Node children is not an array:', children);
+      return false;
+    }
+
+    // Validate each child
+    return children.every((child: unknown) => {
+      if (!child || typeof child !== 'object') {
+        console.debug('Child is not an object:', child);
+        return false;
+      }
+
+      // Text nodes - accept any string text
+      if ('text' in child) {
+        const text = (child as { text: unknown }).text;
+        if (typeof text !== 'string') {
+          console.debug('Text node has invalid text:', text);
+          return false;
+        }
+        return true;
+      }
+
+      // Element nodes (recursive validation)
+      return validateContent([child as TElement]);
     });
   });
 }
@@ -73,6 +113,9 @@ export function PlateEditor() {
 
         if (doc.content?.content) {
           try {
+            // Log the content structure
+            console.debug('Received document content:', JSON.stringify(doc.content.content, null, 2));
+
             // Validate content structure
             const content = doc.content.content;
             if (!validateContent(content)) {
