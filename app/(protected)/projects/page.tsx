@@ -52,7 +52,7 @@ export default function ProjectsPage() {
           </Tabs>
           <Button asChild>
             <Link href="/projects/new" className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
+              <Plus className="size-4" />
               New Project
             </Link>
           </Button>
@@ -74,7 +74,7 @@ export default function ProjectsPage() {
               {!searchQuery && (
                 <Button asChild className="mt-4">
                   <Link href="/projects/new" className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
+                    <Plus className="size-4" />
                     New Project
                   </Link>
                 </Button>
@@ -108,15 +108,15 @@ export default function ProjectsPage() {
                 <div className="grid gap-4">
                   <div className="flex items-center gap-6 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
+                      <Building2 className="size-4" />
                       <span>{project.details.totalArea} m²</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
+                      <Calendar className="size-4" />
                       <span>{project.details.estimatedDuration} months</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
+                      <MapPin className="size-4" />
                       <span>{project.location.city}, {project.location.state}</span>
                     </div>
                   </div>

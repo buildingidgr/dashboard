@@ -129,7 +129,7 @@ export default function ProjectDetailsPage() {
           asChild
         >
           <Link href="/projects">
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="size-4" />
             Back to Projects
           </Link>
         </Button>
@@ -141,7 +141,7 @@ export default function ProjectDetailsPage() {
             asChild
           >
             <Link href={`/projects/${projectId}/edit`}>
-              <Pencil className="h-4 w-4" />
+              <Pencil className="size-4" />
               Edit Project
             </Link>
           </Button>
@@ -175,7 +175,7 @@ export default function ProjectDetailsPage() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-muted-foreground" />
+                    <Building2 className="size-5 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">Total Area</p>
                       <p className="text-2xl font-bold">{project.details.totalArea} m²</p>
@@ -187,7 +187,7 @@ export default function ProjectDetailsPage() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                    <Calendar className="size-5 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">Duration</p>
                       <p className="text-2xl font-bold">{project.details.estimatedDuration} months</p>
@@ -199,7 +199,7 @@ export default function ProjectDetailsPage() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-2">
-                    <Construction className="h-5 w-5 text-muted-foreground" />
+                    <Construction className="size-5 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">Construction Type</p>
                       <p className="text-lg font-medium">{project.details.constructionType}</p>
@@ -211,7 +211,7 @@ export default function ProjectDetailsPage() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-muted-foreground" />
+                    <Clock className="size-5 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">Created</p>
                       <p className="text-lg font-medium">
@@ -230,7 +230,7 @@ export default function ProjectDetailsPage() {
               <h3 className="font-semibold text-lg mb-4">Location</h3>
               <div className="grid gap-2">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
+                  <MapPin className="size-4" />
                   <span>{project.location.address}</span>
                 </div>
                 <div className="text-muted-foreground pl-6">
@@ -246,14 +246,14 @@ export default function ProjectDetailsPage() {
               <h3 className="font-semibold text-lg mb-4">Project Details</h3>
               <div className="grid gap-4">
                 <div className="flex items-start gap-2">
-                  <HardHat className="h-4 w-4 mt-1 text-muted-foreground" />
+                  <HardHat className="mt-1 size-4 text-muted-foreground" />
                   <div>
                     <p className="font-medium">Construction Type</p>
                     <p className="text-muted-foreground">{project.details.constructionType}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <FileText className="h-4 w-4 mt-1 text-muted-foreground" />
+                  <FileText className="mt-1 size-4 text-muted-foreground" />
                   <div>
                     <p className="font-medium">Project Description</p>
                     <p className="text-muted-foreground">{project.description}</p>

@@ -103,7 +103,7 @@ export default function ProfessionalPage() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
-                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                    <HelpCircle className="size-4 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Select your professional title as registered with TEE</p>
@@ -151,7 +151,7 @@ export default function ProfessionalPage() {
                 </SelectContent>
               </Select>
             ) : (
-              <div className="w-full p-2 rounded-md bg-muted">
+              <div className="rounded-md w-full p-2 bg-muted">
                 {professionalInfo?.profession.current || 'Not set'}
               </div>
             )}
@@ -163,7 +163,7 @@ export default function ProfessionalPage() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
-                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                    <HelpCircle className="size-4 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Your unique registration number with the Technical Chamber of Greece (TEE)</p>
@@ -179,7 +179,7 @@ export default function ProfessionalPage() {
                 placeholder="Enter your AMTEE number"
               />
             ) : (
-              <div className="w-full p-2 rounded-md bg-muted">
+              <div className="rounded-md w-full p-2 bg-muted">
                 {professionalInfo?.amtee || 'Not set'}
               </div>
             )}
@@ -191,7 +191,7 @@ export default function ProfessionalPage() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
-                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                    <HelpCircle className="size-4 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-[300px]">
                     <p>Define the area where you operate. This will affect which opportunities you see in the marketplace.</p>
@@ -231,7 +231,7 @@ export default function ProfessionalPage() {
               <div className="space-y-2">
                 <div className="space-y-1">
                   <Label className="text-sm text-muted-foreground">Base Location</Label>
-                  <div className="w-full p-2 rounded-md bg-muted">
+                  <div className="rounded-md w-full p-2 bg-muted">
                     {professionalInfo?.areaOfOperation.coordinates ? 
                       `Coordinates: ${professionalInfo.areaOfOperation.coordinates.latitude.toFixed(6)}, ${professionalInfo.areaOfOperation.coordinates.longitude.toFixed(6)}` : 
                       'Not set'}
@@ -239,7 +239,7 @@ export default function ProfessionalPage() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-sm text-muted-foreground">Coverage Radius</Label>
-                  <div className="w-full p-2 rounded-md bg-muted">
+                  <div className="rounded-md w-full p-2 bg-muted">
                     {professionalInfo?.areaOfOperation.radius ? 
                       `${professionalInfo.areaOfOperation.radius} km` : 
                       'Not set'}

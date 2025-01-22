@@ -313,7 +313,7 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-background">
         <div className="h-[200px] bg-gradient-to-r from-gray-100 to-gray-200 animate-pulse" />
         <div className="max-w-4xl mx-auto -mt-16 px-4">
-          <Skeleton className="h-32 w-32 rounded-full" />
+          <Skeleton className="size-32 rounded-full" />
           <div className="mt-8 space-y-8">
             <Skeleton className="h-12 w-2/3" />
             <Skeleton className="h-48 w-full" />
@@ -329,21 +329,23 @@ export default function ProfilePage() {
       {/* Cover Photo Section */}
       <div className="relative w-full h-56 rounded-lg overflow-hidden bg-muted">
         {profile?.coverPhoto ? (
-          <Image
-            src={profile.coverPhoto}
-            alt="Cover"
-            fill
-            className="w-full h-full object-cover"
-          />
+          <div className="relative size-full">
+            <Image
+              src={profile.coverPhoto}
+              alt="Cover"
+              fill
+              className="size-full object-cover"
+            />
+          </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-muted">
-            <ImageIcon className="h-8 w-8 text-muted-foreground" />
+            <ImageIcon className="size-8 text-muted-foreground" />
           </div>
         )}
         <div className="absolute bottom-4 right-4">
           <label htmlFor="cover-photo-upload">
             <div className="bg-background hover:bg-muted transition rounded-full p-2 cursor-pointer">
-              <Edit2 className="h-5 w-5" />
+              <Edit2 className="size-5" />
             </div>
             <input
               id="cover-photo-upload"
@@ -361,7 +363,7 @@ export default function ProfilePage() {
         {/* Profile Header */}
         <div className="-mt-20 mb-12 flex items-end">
           <div className="relative group">
-            <Avatar className="h-40 w-40 border-4 border-background shadow-lg">
+            <Avatar className="size-40 border-4 border-background shadow-lg">
               <AvatarImage src={profile?.avatarUrl} alt={`${profile?.firstName} ${profile?.lastName}`} />
               <AvatarFallback className="text-3xl">
                 {profile?.firstName?.[0]}{profile?.lastName?.[0]}
@@ -374,7 +376,7 @@ export default function ProfilePage() {
                 isUploading && "opacity-50 cursor-not-allowed"
               )}
             >
-              <Edit2 className="h-4 w-4" />
+              <Edit2 className="size-4" />
               <input
                 id="avatar-upload"
                 type="file"
@@ -406,9 +408,9 @@ export default function ProfilePage() {
             >
               <h2 className="text-xl font-semibold">Personal Information</h2>
               {expandedSections.personal ? (
-                <ChevronDown className="h-5 w-5" />
+                <ChevronDown className="size-5" />
               ) : (
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="size-5" />
               )}
             </button>
             {expandedSections.personal && (
@@ -463,9 +465,9 @@ export default function ProfilePage() {
             >
               <h2 className="text-xl font-semibold">Professional Information</h2>
               {expandedSections.professional ? (
-                <ChevronDown className="h-5 w-5" />
+                <ChevronDown className="size-5" />
               ) : (
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="size-5" />
               )}
             </button>
             {expandedSections.professional && (
@@ -476,7 +478,7 @@ export default function ProfilePage() {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger>
-                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          <HelpCircle className="size-4 text-muted-foreground" />
                         </TooltipTrigger>
                         <TooltipContent className="max-w-sm">
                           <p>Your official professional title as registered with the Technical Chamber of Greece (TEE). This will be displayed on your profile and documents.</p>
@@ -533,7 +535,7 @@ export default function ProfilePage() {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger>
-                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          <HelpCircle className="size-4 text-muted-foreground" />
                         </TooltipTrigger>
                         <TooltipContent className="max-w-sm">
                           <p>Your unique Technical Chamber of Greece (TEE) registration number. This number verifies your professional status and is required for official documents.</p>
@@ -563,7 +565,7 @@ export default function ProfilePage() {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger>
-                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                          <HelpCircle className="size-4 text-muted-foreground" />
                         </TooltipTrigger>
                         <TooltipContent className="max-w-sm">
                           <p>Define your primary work location and operational radius. This helps clients find you and determines which regional projects you can participate in.</p>
@@ -614,9 +616,9 @@ export default function ProfilePage() {
             >
               <h2 className="text-xl font-semibold">Preferences</h2>
               {expandedSections.preferences ? (
-                <ChevronDown className="h-5 w-5" />
+                <ChevronDown className="size-5" />
               ) : (
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="size-5" />
               )}
             </button>
             {expandedSections.preferences && (
@@ -782,7 +784,7 @@ export default function ProfilePage() {
               size="lg"
               className="px-6"
             >
-              <Edit2 className="h-4 w-4 mr-2" />
+              <Edit2 className="size-4 mr-2" />
               Edit Profile
             </Button>
           ) : (
@@ -796,7 +798,7 @@ export default function ProfilePage() {
                 Cancel
               </Button>
               <Button onClick={saveChanges} size="lg" className="px-6">
-                <Check className="h-4 w-4 mr-2" />
+                <Check className="size-4 mr-2" />
                 Save Changes
               </Button>
             </div>

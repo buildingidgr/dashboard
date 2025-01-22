@@ -23,7 +23,7 @@ export default function NewProjectPage() {
         asChild
       >
         <Link href="/projects">
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
           Back to Projects
         </Link>
       </Button>

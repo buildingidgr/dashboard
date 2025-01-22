@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Plate } from '@udecode/plate-common/react';
 import { type TElement, type Value, type TText, type TDescendant } from '@udecode/plate-common';
 import { ParagraphPlugin } from '@udecode/plate-common/react';
+import { type MyValue, type MyRootBlock, type RichText } from '@/components/editor/plate-types';
 
 import { useCreateEditor } from '@/components/editor/use-create-editor';
 import { Editor, EditorContainer } from '@/components/plate-ui/editor';
@@ -20,7 +21,7 @@ import { getAccessToken } from '@/lib/services/auth';
 import { Skeleton } from "@/components/ui/skeleton";
 import { DocumentMetadata } from '@/components/document-metadata';
 
-interface RichText extends TText {
+interface CustomText extends TText {
   text: string;
   bold?: boolean;
   italic?: boolean;
@@ -29,14 +30,16 @@ interface RichText extends TText {
   code?: boolean;
   subscript?: boolean;
   superscript?: boolean;
+  [key: string]: unknown;
 }
 
-interface ParagraphElement extends TElement {
-  type: typeof ParagraphPlugin.key;
-  children: RichText[];
+interface CustomElement extends TElement {
+  type: string;
+  children: CustomText[];
+  [key: string]: unknown;
 }
 
-type DocumentValue = ParagraphElement[];
+type EditorValue = Value & { type: "p"; children: { text: string; }[]; }[];
 
 function safeStringify(obj: any): string {
   const seen = new WeakSet();
@@ -51,37 +54,23 @@ function safeStringify(obj: any): string {
   });
 }
 
-function normalizeContent(content: TElement[]): DocumentValue {
-  // Create a clean version of the content without circular references
-  return content.map(block => {
-    const cleanBlock: ParagraphElement = {
-      type: ParagraphPlugin.key,
-      children: Array.isArray(block.children) 
-        ? block.children.map(child => {
-            if (typeof child === 'object' && child !== null) {
-              // Only keep essential text properties
-              const cleanChild: RichText = {
-                text: (child as any).text || '',
-                bold: (child as any).bold,
-                italic: (child as any).italic,
-                underline: (child as any).underline,
-                strikethrough: (child as any).strikethrough,
-                code: (child as any).code,
-                subscript: (child as any).subscript,
-                superscript: (child as any).superscript
-              };
-              // Remove undefined properties
-              Object.keys(cleanChild).forEach(key => 
-                cleanChild[key] === undefined && delete cleanChild[key]
-              );
-              return cleanChild;
-            }
-            return { text: String(child) };
-          })
-        : [{ text: '' }]
-    };
-    return cleanBlock;
-  });
+function normalizeContent(content: TElement[]): EditorValue {
+  return content.map(block => ({
+    ...block,
+    type: "p",
+    children: Array.isArray(block.children) 
+      ? block.children.map(child => {
+          if (typeof child === 'object' && child !== null) {
+            // Preserve all text properties
+            return {
+              ...child,
+              text: (child as any).text || ''
+            };
+          }
+          return { text: String(child) };
+        })
+      : [{ text: '' }]
+  })) as EditorValue;
 }
 
 export function PlateEditor() {
@@ -110,39 +99,24 @@ export function PlateEditor() {
 
         if (doc.content?.content) {
           try {
-            // Clean and normalize the loaded content
-            const cleanContent = doc.content.content.map(block => {
-              const type = block.type || ParagraphPlugin.key;
-              const textNodes = Array.isArray(block.children) 
+            // Set the editor content
+            const cleanContent = doc.content.content.map(block => ({
+              ...block,
+              type: "p",
+              children: Array.isArray(block.children) 
                 ? block.children.map(child => {
                     if (typeof child === 'object' && child !== null) {
-                      // Keep all styling properties
-                      const textNode: RichText = {
-                        text: (child as any).text || '',
-                        bold: (child as any).bold,
-                        italic: (child as any).italic,
-                        underline: (child as any).underline,
-                        strikethrough: (child as any).strikethrough,
-                        code: (child as any).code,
-                        subscript: (child as any).subscript,
-                        superscript: (child as any).superscript
+                      // Preserve all text properties
+                      return {
+                        ...child,
+                        text: (child as any).text || ''
                       };
-                      // Remove undefined properties
-                      Object.keys(textNode).forEach(key => 
-                        textNode[key] === undefined && delete textNode[key]
-                      );
-                      return textNode;
                     }
                     return { text: String(child) };
                   })
-                : [{ text: '' }];
-
-              return {
-                type: ParagraphPlugin.key,
-                children: textNodes
-              } as ParagraphElement;
-            });
-
+                : [{ text: '' }]
+            })) as EditorValue;
+            
             // Initialize the last content state with cleaned content
             lastContentRef.current.lastSavedContent = safeStringify(cleanContent);
             
@@ -155,17 +129,17 @@ export function PlateEditor() {
             
             // Set default content as fallback
             editor.children = [{
-              type: ParagraphPlugin.key,
+              type: "p",
               children: [{ text: '' }]
-            }] as DocumentValue;
+            }] as EditorValue;
             editor.onChange();
           }
         } else {
           // Set default content
           editor.children = [{
-            type: ParagraphPlugin.key,
+            type: "p",
             children: [{ text: '' }]
-          }] as DocumentValue;
+          }] as EditorValue;
           editor.onChange();
         }
       })
@@ -281,19 +255,20 @@ export function PlateEditor() {
               try {
                 const mappedContent = data.content.content.map(node => ({
                   ...node,
-                  type: node.type || 'p',
+                  type: "p",
                   children: Array.isArray(node.children) 
                     ? node.children.map(child => {
                         if (typeof child === 'object' && child !== null) {
+                          // Preserve all text properties
                           return {
                             ...child,
                             text: (child as any).text || ''
-                          } as RichText;
+                          };
                         }
                         return { text: String(child) };
                       })
                     : [{ text: '' }]
-                })) as DocumentValue;
+                })) as EditorValue;
                 console.log('Setting editor content:', mappedContent);
                 editor.children = mappedContent;
                 editor.onChange();
