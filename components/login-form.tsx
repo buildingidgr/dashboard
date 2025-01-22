@@ -95,7 +95,7 @@ export function LoginForm() {
       // Always try to sign up first for new users
       await signUp.authenticateWithRedirect({
         strategy: provider,
-        redirectUrl: `${window.location.origin}/auth/callback`,
+        redirectUrl: '/auth/callback',
         redirectUrlComplete: '/dashboard'
       });
       
@@ -113,7 +113,7 @@ export function LoginForm() {
           }
           await signIn.authenticateWithRedirect({
             strategy: provider,
-            redirectUrl: `${window.location.origin}/auth/callback`,
+            redirectUrl: '/auth/callback',
             redirectUrlComplete: '/dashboard'
           });
         } catch (signInErr) {
