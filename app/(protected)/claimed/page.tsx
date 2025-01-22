@@ -191,16 +191,17 @@ export default function ClaimedProjectsPage() {
 
   // Map Project objects to Opportunity format
   const opportunities = projects.map(project => {
-    // Format address as a string
-    const address = project.data.project.location.address;
-    const addressStr = [
+    // Format address as a string with null checks
+    const location = project.data.project.location;
+    const address = location?.address;
+    const addressStr = address ? [
       address.street,
       address.unit,
       address.city,
       address.state,
       address.country,
       address.postalCode
-    ].filter(Boolean).join(', ');
+    ].filter(Boolean).join(', ') : 'Address not available';
 
     return {
       _id: project._id,
@@ -212,19 +213,26 @@ export default function ClaimedProjectsPage() {
           ...project.data.project,
           location: {
             address: addressStr,
-            coordinates: project.data.project.location.coordinates
+            coordinates: location?.coordinates || { lat: 0, lng: 0 }
           }
         },
         contact: {
           ...project.data.contact,
           // Add missing fields required by Opportunity interface
-          address: {
-            city: address.city,
-            unit: address.unit,
-            state: address.state,
-            street: address.street,
-            country: address.country,
-            postalCode: address.postalCode
+          address: address ? {
+            city: address.city || '',
+            unit: address.unit || '',
+            state: address.state || '',
+            street: address.street || '',
+            country: address.country || '',
+            postalCode: address.postalCode || ''
+          } : {
+            city: '',
+            unit: '',
+            state: '',
+            street: '',
+            country: '',
+            postalCode: ''
           },
           company: {
             name: "N/A",
