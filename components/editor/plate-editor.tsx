@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { Plate } from '@udecode/plate-common/react';
-import { type TElement, type Value, type TText, type TDescendant } from '@udecode/plate-common';
+import { type TElement, type Value, type TText } from '@udecode/plate-common';
 import { ParagraphPlugin } from '@udecode/plate-common/react';
 import { type MyValue, type MyRootBlock, type RichText } from '@/components/editor/plate-types';
 
@@ -21,25 +21,7 @@ import { getAccessToken } from '@/lib/services/auth';
 import { Skeleton } from "@/components/ui/skeleton";
 import { DocumentMetadata } from '@/components/document-metadata';
 
-interface CustomText extends TText {
-  text: string;
-  bold?: boolean;
-  italic?: boolean;
-  underline?: boolean;
-  strikethrough?: boolean;
-  code?: boolean;
-  subscript?: boolean;
-  superscript?: boolean;
-  [key: string]: unknown;
-}
-
-interface CustomElement extends TElement {
-  type: string;
-  children: CustomText[];
-  [key: string]: unknown;
-}
-
-type EditorValue = Value & { type: "p"; children: { text: string; }[]; }[];
+type EditorValue = Value & { type: string; children: { text: string; }[]; }[];
 
 function safeStringify(obj: any): string {
   const seen = new WeakSet();
@@ -52,25 +34,6 @@ function safeStringify(obj: any): string {
     }
     return value;
   });
-}
-
-function normalizeContent(content: TElement[]): EditorValue {
-  return content.map(block => ({
-    ...block,
-    type: "p",
-    children: Array.isArray(block.children) 
-      ? block.children.map(child => {
-          if (typeof child === 'object' && child !== null) {
-            // Preserve all text properties
-            return {
-              ...child,
-              text: (child as any).text || ''
-            };
-          }
-          return { text: String(child) };
-        })
-      : [{ text: '' }]
-  })) as EditorValue;
 }
 
 export function PlateEditor() {
@@ -99,47 +62,35 @@ export function PlateEditor() {
 
         if (doc.content?.content) {
           try {
-            // Set the editor content
-            const cleanContent = doc.content.content.map(block => ({
-              ...block,
-              type: "p",
-              children: Array.isArray(block.children) 
-                ? block.children.map(child => {
-                    if (typeof child === 'object' && child !== null) {
-                      // Preserve all text properties
-                      return {
-                        ...child,
-                        text: (child as any).text || ''
-                      };
-                    }
-                    return { text: String(child) };
-                  })
-                : [{ text: '' }]
-            })) as EditorValue;
-            
-            // Initialize the last content state with cleaned content
-            lastContentRef.current.lastSavedContent = safeStringify(cleanContent);
-            
-            // Set the editor content
-            editor.children = cleanContent;
+            // Set the editor content directly
+            const content = doc.content.content;
+            // @ts-ignore - The content structure is compatible with Plate's internal types
+            editor.children = content;
             editor.onChange();
+            
+            // Initialize the last content state
+            lastContentRef.current.lastSavedContent = safeStringify(content);
           } catch (error) {
             console.error('Failed to process document content:', error);
             toast.error('Failed to load document content properly.');
             
             // Set default content as fallback
-            editor.children = [{
-              type: "p",
+            const defaultContent = [{
+              type: ParagraphPlugin.key,
               children: [{ text: '' }]
-            }] as EditorValue;
+            }];
+            // @ts-ignore - The content structure is compatible with Plate's internal types
+            editor.children = defaultContent;
             editor.onChange();
           }
         } else {
           // Set default content
-          editor.children = [{
-            type: "p",
+          const defaultContent = [{
+            type: ParagraphPlugin.key,
             children: [{ text: '' }]
-          }] as EditorValue;
+          }];
+          // @ts-ignore - The content structure is compatible with Plate's internal types
+          editor.children = defaultContent;
           editor.onChange();
         }
       })
@@ -168,21 +119,22 @@ export function PlateEditor() {
     if (!documentId || !editor) return;
 
     const saveDocument = async () => {
-      // Skip if editor is empty or has no content
       if (!editor.children || editor.children.length === 0) {
         console.log('Editor is empty, skipping save');
         return;
       }
 
-      // Normalize the content by removing unstable properties and cleaning up the structure
-      const normalizedContent = normalizeContent(editor.children);
-
       // Check if content is just empty paragraphs
-      const isOnlyEmptyParagraphs = normalizedContent.every((block: any) => 
-        (block.type === 'p' || block.type === 'paragraph') && 
-        (!block.children || block.children.length === 0 || 
-         (block.children.length === 1 && (!block.children[0].text || block.children[0].text.trim() === '')))
-      );
+      const isOnlyEmptyParagraphs = editor.children.every((block) => {
+        if (block.type !== ParagraphPlugin.key) return false;
+        if (!block.children || block.children.length === 0) return true;
+        if (block.children.length !== 1) return false;
+        
+        const textNode = block.children[0];
+        if (!textNode || typeof textNode !== 'object') return true;
+        if (!('text' in textNode) || typeof textNode.text !== 'string') return true;
+        return textNode.text.trim() === '';
+      });
 
       if (isOnlyEmptyParagraphs) {
         console.log('Content contains only empty paragraphs, skipping save');
@@ -191,12 +143,12 @@ export function PlateEditor() {
 
       // Store the last saved content string on first run
       if (!lastContentRef.current.lastSavedContent) {
-        lastContentRef.current.lastSavedContent = safeStringify(normalizedContent);
+        lastContentRef.current.lastSavedContent = safeStringify(editor.children);
         return;
       }
 
       // Compare with last saved content
-      const currentContentString = safeStringify(normalizedContent);
+      const currentContentString = safeStringify(editor.children);
       if (currentContentString === lastContentRef.current.lastSavedContent) {
         console.log('No changes detected in content, skipping save');
         return;
@@ -211,7 +163,7 @@ export function PlateEditor() {
         const payload = {
           content: {
             type: 'doc',
-            content: normalizedContent
+            content: editor.children
           }
         };
         await DocumentsService.updateDocument(documentId, payload);
@@ -253,24 +205,10 @@ export function PlateEditor() {
             console.log('WebSocket update received:', data);
             if (editor && data.content?.content) {
               try {
-                const mappedContent = data.content.content.map(node => ({
-                  ...node,
-                  type: "p",
-                  children: Array.isArray(node.children) 
-                    ? node.children.map(child => {
-                        if (typeof child === 'object' && child !== null) {
-                          // Preserve all text properties
-                          return {
-                            ...child,
-                            text: (child as any).text || ''
-                          };
-                        }
-                        return { text: String(child) };
-                      })
-                    : [{ text: '' }]
-                })) as EditorValue;
-                console.log('Setting editor content:', mappedContent);
-                editor.children = mappedContent;
+                // Set the editor content directly
+                const content = data.content.content;
+                // @ts-ignore - The content structure is compatible with Plate's internal types
+                editor.children = content;
                 editor.onChange();
               } catch (error) {
                 console.error('Failed to update editor content:', error);
