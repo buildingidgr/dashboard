@@ -85,50 +85,29 @@ export function LoginForm() {
 
   const handleSocialLogin = async (provider: 'oauth_google' | 'oauth_facebook' | 'oauth_apple') => {
     try {
-      if (!isSignInLoaded || !isSignUpLoaded || !signUp) return;
+      if (!isSignInLoaded || !signIn) return;
       
       if (session?.status === 'active') {
         router.push('/dashboard');
         return;
       }
 
-      // Create a new sign up attempt first
-      const signUpAttempt = await signUp.create({
-        strategy: provider,
-        redirectUrl: '/auth/callback'
-      });
-      
-      // Then start the OAuth flow
-      await signUpAttempt.authenticateWithRedirect({
+      // For development, we'll use signIn directly
+      const result = await signIn.authenticateWithRedirect({
         strategy: provider,
         redirectUrl: '/auth/callback',
         redirectUrlComplete: '/dashboard'
       });
+
+      // The token exchange will be handled in the callback route
       
     } catch (err) {
       console.error('Social login error:', err);
-      if (err instanceof Error && err.message.includes('single session mode')) {
-        router.push('/dashboard');
-      } else {
-        // If user already exists, try sign in
-        try {
-          if (!signIn) {
-            throw new Error('Sign in is not initialized');
-          }
-          await signIn.authenticateWithRedirect({
-            strategy: provider,
-            redirectUrl: '/auth/callback',
-            redirectUrlComplete: '/dashboard'
-          });
-        } catch (signInErr) {
-          console.error('Sign in error:', signInErr);
-          toast({
-            variant: "destructive",
-            title: "Sign In Error",
-            description: "Failed to sign in with social provider."
-          });
-        }
-      }
+      toast({
+        variant: "destructive",
+        title: "Social Login Error",
+        description: "An error occurred while trying to log in with social provider."
+      });
     }
   };
 
