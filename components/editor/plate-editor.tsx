@@ -7,7 +7,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { Plate } from '@udecode/plate-common/react';
-import { type TElement, type Value } from '@udecode/plate-common';
+import { type TElement, type Value, type TText, type TDescendant } from '@udecode/plate-common';
+import { ParagraphPlugin } from '@udecode/plate-common/react';
 
 import { useCreateEditor } from '@/components/editor/use-create-editor';
 import { Editor, EditorContainer } from '@/components/plate-ui/editor';
@@ -19,7 +20,7 @@ import { getAccessToken } from '@/lib/services/auth';
 import { Skeleton } from "@/components/ui/skeleton";
 import { DocumentMetadata } from '@/components/document-metadata';
 
-interface StyledText {
+interface RichText extends TText {
   text: string;
   bold?: boolean;
   italic?: boolean;
@@ -28,16 +29,14 @@ interface StyledText {
   code?: boolean;
   subscript?: boolean;
   superscript?: boolean;
-  [key: string]: unknown;
 }
 
-interface NormalizedBlock {
-  type: string;
-  children: StyledText[];
-  [key: string]: unknown;
+interface ParagraphElement extends TElement {
+  type: typeof ParagraphPlugin.key;
+  children: RichText[];
 }
 
-type EditorValue = Value & { type: "p"; children: { text: string }[] }[];
+type DocumentValue = ParagraphElement[];
 
 function safeStringify(obj: any): string {
   const seen = new WeakSet();
@@ -52,16 +51,16 @@ function safeStringify(obj: any): string {
   });
 }
 
-function normalizeContent(content: TElement[]): NormalizedBlock[] {
+function normalizeContent(content: TElement[]): DocumentValue {
   // Create a clean version of the content without circular references
   return content.map(block => {
-    const cleanBlock = {
-      type: block.type || "p",
+    const cleanBlock: ParagraphElement = {
+      type: ParagraphPlugin.key,
       children: Array.isArray(block.children) 
         ? block.children.map(child => {
             if (typeof child === 'object' && child !== null) {
               // Only keep essential text properties
-              const cleanChild = {
+              const cleanChild: RichText = {
                 text: (child as any).text || '',
                 bold: (child as any).bold,
                 italic: (child as any).italic,
@@ -73,7 +72,7 @@ function normalizeContent(content: TElement[]): NormalizedBlock[] {
               };
               // Remove undefined properties
               Object.keys(cleanChild).forEach(key => 
-                (cleanChild as any)[key] === undefined && delete (cleanChild as any)[key]
+                cleanChild[key] === undefined && delete cleanChild[key]
               );
               return cleanChild;
             }
@@ -81,14 +80,6 @@ function normalizeContent(content: TElement[]): NormalizedBlock[] {
           })
         : [{ text: '' }]
     };
-    
-    // Copy any additional properties from the block that aren't type or children
-    Object.keys(block).forEach(key => {
-      if (key !== 'type' && key !== 'children' && typeof (block as any)[key] !== 'function') {
-        (cleanBlock as any)[key] = (block as any)[key];
-      }
-    });
-    
     return cleanBlock;
   });
 }
@@ -118,35 +109,63 @@ export function PlateEditor() {
         setTitle(doc.title);
 
         if (doc.content?.content) {
-          // Initialize the last content state with the loaded blocks
-          lastContentRef.current.lastSavedContent = JSON.stringify(doc.content.content);
-          
-          // Convert document content to editor format
-          const content = doc.content.content.map(block => ({
-            ...block,
-            type: block.type || 'p',
-            children: Array.isArray(block.children) 
-              ? block.children.map(child => {
-                  if (typeof child === 'object' && child !== null) {
-                    // Preserve all styling attributes
-                    return {
-                      ...child,
-                      text: child.text || ''
-                    };
-                  }
-                  return { text: '' };
-                })
-              : [{ text: '' }]
-          })) as EditorValue;
-          
-          editor.children = content;
-          editor.onChange();
+          try {
+            // Clean and normalize the loaded content
+            const cleanContent = doc.content.content.map(block => {
+              const type = block.type || ParagraphPlugin.key;
+              const textNodes = Array.isArray(block.children) 
+                ? block.children.map(child => {
+                    if (typeof child === 'object' && child !== null) {
+                      // Keep all styling properties
+                      const textNode: RichText = {
+                        text: (child as any).text || '',
+                        bold: (child as any).bold,
+                        italic: (child as any).italic,
+                        underline: (child as any).underline,
+                        strikethrough: (child as any).strikethrough,
+                        code: (child as any).code,
+                        subscript: (child as any).subscript,
+                        superscript: (child as any).superscript
+                      };
+                      // Remove undefined properties
+                      Object.keys(textNode).forEach(key => 
+                        textNode[key] === undefined && delete textNode[key]
+                      );
+                      return textNode;
+                    }
+                    return { text: String(child) };
+                  })
+                : [{ text: '' }];
+
+              return {
+                type: ParagraphPlugin.key,
+                children: textNodes
+              } as ParagraphElement;
+            });
+
+            // Initialize the last content state with cleaned content
+            lastContentRef.current.lastSavedContent = safeStringify(cleanContent);
+            
+            // Set the editor content
+            editor.children = cleanContent;
+            editor.onChange();
+          } catch (error) {
+            console.error('Failed to process document content:', error);
+            toast.error('Failed to load document content properly.');
+            
+            // Set default content as fallback
+            editor.children = [{
+              type: ParagraphPlugin.key,
+              children: [{ text: '' }]
+            }] as DocumentValue;
+            editor.onChange();
+          }
         } else {
           // Set default content
-          editor.children = [
-            { type: 'p' as const, children: [{ text: '' }] },
-            { type: 'p' as const, children: [{ text: '' }] }
-          ] as EditorValue;
+          editor.children = [{
+            type: ParagraphPlugin.key,
+            children: [{ text: '' }]
+          }] as DocumentValue;
           editor.onChange();
         }
       })
@@ -269,12 +288,12 @@ export function PlateEditor() {
                           return {
                             ...child,
                             text: (child as any).text || ''
-                          } as StyledText;
+                          } as RichText;
                         }
                         return { text: String(child) };
                       })
                     : [{ text: '' }]
-                })) as EditorValue;
+                })) as DocumentValue;
                 console.log('Setting editor content:', mappedContent);
                 editor.children = mappedContent;
                 editor.onChange();
