@@ -176,8 +176,8 @@ export function LoginForm() {
                 Don&apos;t have an account?
               </span>
             </div>
-            <Button variant="ghost" asChild>
-              <Link href="/sign-up">Sign up</Link>
+            <Button variant="ghost" onClick={() => window.location.href = "https://flowing-lamb-6.accounts.dev/sign-up"}>
+              Sign up
             </Button>
           </div>
         </CardContent>
