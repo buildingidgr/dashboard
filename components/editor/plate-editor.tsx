@@ -67,11 +67,19 @@ export function PlateEditor() {
           
           // Convert document content to editor format
           const content = doc.content.content.map(block => ({
-            type: 'p' as const,
+            ...block,
+            type: block.type || 'p',
             children: Array.isArray(block.children) 
-              ? block.children.map(child => ({ 
-                  text: typeof child === 'object' && child !== null ? (child.text || '') : ''
-                }))
+              ? block.children.map(child => {
+                  if (typeof child === 'object' && child !== null) {
+                    // Preserve all styling attributes
+                    return {
+                      ...child,
+                      text: child.text || ''
+                    };
+                  }
+                  return { text: '' };
+                })
               : [{ text: '' }]
           })) as EditorValue;
           
