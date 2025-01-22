@@ -13,21 +13,25 @@ export async function POST(request: Request) {
     const headersList = headers()
     const origin = headersList.get('origin')
 
+    // Set CORS headers
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': origin || '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'true'
+    }
+
     if (!sessionId || !userId) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { 
           status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': origin || '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-            'Access-Control-Allow-Credentials': 'true'
-          }
+          headers: corsHeaders
         }
       )
     }
 
+    console.log('Exchanging token for:', { sessionId, userId })
     const response = await fetch(`${AUTH_API_URL}/v1/token/clerk/exchange`, {
       method: 'POST',
       headers: {
@@ -39,30 +43,39 @@ export async function POST(request: Request) {
       }),
     })
 
+    const responseText = await response.text()
+    console.log('Auth service response:', {
+      status: response.status,
+      statusText: response.statusText,
+      body: responseText
+    })
+
     if (!response.ok) {
-      const error = await response.text()
       return NextResponse.json(
-        { error: `Token exchange failed: ${error}` },
+        { error: `Token exchange failed: ${responseText}` },
         { 
           status: response.status,
-          headers: {
-            'Access-Control-Allow-Origin': origin || '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-            'Access-Control-Allow-Credentials': 'true'
-          }
+          headers: corsHeaders
         }
       )
     }
 
-    const data = await response.json()
+    let data
+    try {
+      data = JSON.parse(responseText)
+    } catch (e) {
+      console.error('Failed to parse auth service response:', e)
+      return NextResponse.json(
+        { error: 'Invalid response from auth service' },
+        { 
+          status: 500,
+          headers: corsHeaders
+        }
+      )
+    }
+
     return NextResponse.json(data, {
-      headers: {
-        'Access-Control-Allow-Origin': origin || '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Credentials': 'true'
-      }
+      headers: corsHeaders
     })
   } catch (error) {
     console.error('Token exchange error:', error)
