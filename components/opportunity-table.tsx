@@ -177,7 +177,6 @@ export default function OpportunityTable({
       columns={columns} 
       data={opportunities}
       pageCount={totalPages}
-      pageIndex={currentPage - 1}
       onPaginationChange={(updater) => {
         const newState = typeof updater === 'function' 
           ? updater({ pageIndex: currentPage - 1, pageSize: 15 })

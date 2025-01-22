@@ -185,7 +185,7 @@ export const setBlockType = (
         return setBlockMap[type](editor, type, entry);
       }
       if (node.type !== type) {
-        editor.setNodes<TElement>({ type }, { at: path });
+        setNodes(editor, { type }, { at: path });
       }
     };
 

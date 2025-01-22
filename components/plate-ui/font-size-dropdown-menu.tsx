@@ -3,7 +3,6 @@
 import React from 'react';
 import { DropdownMenuProps } from '@radix-ui/react-dropdown-menu';
 import { useEditorRef } from '@udecode/plate-common/react';
-import { setFontSize } from '@udecode/plate-font/react';
 
 import {
   DropdownMenu,
@@ -25,27 +24,33 @@ const fontSizes = {
 
 export function FontSizeDropdownMenu(props: DropdownMenuProps) {
   const editor = useEditorRef();
+  const [fontSize, setFontSize] = React.useState('1em');
 
   return (
     <DropdownMenu modal={false} {...props}>
       <DropdownMenuTrigger asChild>
-        <ToolbarButton tooltip="Text size" className="min-w-[3rem]">
-          <span className="max-w-48 truncate">Size</span>
+        <ToolbarButton tooltip="Font size">
+          <span className="text-base">A</span>
+          <span className="text-lg">A</span>
         </ToolbarButton>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="max-h-80 overflow-y-auto">
-        <DropdownMenuRadioGroup className="flex flex-col gap-0.5">
+
+      <DropdownMenuContent align="start" className="min-w-[180px]">
+        <DropdownMenuRadioGroup 
+          className="flex flex-col gap-0.5"
+          value={fontSize}
+          onValueChange={(value) => {
+            setFontSize(value);
+            editor.addMark('fontSize', value);
+          }}
+        >
           {Object.entries(fontSizes).map(([name, size]) => (
             <DropdownMenuRadioItem
-              key={size}
+              key={name}
               value={size}
               className="flex items-center"
-              onSelect={(e) => {
-                e.preventDefault();
-                setFontSize(editor, size);
-              }}
             >
-              <span style={{ fontSize: size }}>{name}</span>
+              {name}
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>
