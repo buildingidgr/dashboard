@@ -92,39 +92,38 @@ export function LoginForm() {
         return;
       }
 
-      // Always try to sign up first for new users
-      await signUp.authenticateWithRedirect({
-        strategy: provider,
-        redirectUrl: '/auth/callback',
-        redirectUrlComplete: '/dashboard'
-      });
-      
-    } catch (err) {
-      console.error('Social login error:', err);
-      
-      // If sign up fails because user exists, try sign in
-      if (err instanceof Error && (
-        err.message?.includes('user already exists') || 
-        err.message?.includes('identifier already exists')
-      )) {
-        try {
-          if (!signIn) {
-            throw new Error('Sign in is not initialized');
-          }
-          await signIn.authenticateWithRedirect({
+      // First try sign in for existing users
+      try {
+        if (!signIn) {
+          throw new Error('Sign in is not initialized');
+        }
+        await signIn.authenticateWithRedirect({
+          strategy: provider,
+          redirectUrl: '/auth/callback',
+          redirectUrlComplete: '/dashboard'
+        });
+      } catch (signInErr: any) {
+        // If user doesn't exist, create a new sign up
+        if (signInErr.message?.includes('user not found') || 
+            signInErr.code === 'user_not_found') {
+          // Create a new sign up
+          const signUpAttempt = await signUp.create({
+            strategy: provider
+          });
+
+          // Start the OAuth flow for sign up
+          await signUpAttempt.authenticateWithRedirect({
             strategy: provider,
             redirectUrl: '/auth/callback',
             redirectUrlComplete: '/dashboard'
           });
-        } catch (signInErr) {
-          console.error('Sign in error:', signInErr);
-          toast({
-            variant: "destructive",
-            title: "Sign In Error",
-            description: "Failed to sign in with social provider."
-          });
+        } else {
+          throw signInErr;
         }
-      } else if (err instanceof Error && err.message.includes('single session mode')) {
+      }
+    } catch (err) {
+      console.error('Social login error:', err);
+      if (err instanceof Error && err.message.includes('single session mode')) {
         router.push('/dashboard');
       } else {
         toast({
