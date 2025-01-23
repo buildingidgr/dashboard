@@ -122,7 +122,9 @@ export function PlateEditor() {
               throw new Error('Invalid document content structure');
             }
 
-            // Use editor transform to set content
+            // Reset editor content and insert new content
+            editor.select({ anchor: { path: [0, 0], offset: 0 }, focus: { path: [editor.children.length - 1, 0], offset: 0 } });
+            editor.delete();
             editor.insertFragment(content);
             
             // Initialize the last content state
@@ -142,6 +144,8 @@ export function PlateEditor() {
                 children: [{ text: '' }]
               }
             ];
+            editor.select({ anchor: { path: [0, 0], offset: 0 }, focus: { path: [editor.children.length - 1, 0], offset: 0 } });
+            editor.delete();
             editor.insertFragment(defaultContent);
           }
         } else {
@@ -156,6 +160,8 @@ export function PlateEditor() {
               children: [{ text: '' }]
             }
           ];
+          editor.select({ anchor: { path: [0, 0], offset: 0 }, focus: { path: [editor.children.length - 1, 0], offset: 0 } });
+          editor.delete();
           editor.insertFragment(defaultContent);
         }
       })
@@ -269,8 +275,15 @@ export function PlateEditor() {
             console.log('WebSocket update received:', data);
             if (editor && data.content?.content) {
               try {
-                // Use editor transform to set content
+                // Set editor content using proper transformation
                 const content = data.content.content;
+                if (!validateContent(content)) {
+                  throw new Error('Invalid document content structure');
+                }
+
+                // Reset editor content and insert new content
+                editor.select({ anchor: { path: [0, 0], offset: 0 }, focus: { path: [editor.children.length - 1, 0], offset: 0 } });
+                editor.delete();
                 editor.insertFragment(content);
               } catch (error) {
                 console.error('Failed to update editor content:', error);

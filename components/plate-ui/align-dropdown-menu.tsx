@@ -17,13 +17,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useOpenState } from '@/hooks/use-open-state';
 import { ToolbarButton } from './toolbar';
+import { useEditorRef } from '@udecode/plate-common/react';
+import { 
+  useAlignDropdownMenu,
+  useAlignDropdownMenuState 
+} from '@udecode/plate-alignment/react';
 
-interface AlignmentItem {
-  value: 'left' | 'center' | 'right' | 'justify';
-  icon: typeof AlignLeftIcon;
-}
-
-const alignItems: AlignmentItem[] = [
+const alignments = [
   {
     value: 'left',
     icon: AlignLeftIcon,
@@ -40,27 +40,33 @@ const alignItems: AlignmentItem[] = [
     value: 'justify',
     icon: AlignJustifyIcon,
   },
-];
+] as const;
+
+type Alignment = (typeof alignments)[number]['value'];
 
 export function AlignDropdownMenu(props: DropdownMenuProps) {
+  const editor = useEditorRef();
   const { isOpen, toggle } = useOpenState();
-  const [value, setValue] = React.useState<AlignmentItem['value']>('left');
+  
+  const state = useAlignDropdownMenuState();
+  const { radioGroupProps } = useAlignDropdownMenu(state);
+
+  const IconComponent = alignments.find((item) => item.value === state.value)?.icon || AlignLeftIcon;
 
   return (
     <DropdownMenu modal={false} open={isOpen} onOpenChange={toggle} {...props}>
       <DropdownMenuTrigger asChild>
         <ToolbarButton pressed={isOpen} tooltip="Align">
-          <AlignLeftIcon />
+          <IconComponent />
         </ToolbarButton>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start" className="min-w-0">
         <DropdownMenuRadioGroup 
-          value={value} 
-          onValueChange={(val) => setValue(val as AlignmentItem['value'])}
+          {...radioGroupProps}
           className="flex flex-col gap-0.5"
         >
-          {alignItems.map(({ value, icon: Icon }) => (
+          {alignments.map(({ value, icon: Icon }) => (
             <DropdownMenuRadioItem
               key={value}
               value={value}
