@@ -9,12 +9,9 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Get the base URL from environment variable, fallback to window.location.origin for local development
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-    
     openSignIn({
-      redirectUrl: `${baseUrl}/auth/callback`,
-      afterSignInUrl: `${baseUrl}/dashboard`,
+      redirectUrl: "/auth/callback",
+      afterSignInUrl: "/dashboard",
     });
   }, [openSignIn]);
 
