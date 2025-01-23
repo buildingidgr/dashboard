@@ -10,8 +10,14 @@ export default function LoginPage() {
     // Get the base URL from environment variable, fallback to window.location.origin for local development
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
     
-    // Redirect to Clerk's hosted sign-in page with redirect parameters
-    window.location.href = `https://flowing-lamb-6.accounts.dev/sign-in?redirect_url=${baseUrl}/auth/callback&after_sign_in_url=${baseUrl}/dashboard`;
+    // Construct the callback and after sign-in URLs
+    const callbackUrl = `${baseUrl}/auth/callback`;
+    const afterSignInUrl = `${baseUrl}/dashboard`;
+    
+    // Redirect to Clerk's sign-in page with properly encoded URLs
+    window.location.href = `https://flowing-lamb-6.accounts.dev/sign-in?` + 
+      `redirect_url=${encodeURIComponent(callbackUrl)}` +
+      `&after_sign_in_url=${encodeURIComponent(afterSignInUrl)}`;
   }, []);
 
   return (
