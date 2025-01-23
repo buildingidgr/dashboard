@@ -18,23 +18,28 @@ export async function GET(request: Request) {
     if (userId && createdSessionId) {
       try {
         await exchangeClerkToken(createdSessionId, userId);
-        return NextResponse.redirect(new URL("/dashboard", request.url));
+        const baseUrl = new URL(request.url).origin;
+        return NextResponse.redirect(`${baseUrl}/dashboard`);
       } catch (error) {
         console.error("Token exchange error:", error);
-        return NextResponse.redirect(new URL("/login", request.url));
+        const baseUrl = new URL(request.url).origin;
+        return NextResponse.redirect(`${baseUrl}/login`);
       }
     }
 
     // If we have a userId but no session, just redirect to dashboard
     if (userId) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      const baseUrl = new URL(request.url).origin;
+      return NextResponse.redirect(`${baseUrl}/dashboard`);
     }
 
     // If something went wrong, redirect to login
     console.error("Auth callback: No userId found");
-    return NextResponse.redirect(new URL("/login", request.url));
+    const baseUrl = new URL(request.url).origin;
+    return NextResponse.redirect(`${baseUrl}/login`);
   } catch (error) {
     console.error("Auth callback error:", error);
-    return NextResponse.redirect(new URL("/login", request.url));
+    const baseUrl = new URL(request.url).origin;
+    return NextResponse.redirect(`${baseUrl}/login`);
   }
 } 
