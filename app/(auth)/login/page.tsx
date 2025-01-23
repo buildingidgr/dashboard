@@ -7,11 +7,11 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Get the current origin for the redirect URL
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    // Get the base URL from environment variable, fallback to window.location.origin for local development
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
     
     // Redirect to Clerk's hosted sign-in page with redirect parameters
-    window.location.href = `https://flowing-lamb-6.accounts.dev/sign-in?redirect_url=${origin}/auth/callback&after_sign_in_url=${origin}/dashboard`;
+    window.location.href = `https://flowing-lamb-6.accounts.dev/sign-in?redirect_url=${baseUrl}/auth/callback&after_sign_in_url=${baseUrl}/dashboard`;
   }, []);
 
   return (
