@@ -2,15 +2,6 @@
 
 import { ArrowRight, Clock } from "lucide-react"
 import Link from "next/link"
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
 import { defaultCenter } from '@/constants/map-styles'
@@ -20,6 +11,9 @@ import { useOpportunities } from '@/hooks/use-opportunities'
 import { useState } from 'react'
 import { GOOGLE_MAPS_LIBRARIES } from '@/lib/google-maps'
 import { useProfessionalInfo } from "@/hooks/use-professional-info"
+import { MechDialog } from "@/components/ui/mech-dialog"
+import { MechBadge } from "@/components/ui/mech-badge"
+import { categoryColors } from "@/constants/map-categories"
 
 interface GreeceOpportunitiesMapProps {
   isDarkMode: boolean
@@ -149,45 +143,50 @@ export function GreeceOpportunitiesMap({
             radiusInKm={searchRadius}
           />
 
-          <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-            <DrawerContent>
-              {selectedProject && (
+          {selectedProject && (
+            <MechDialog
+              open={isDrawerOpen}
+              onOpenChange={setIsDrawerOpen}
+              title={selectedProject.data.project.category.title}
+              description={
+                <div className="text-sm text-muted-foreground line-clamp-2">
+                  {selectedProject.data.project.details.description}
+                </div>
+              }
+              footer={
                 <>
-                  <DrawerHeader>
-                    <DrawerTitle>{selectedProject.data.project.category.title}</DrawerTitle>
-                    <DrawerDescription className="line-clamp-2">{selectedProject.data.project.details.description}</DrawerDescription>
-                  </DrawerHeader>
-
-                  <div className="px-4 py-3 space-y-4">
-                    {/* Posted Date */}
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="p-2 bg-secondary rounded-md">
-                        <Clock className="h-4 w-4 text-foreground" />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="font-medium text-sm">Posted</p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(selectedProject.data.metadata.submittedAt), 'PPp')}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <DrawerFooter>
-                    <Link href={`/opportunities/${selectedProject._id}`}>
-                      <Button className="w-full gap-2">
-                        View Details
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <DrawerClose asChild>
-                      <Button variant="outline">Close</Button>
-                    </DrawerClose>
-                  </DrawerFooter>
+                  <Link href={`/opportunities/${selectedProject._id}`}>
+                    <Button className="gap-2">
+                      View Details
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
                 </>
-              )}
-            </DrawerContent>
-          </Drawer>
+              }
+            >
+              <div className="space-y-4">
+                {/* Project Type */}
+                <MechBadge
+                  dotColor={categoryColors[selectedProject.data.projectType]}
+                >
+                  {selectedProject.data.projectType}
+                </MechBadge>
+
+                {/* Posted Date */}
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-secondary rounded-md">
+                    <Clock className="h-4 w-4 text-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium text-sm">Posted</p>
+                    <p className="text-sm text-muted-foreground">
+                      {format(new Date(selectedProject.data.metadata.submittedAt), 'PPp')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </MechDialog>
+          )}
         </>
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-900">
