@@ -2,23 +2,21 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useClerk } from "@clerk/nextjs";
 
 export default function LoginPage() {
+  const { openSignIn } = useClerk();
   const router = useRouter();
 
   useEffect(() => {
     // Get the base URL from environment variable, fallback to window.location.origin for local development
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
     
-    // Construct the callback and after sign-in URLs
-    const callbackUrl = `${baseUrl}/auth/callback`;
-    const afterSignInUrl = `${baseUrl}/dashboard`;
-    
-    // Redirect to Clerk's sign-in page with properly encoded URLs
-    window.location.href = `https://flowing-lamb-6.accounts.dev/sign-in?` + 
-      `redirect_url=${encodeURIComponent(callbackUrl)}` +
-      `&after_sign_in_url=${encodeURIComponent(afterSignInUrl)}`;
-  }, []);
+    openSignIn({
+      redirectUrl: `${baseUrl}/auth/callback`,
+      afterSignInUrl: `${baseUrl}/dashboard`,
+    });
+  }, [openSignIn]);
 
   return (
     // Show loading state while redirecting
