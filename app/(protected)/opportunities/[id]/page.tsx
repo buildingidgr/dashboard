@@ -26,6 +26,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { MechBadge } from "@/components/ui/mech-badge"
+import { categoryColors, simplifiedLabels } from "@/constants/map-categories"
 
 interface OpportunityDetails {
   _id: string
@@ -376,22 +378,10 @@ export default function OpportunityDetailsPage() {
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge 
-                  variant="outline" 
-                  className={cn(
-                    "rounded-full border-2 px-3 py-1 text-xs font-medium", 
-                    getStatusColor(opportunity.status)
-                  )}
-                >
-                  {opportunity.status}
-                </Badge>
+                <MechBadge dotColor={categoryColors[opportunity.data.projectType]}>
+                  {simplifiedLabels[opportunity.data.projectType]}
+                </MechBadge>
               </div>
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {opportunity.data.project.category.title}
-              </h1>
-              <p className="text-base text-gray-600 dark:text-gray-300">
-                {opportunity.data.project.category.description}
-              </p>
               <div className="mt-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800/50">
                 <h2 className="mb-2 text-lg font-medium">Project Details</h2>
                 <p className="text-gray-700 dark:text-gray-300">
@@ -407,176 +397,140 @@ export default function OpportunityDetailsPage() {
             </div>
           </div>
 
-          {/* Location Accuracy Warning */}
-          {opportunity.status === 'public' && (
-            <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
-              <p className="text-sm">
-                <strong>Note:</strong> The location shown on the map is approximate. The exact location will be revealed after claiming this opportunity.
-              </p>
-            </div>
-          )}
-
-          {/* Map Section */}
-          <div className="h-[400px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <OpportunityLocationMap coordinates={opportunity.data.project.location.coordinates} />
-          </div>
-
-          {/* Details Cards */}
-          <div className="space-y-6">
-            {/* Location Card */}
+          {/* Contact Card */}
+          {opportunity.status === 'private' && (
             <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-                  <MapPin className="size-4 text-blue-600 dark:text-blue-400" />
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
+                    <Building2 className="size-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Contact Information</h2>
                 </div>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Location Details</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const contactData = {
+                      firstName: opportunity.data.contact.firstName,
+                      lastName: opportunity.data.contact.lastName,
+                      email: opportunity.data.contact.email,
+                      phones: opportunity.data.contact.phones,
+                      address: opportunity.data.contact.address,
+                      company: opportunity.data.contact.company,
+                      opportunityIds: [opportunity._id]
+                    }
+                    const encodedData = encodeURIComponent(JSON.stringify(contactData))
+                    router.push(`/contacts/new?data=${encodedData}`)
+                  }}
+                  className="text-blue-600 dark:text-blue-400"
+                >
+                  Add to Contacts
+                </Button>
               </div>
-              <div className="pl-12 space-y-2 text-gray-600 dark:text-gray-300">
-                {opportunity.status === 'private' ? (
-                  <p className="font-medium text-gray-900 dark:text-gray-100">
-                    {opportunity.data.project.location.address}
+              <div className="pl-12 space-y-6">
+                <div className="space-y-1">
+                  <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                    {opportunity.data.contact.firstName} {opportunity.data.contact.lastName}
                   </p>
-                ) : (
-                  <p>Full address details will be available after claiming the opportunity.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Contact Card */}
-            {opportunity.status === 'private' && (
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-                      <Building2 className="size-4 text-blue-600 dark:text-blue-400" />
+                  {opportunity.data.contact.company && (
+                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                      <Building2 className="size-4" />
+                      <div>
+                        <p className="font-medium">{opportunity.data.contact.company.name}</p>
+                        {opportunity.data.contact.company.title && (
+                          <p className="text-sm text-gray-500">{opportunity.data.contact.company.title}</p>
+                        )}
+                      </div>
                     </div>
-                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Contact Information</h2>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const contactData = {
-                        firstName: opportunity.data.contact.firstName,
-                        lastName: opportunity.data.contact.lastName,
-                        email: opportunity.data.contact.email,
-                        phones: opportunity.data.contact.phones,
-                        address: opportunity.data.contact.address,
-                        company: opportunity.data.contact.company,
-                        opportunityIds: [opportunity._id]
-                      }
-                      const encodedData = encodeURIComponent(JSON.stringify(contactData))
-                      router.push(`/contacts/new?data=${encodedData}`)
-                    }}
-                    className="text-blue-600 dark:text-blue-400"
-                  >
-                    Add to Contacts
-                  </Button>
+                  )}
                 </div>
-                <div className="pl-12 space-y-6">
-                  <div className="space-y-1">
-                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                      {opportunity.data.contact.firstName} {opportunity.data.contact.lastName}
-                    </p>
-                    {opportunity.data.contact.company && (
-                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                        <Building2 className="size-4" />
-                        <div>
-                          <p className="font-medium">{opportunity.data.contact.company.name}</p>
-                          {opportunity.data.contact.company.title && (
-                            <p className="text-sm text-gray-500">{opportunity.data.contact.company.title}</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="space-y-3">
-                    {opportunity.data.contact.phones.map((phone, index) => (
-                      <div key={index} className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                        <Phone className="size-4" />
-                        <div className="flex flex-wrap items-center gap-2">
-                          <a 
-                            href={`tel:${phone.number}`} 
-                            className="font-medium text-blue-600 hover:underline dark:text-blue-400"
-                          >
-                            {phone.number}
-                          </a>
-                          <div className="flex gap-2">
-                            {phone.type && (
-                              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs dark:bg-gray-700">
-                                {phone.type}
-                              </span>
-                            )}
-                            {phone.primary && (
-                              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                                Primary
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {opportunity.data.contact.email && (
-                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                        <Mail className="size-4" />
+                <div className="space-y-3">
+                  {opportunity.data.contact.phones.map((phone, index) => (
+                    <div key={index} className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                      <Phone className="size-4" />
+                      <div className="flex flex-wrap items-center gap-2">
                         <a 
-                          href={`mailto:${opportunity.data.contact.email}`} 
+                          href={`tel:${phone.number}`} 
                           className="font-medium text-blue-600 hover:underline dark:text-blue-400"
                         >
-                          {opportunity.data.contact.email}
+                          {phone.number}
                         </a>
-                      </div>
-                    )}
-                    {opportunity.data.contact.address && (
-                      <div className="flex items-start gap-3 text-gray-600 dark:text-gray-300">
-                        <MapPin className="size-4" />
-                        <div className="space-y-0.5">
-                          <p>{opportunity.data.contact.address.street}</p>
-                          {opportunity.data.contact.address.unit && (
-                            <p>Unit {opportunity.data.contact.address.unit}</p>
+                        <div className="flex gap-2">
+                          {phone.type && (
+                            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs dark:bg-gray-700">
+                              {phone.type}
+                            </span>
                           )}
-                          <p>
-                            {opportunity.data.contact.address.city}, {opportunity.data.contact.address.state} {opportunity.data.contact.address.postalCode}
-                          </p>
-                          <p>{opportunity.data.contact.address.country}</p>
+                          {phone.primary && (
+                            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                              Primary
+                            </span>
+                          )}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Status History Card */}
-            {opportunity.status === 'private' && (
-              <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-                    <History className="size-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Status History</h2>
-                </div>
-                <div className="pl-12 space-y-4">
-                  {opportunity.statusHistory.map((status, index) => (
-                    <div key={index} className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                      <div className="rounded-full bg-gray-50 p-1.5 dark:bg-gray-700">
-                        <ArrowRight className="size-4" />
-                      </div>
-                      <div className="flex-1">
-                        <span>
-                          Changed from <strong>{status.from}</strong> to <strong>{status.to}</strong>
-                        </span>
-                        <p className="mt-0.5 text-sm text-gray-500">
-                          {format(new Date(status.changedAt), 'PPp')}
-                        </p>
                       </div>
                     </div>
                   ))}
+                  {opportunity.data.contact.email && (
+                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                      <Mail className="size-4" />
+                      <a 
+                        href={`mailto:${opportunity.data.contact.email}`} 
+                        className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {opportunity.data.contact.email}
+                      </a>
+                    </div>
+                  )}
+                  {opportunity.data.contact.address && (
+                    <div className="flex items-start gap-3 text-gray-600 dark:text-gray-300">
+                      <MapPin className="size-4" />
+                      <div className="space-y-0.5">
+                        <p>{opportunity.data.contact.address.street}</p>
+                        {opportunity.data.contact.address.unit && (
+                          <p>Unit {opportunity.data.contact.address.unit}</p>
+                        )}
+                        <p>
+                          {opportunity.data.contact.address.city}, {opportunity.data.contact.address.state} {opportunity.data.contact.address.postalCode}
+                        </p>
+                        <p>{opportunity.data.contact.address.country}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Status History Card */}
+          {opportunity.status === 'private' && (
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
+                  <History className="size-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Status History</h2>
+              </div>
+              <div className="pl-12 space-y-4">
+                {opportunity.statusHistory.map((status, index) => (
+                  <div key={index} className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                    <div className="rounded-full bg-gray-50 p-1.5 dark:bg-gray-700">
+                      <ArrowRight className="size-4" />
+                    </div>
+                    <div className="flex-1">
+                      <span>
+                        Changed from <strong>{status.from}</strong> to <strong>{status.to}</strong>
+                      </span>
+                      <p className="mt-0.5 text-sm text-gray-500">
+                        {format(new Date(status.changedAt), 'PPp')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column - Quick Actions */}
