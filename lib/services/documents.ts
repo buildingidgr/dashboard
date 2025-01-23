@@ -12,15 +12,27 @@ export interface Document {
   updatedAt: string;
 }
 
+export interface PaginationInfo {
+  totalCount: number;
+  pageSize: number;
+  hasMore: boolean;
+  nextCursor?: string;
+}
+
 export interface GetDocumentsResponse {
   items: Document[];
-  total: number;
+  pagination: PaginationInfo;
 }
 
 export class DocumentsService {
   private static readonly API_URL = '/api';
 
-  static async getDocuments(params?: { orderBy?: string; order?: string; limit?: string }): Promise<GetDocumentsResponse> {
+  static async getDocuments(params?: { 
+    orderBy?: string; 
+    order?: string;
+    cursor?: string;
+    limit?: string;
+  }): Promise<GetDocumentsResponse> {
     const token = await getAccessToken();
     if (!token) {
       throw new Error('No authentication token found');
@@ -29,6 +41,7 @@ export class DocumentsService {
     const queryParams = new URLSearchParams();
     if (params?.orderBy) queryParams.set('orderBy', params.orderBy);
     if (params?.order) queryParams.set('order', params.order);
+    if (params?.cursor) queryParams.set('cursor', params.cursor);
     if (params?.limit) queryParams.set('limit', params.limit);
 
     const url = `${this.API_URL}/documents${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;

@@ -1,8 +1,29 @@
 'use client';
 
-import { DocumentsGrid } from "@/components/documents/documents-grid";
+import { DocumentsTable } from "@/components/documents/documents-table";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { DocumentsService } from "@/lib/services/documents";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function DocumentsPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleCreateDocument = async () => {
+    try {
+      const document = await DocumentsService.createDocument();
+      router.push(`/editor?id=${document.id}`);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create document. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex-1 flex-col space-y-8 p-8 md:flex">
       <div className="flex items-center justify-between space-y-2">
@@ -12,8 +33,12 @@ export default function DocumentsPage() {
             Create and manage documents.
           </p>
         </div>
+        <Button onClick={handleCreateDocument}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create Document
+        </Button>
       </div>
-      <DocumentsGrid />
+      <DocumentsTable />
     </div>
   );
 } 
