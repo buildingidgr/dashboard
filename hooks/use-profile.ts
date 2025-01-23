@@ -32,25 +32,29 @@ export function useProfile() {
 
   const updateProfileData = async (data: Partial<Profile>) => {
     try {
-      setIsLoading(true)
+      // Optimistically update the local state
+      setProfile(prev => prev ? { ...prev, ...data } : null)
+
+      // Make the API call
       const updatedProfile = await updateProfile(data)
+      
+      // Update with the server response
       setProfile(updatedProfile)
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      })
       return updatedProfile
     } catch (err) {
       const error = err as Error
       setError(error)
+      
+      // Revert to the previous state on error
+      const prevProfile = await getMyProfile()
+      setProfile(prevProfile)
+      
       toast({
         title: "Error",
         description: error.message || "Failed to update profile",
         variant: "destructive",
       })
       throw error
-    } finally {
-      setIsLoading(false)
     }
   }
 

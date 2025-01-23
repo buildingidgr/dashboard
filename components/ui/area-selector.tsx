@@ -48,9 +48,10 @@ export default function AreaSelector({
   const updateCircle = useCallback((center: google.maps.LatLng, newRadius: number) => {
     if (circle) {
       circle.setCenter(center)
-      circle.setRadius(newRadius * 1000)
+      circle.setRadius(newRadius * 1000) // Convert km to meters
+      circle.setMap(map) // Ensure circle is attached to map
     }
-  }, [circle])
+  }, [circle, map])
 
   const debouncedOnChange = useCallback(
     (location: Parameters<typeof onChange>[0]) => {
@@ -89,6 +90,32 @@ export default function AreaSelector({
       }
     }
   }, [value?.address, value?.radius, maxRadius, circle, value])
+
+  // Calculate appropriate zoom level based on radius
+  const getZoomForRadius = useCallback((radiusInKm: number) => {
+    // This is an approximation. Adjust these values based on your needs
+    const radiusToZoomMap = [
+      { radius: 5, zoom: 12 },
+      { radius: 10, zoom: 11 },
+      { radius: 20, zoom: 10 },
+      { radius: 50, zoom: 9 },
+      { radius: 100, zoom: 8 },
+    ]
+    
+    for (const { radius, zoom } of radiusToZoomMap) {
+      if (radiusInKm <= radius) return zoom
+    }
+    return 8 // Default zoom for large radius
+  }, [])
+
+  // Update map zoom to fit radius
+  const adjustMapZoom = useCallback((center: google.maps.LatLng, radiusInKm: number) => {
+    if (!map) return
+    
+    const zoom = getZoomForRadius(radiusInKm)
+    map.setZoom(zoom)
+    map.setCenter(center)
+  }, [map, getZoomForRadius])
 
   // Initialize autocomplete separately from map
   useEffect(() => {
@@ -129,52 +156,40 @@ export default function AreaSelector({
     }
   }, [isLoaded, map, marker, circle, radius, debouncedOnChangeWithDebounce, updateCircle])
 
-  const handleRadiusChange = useCallback(([newRadius]: number[]) => {
-    isUserInteractionRef.current = true;
-    const clampedRadius = Math.min(newRadius, maxRadius)
-    setRadius(clampedRadius)
-    const center = marker?.getPosition()
-    if (center && circle) {
-      updateCircle(center, clampedRadius)
-      
-      // Use debounced onChange for radius changes
-      debouncedOnChangeWithDebounce({
-        address: inputValue,
-        coordinates: {
-          lat: center.lat(),
-          lng: center.lng(),
-        },
-        radius: clampedRadius
-      })
-    }
-  }, [marker, circle, inputValue, debouncedOnChangeWithDebounce, maxRadius, updateCircle])
-
+  // Initialize map elements when loaded
   useEffect(() => {
     if (!isLoaded || !mapRef.current || isInitializedRef.current) return;
 
+    const initialRadius = value?.radius || DEFAULT_RADIUS
+    const initialCenter = value?.coordinates || { lat: 0, lng: 0 }
+    const initialZoom = getZoomForRadius(initialRadius)
+
     const mapInstance = new google.maps.Map(mapRef.current, {
-      zoom: 12,
-      center: value?.coordinates || { lat: 0, lng: 0 },
+      zoom: initialZoom,
+      center: initialCenter,
       disableDefaultUI: true,
-      zoomControl: true
+      zoomControl: true,
+      draggable: false,
+      scrollwheel: false
     })
 
     const markerInstance = new google.maps.Marker({
       map: mapInstance,
-      position: value?.coordinates || { lat: 0, lng: 0 },
-      draggable: !disabled
+      position: initialCenter,
+      draggable: false
     })
 
     const circleInstance = new google.maps.Circle({
       map: mapInstance,
-      center: value?.coordinates || { lat: 0, lng: 0 },
-      radius: (value?.radius || DEFAULT_RADIUS) * 1000,
-      editable: !disabled,
-      draggable: !disabled,
+      center: initialCenter,
+      radius: initialRadius * 1000,
+      editable: false, // Prevent radius editing on map
+      draggable: false,
       fillColor: '#1d4ed8',
       fillOpacity: 0.2,
       strokeColor: '#1d4ed8',
-      strokeWeight: 2
+      strokeWeight: 2,
+      visible: true
     })
 
     setMap(mapInstance)
@@ -186,24 +201,27 @@ export default function AreaSelector({
       markerInstance.setMap(null)
       circleInstance.setMap(null)
     }
-  }, [isLoaded, disabled, value?.coordinates, value?.radius, maxRadius, inputValue])
+  }, [isLoaded, disabled, value?.coordinates, value?.radius, getZoomForRadius])
 
   // Update map elements when value changes externally
   useEffect(() => {
-    if (!map || !marker || !circle || !value?.coordinates) return;
+    if (!map || !marker || !circle || !value?.coordinates || isUserInteractionRef.current) return;
 
     const newPosition = new google.maps.LatLng(
       value.coordinates.lat,
       value.coordinates.lng
     )
 
+    const newRadius = value.radius || DEFAULT_RADIUS
+    
     marker.setPosition(newPosition)
     circle.setCenter(newPosition)
-    if (typeof value.radius === 'number') {
-      circle.setRadius(value.radius * 1000)
-    }
-    map.setCenter(newPosition)
-  }, [map, marker, circle, value?.coordinates?.lat, value?.coordinates?.lng, value?.radius, value?.coordinates])
+    circle.setRadius(newRadius * 1000)
+    circle.setMap(map)
+    
+    // Adjust zoom and center when values change externally
+    adjustMapZoom(newPosition, newRadius)
+  }, [map, marker, circle, value?.coordinates?.lat, value?.coordinates?.lng, value?.radius, adjustMapZoom])
 
   if (loadError) {
     return <div>Error loading maps</div>
@@ -233,7 +251,24 @@ export default function AreaSelector({
         </div>
         <Slider
           value={[radius]}
-          onValueChange={handleRadiusChange}
+          onValueChange={([newRadius]) => {
+            isUserInteractionRef.current = true;
+            const clampedRadius = Math.min(newRadius, maxRadius)
+            setRadius(clampedRadius)
+            const center = marker?.getPosition()
+            if (center && circle) {
+              updateCircle(center, clampedRadius)
+              // Trigger onChange with current values
+              debouncedOnChangeWithDebounce({
+                address: inputValue,
+                coordinates: {
+                  lat: center.lat(),
+                  lng: center.lng()
+                },
+                radius: clampedRadius
+              })
+            }
+          }}
           max={maxRadius}
           min={1}
           step={1}

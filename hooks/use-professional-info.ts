@@ -46,56 +46,40 @@ export function useProfessionalInfo() {
     }
   }
 
-  const debouncedUpdateInfo = useCallback(
-    debounce(async (data: Partial<ProfessionalInformation>) => {
-      const updateKey = JSON.stringify(data)
-      if (updateKey === lastUpdateRef.current) {
-        return;
-      }
-
-      try {
-        setIsLoading(true)
-        console.log('Updating professional info with:', data)
-        const updated = await updateProfessionalInfo(data)
-        console.log('Update response:', updated)
-        if (mountedRef.current) {
-          setProfessionalInfo(updated)
-          lastUpdateRef.current = updateKey
-          toast({
-            title: "Success",
-            description: "Professional information updated successfully"
-          })
-        }
-      } catch (error) {
-        console.error('Update error:', error)
-        if (mountedRef.current) {
-          toast({
-            title: "Error",
-            description: error instanceof Error ? error.message : "Failed to update professional information",
-            variant: "destructive"
-          })
-        }
-      } finally {
-        if (mountedRef.current) {
-          setIsLoading(false)
-        }
-      }
-    }, 1000),
-    []
-  )
-
-  const updateInfo = useCallback((data: Partial<ProfessionalInformation>) => {
-    if (!professionalInfo) {
-      toast({
-        title: "Error",
-        description: "Cannot update before initial data is loaded",
-        variant: "destructive"
-      })
+  const updateInfo = useCallback(async (data: Partial<ProfessionalInformation>) => {
+    const updateKey = JSON.stringify(data)
+    if (updateKey === lastUpdateRef.current) {
       return;
     }
 
-    debouncedUpdateInfo(data)
-  }, [professionalInfo, debouncedUpdateInfo, toast])
+    try {
+      // Optimistically update the local state
+      setProfessionalInfo(prev => prev ? { ...prev, ...data } : null)
+
+      // Make the API call
+      const updated = await updateProfessionalInfo(data)
+      
+      // Update with the server response
+      if (mountedRef.current) {
+        setProfessionalInfo(updated)
+        lastUpdateRef.current = updateKey
+      }
+    } catch (error) {
+      console.error('Update error:', error)
+      
+      // Revert to the previous state on error
+      if (mountedRef.current) {
+        const prevInfo = await getMyProfessionalInfo()
+        setProfessionalInfo(prevInfo)
+        
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "Failed to update professional information",
+          variant: "destructive"
+        })
+      }
+    }
+  }, [toast])
 
   useEffect(() => {
     mountedRef.current = true;
@@ -103,9 +87,8 @@ export function useProfessionalInfo() {
     fetchProfessionalInfo()
     return () => {
       mountedRef.current = false;
-      debouncedUpdateInfo.cancel()
     }
-  }, [debouncedUpdateInfo])
+  }, [])
 
   return {
     professionalInfo,

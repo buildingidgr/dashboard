@@ -32,25 +32,29 @@ export function usePreferences() {
 
   const updateUserPreferences = async (data: Partial<ProfilePreferences>) => {
     try {
-      setIsLoading(true)
+      // Optimistically update the local state
+      setPreferences(prev => prev ? { ...prev, ...data } : null)
+
+      // Make the API call
       const updatedPreferences = await updatePreferences(data)
+      
+      // Update with the server response
       setPreferences(updatedPreferences)
-      toast({
-        title: "Success",
-        description: "Preferences updated successfully",
-      })
       return updatedPreferences
     } catch (err) {
       const error = err as Error
       setError(error)
+      
+      // Revert to the previous state on error
+      const prevPreferences = await getMyPreferences()
+      setPreferences(prevPreferences)
+      
       toast({
         title: "Error",
         description: error.message || "Failed to update preferences",
         variant: "destructive",
       })
       throw error
-    } finally {
-      setIsLoading(false)
     }
   }
 
