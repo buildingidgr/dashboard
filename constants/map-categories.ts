@@ -8,4 +8,16 @@ export const categoryColors: Record<string, string> = {
   'Συστήματα Ασφαλείας': '#795548',
   'Δίκτυα & Επικοινωνίες': '#607D8B',
   'Other': '#9E9E9E'
+}
+
+export const simplifiedLabels: Record<string, string> = {
+  'Αρχιτεκτονικός Σχεδιασμός': 'Design',
+  'Στατικές & Κατασκευαστικές Μελέτες': 'Structure',
+  'Τεχνικοί Έλεγχοι & Νομιμοποιήσεις': 'Permits',
+  'Τεχνικά Έργα & Υποδομές': 'Projects',
+  'Ηλεκτρομηχανολογικές Εγκαταστάσεις': 'MEP',
+  'Ενεργειακές Υπηρεσίες': 'Energy',
+  'Συστήματα Ασφαλείας': 'Security',
+  'Δίκτυα & Επικοινωνίες': 'Networks',
+  'Other': 'Other'
 } 

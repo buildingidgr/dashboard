@@ -5,8 +5,6 @@ import { usePageTitle } from "@/components/layouts/client-layout"
 import { GreeceOpportunitiesMap } from "@/components/maps/greece-opportunities-map"
 import { GoogleMapsProvider } from "@/components/maps/google-maps-provider"
 import { useTheme } from "@/components/layouts/client-layout"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useOpportunities, type Opportunity } from "@/hooks/use-opportunities"
@@ -14,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { ProjectTypesLegend } from "@/components/opportunities/project-types-legend"
 import Link from "next/link"
+import { Card } from "@/components/ui/card"
 
 const projectTypes = [
   "Αρχιτεκτονικός Σχεδιασμός",
@@ -67,7 +66,7 @@ export default function PublicOpportunitiesPage() {
       </div>
 
       {/* Filters and View Toggle */}
-      <Card className="p-4 space-y-4">
+      <Card className="space-y-4 border-none">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
           <div className="flex-1 w-full md:w-auto">
             <Input
@@ -77,22 +76,6 @@ export default function PublicOpportunitiesPage() {
               className="w-full"
             />
           </div>
-          <Select
-            value={selectedType}
-            onValueChange={setSelectedType}
-          >
-            <SelectTrigger className="w-[250px]">
-              <SelectValue placeholder="Select project type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Projects</SelectItem>
-              {projectTypes.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <div className="w-[200px] space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Radius</span>
@@ -117,7 +100,10 @@ export default function PublicOpportunitiesPage() {
       </Card>
 
       {/* Project Types Legend */}
-      <ProjectTypesLegend />
+      <ProjectTypesLegend 
+        selectedType={selectedType}
+        onTypeChange={setSelectedType}
+      />
 
       {/* Content */}
       {viewMode === "map" ? (
