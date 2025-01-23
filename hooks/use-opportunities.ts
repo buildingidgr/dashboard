@@ -3,7 +3,7 @@ import { useSession, useUser } from "@clerk/nextjs"
 import { exchangeClerkToken, getAccessToken } from "@/lib/services/auth"
 import { toast } from "sonner"
 
-interface Opportunity {
+export interface Opportunity {
   _id: string
   type: string
   data: {

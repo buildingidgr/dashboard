@@ -13,20 +13,27 @@ import {
 } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
 import { format } from "date-fns"
-import { MapLegend } from './map-legend'
 import { defaultCenter } from '@/constants/map-styles'
 import { OpportunityLocationMap } from './opportunity-location-map'
 import { useLoadScript } from '@react-google-maps/api'
 import { useOpportunities } from '@/hooks/use-opportunities'
 import { useState } from 'react'
 import { GOOGLE_MAPS_LIBRARIES } from '@/lib/google-maps'
+import { useProfessionalInfo } from "@/hooks/use-professional-info"
 
 interface GreeceOpportunitiesMapProps {
   isDarkMode: boolean
   projectTypeFilter?: string
+  searchQuery?: string
+  searchRadius?: number
 }
 
-export function GreeceOpportunitiesMap({ isDarkMode, projectTypeFilter = "all" }: GreeceOpportunitiesMapProps) {
+export function GreeceOpportunitiesMap({ 
+  isDarkMode, 
+  projectTypeFilter = "all",
+  searchQuery = "",
+  searchRadius
+}: GreeceOpportunitiesMapProps) {
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries: GOOGLE_MAPS_LIBRARIES,
@@ -37,12 +44,51 @@ export function GreeceOpportunitiesMap({ isDarkMode, projectTypeFilter = "all" }
     limit: 50
   })
 
+  const { professionalInfo } = useProfessionalInfo()
   const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
-  const filteredProjects = projectTypeFilter === "all" 
-    ? projects 
-    : projects.filter(p => p.data.projectType === projectTypeFilter)
+  const calculateDistance = (
+    point1: { lat: number; lng: number },
+    point2: { lat: number; lng: number }
+  ): number | null => {
+    if (!window.google?.maps?.geometry?.spherical) {
+      return null
+    }
+
+    try {
+      return window.google.maps.geometry.spherical.computeDistanceBetween(
+        new window.google.maps.LatLng(point1),
+        new window.google.maps.LatLng(point2)
+      )
+    } catch (error) {
+      console.error('Error calculating distance:', error)
+      return null
+    }
+  }
+
+  const filteredProjects = projects
+    .filter(project => {
+      const matchesType = projectTypeFilter === "all" || project.data.projectType === projectTypeFilter
+      const matchesSearch = !searchQuery || 
+        project.data.project.category.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.data.project.location.address.toLowerCase().includes(searchQuery.toLowerCase())
+      
+      if (!matchesType || !matchesSearch) return false
+
+      if (searchRadius && professionalInfo?.areaOfOperation?.coordinates) {
+        const distance = calculateDistance(
+          {
+            lat: professionalInfo.areaOfOperation.coordinates.latitude,
+            lng: professionalInfo.areaOfOperation.coordinates.longitude
+          },
+          project.data.project.location.coordinates
+        )
+        return distance !== null ? distance <= searchRadius * 1000 : true // Convert km to meters
+      }
+
+      return true
+    })
 
   const mapPoints = filteredProjects.map(project => ({
     id: project.data.id,
@@ -54,7 +100,28 @@ export function GreeceOpportunitiesMap({ isDarkMode, projectTypeFilter = "all" }
     address: project.data.project.location.address
   }))
 
+  // Add professional's location to the map points if available
+  const allMapPoints = professionalInfo?.areaOfOperation?.coordinates
+    ? [
+        ...mapPoints,
+        {
+          id: 'professional-location',
+          coordinates: {
+            lat: professionalInfo.areaOfOperation.coordinates.latitude,
+            lng: professionalInfo.areaOfOperation.coordinates.longitude
+          },
+          category: {
+            title: 'Your Location',
+            description: professionalInfo.areaOfOperation.address
+          },
+          address: professionalInfo.areaOfOperation.address,
+          isUserLocation: true
+        }
+      ]
+    : mapPoints
+
   const handleMarkerClick = (pointId: string) => {
+    if (pointId === 'professional-location') return
     const project = filteredProjects.find(p => p.data.id === pointId)
     if (project) {
       setSelectedProject(project)
@@ -67,14 +134,20 @@ export function GreeceOpportunitiesMap({ isDarkMode, projectTypeFilter = "all" }
       {isLoaded ? (
         <>
           <OpportunityLocationMap
-            coordinates={defaultCenter}
+            coordinates={professionalInfo?.areaOfOperation?.coordinates 
+              ? {
+                  lat: professionalInfo.areaOfOperation.coordinates.latitude,
+                  lng: professionalInfo.areaOfOperation.coordinates.longitude
+                }
+              : defaultCenter}
             center={defaultCenter}
             zoom={6}
-            points={mapPoints}
+            points={allMapPoints}
             isDarkMode={isDarkMode}
             onMarkerClick={handleMarkerClick}
+            showRadius={searchRadius !== undefined}
+            radiusInKm={searchRadius}
           />
-          <MapLegend />
 
           <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
             <DrawerContent>
