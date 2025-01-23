@@ -13,6 +13,10 @@ import { Slider } from "@/components/ui/slider"
 import { ProjectTypesLegend } from "@/components/opportunities/project-types-legend"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
+import { MechBadge } from "@/components/ui/mech-badge"
+import { Clock, ArrowRight } from "lucide-react"
+import { format } from "date-fns"
+import { categoryColors, simplifiedLabels } from "@/constants/map-categories"
 
 const projectTypes = [
   "Αρχιτεκτονικός Σχεδιασμός",
@@ -118,32 +122,53 @@ export default function PublicOpportunitiesPage() {
           </GoogleMapsProvider>
         </div>
       ) : (
-        <Card className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects
-              .filter((p: Opportunity) => 
-                (selectedType === "all" || p.data.projectType === selectedType) &&
-                (searchQuery === "" || 
-                  p.data.project.category.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  p.data.project.location.address.toLowerCase().includes(searchQuery.toLowerCase())
-                )
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {projects
+            .filter((p: Opportunity) => 
+              (selectedType === "all" || p.data.projectType === selectedType) &&
+              (searchQuery === "" || 
+                p.data.project.category.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                p.data.project.location.address.toLowerCase().includes(searchQuery.toLowerCase())
               )
-              .map((project: Opportunity) => (
-                <Card key={project.data.id} className="p-4 space-y-3">
-                  <h3 className="font-medium">{project.data.project.category.title}</h3>
+            )
+            .map((project: Opportunity) => (
+              <Card 
+                key={project.data.id} 
+                className="flex flex-col"
+              >
+                <div className="p-6 flex-1 space-y-4">
+                  {/* Header */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <MechBadge dotColor={categoryColors[project.data.projectType]}>
+                        {simplifiedLabels[project.data.projectType]}
+                      </MechBadge>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        {format(new Date(project.data.metadata.submittedAt), 'PP')}
+                      </div>
+                    </div>
+                    <h3 className="font-semibold">{project.data.project.category.title}</h3>
+                  </div>
+
+                  {/* Description */}
                   <p className="text-sm text-muted-foreground line-clamp-2">
                     {project.data.project.details.description}
                   </p>
-                  <div className="text-sm text-muted-foreground">
-                    {project.data.project.location.address}
-                  </div>
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link href={`/opportunities/${project._id}`}>View Details</Link>
-                  </Button>
-                </Card>
-              ))}
-          </div>
-        </Card>
+                </div>
+
+                {/* Footer */}
+                <div className="p-6 pt-0">
+                  <Link href={`/opportunities/${project._id}`} className="w-full">
+                    <Button className="w-full gap-2" variant="outline">
+                      View Details
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </Card>
+            ))}
+        </div>
       )}
     </div>
   )
