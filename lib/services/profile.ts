@@ -1,7 +1,5 @@
 import { getAccessToken } from './auth'
 
-const PROFILE_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://profile-service-production.up.railway.app'
-
 export interface Profile {
   _id: string
   clerkId: string
@@ -88,7 +86,7 @@ export async function getMyProfile(): Promise<Profile> {
     throw new Error('No access token available')
   }
 
-  const response = await fetch(`${PROFILE_API_URL}/api/profiles/me`, {
+  const response = await fetchWithRetry('/api/profile', {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
@@ -113,25 +111,26 @@ interface UpdateProfileData {
 }
 
 export async function updateProfile(data: UpdateProfileData): Promise<Profile> {
-  try {
-    const response = await fetch(`${PROFILE_API_URL}/api/profiles/me`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  } catch (error: unknown) {
-    console.error('Error updating profile:', error);
-    throw error;
+  const token = getAccessToken()
+  if (!token) {
+    throw new Error('No access token available')
   }
+
+  const response = await fetchWithRetry('/api/profile', {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null)
+    throw new Error(errorData?.message || 'Failed to update profile')
+  }
+
+  return response.json()
 }
 
 export async function getMyPreferences(): Promise<ProfilePreferences> {
@@ -140,7 +139,7 @@ export async function getMyPreferences(): Promise<ProfilePreferences> {
     throw new Error('No access token available')
   }
 
-  const response = await fetch(`${PROFILE_API_URL}/api/profiles/me/preferences`, {
+  const response = await fetchWithRetry('/api/profile/preferences', {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
@@ -161,7 +160,7 @@ export async function updatePreferences(data: Partial<ProfilePreferences>): Prom
     throw new Error('No access token available')
   }
 
-  const response = await fetch(`${PROFILE_API_URL}/api/profiles/me/preferences`, {
+  const response = await fetchWithRetry('/api/profile/preferences', {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -185,16 +184,13 @@ export async function getMyProfessionalInfo(): Promise<ProfessionalInformation> 
     throw new Error('No access token available')
   }
 
-  const url = `${PROFILE_API_URL}/api/profiles/me/professional`;
-  const options = {
+  const response = await fetchWithRetry('/api/profile/professional', {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Accept': 'application/json',
       'Content-Type': 'application/json'
     }
-  };
-
-  const response = await fetchWithRetry(url, options);
+  })
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null)
@@ -217,8 +213,7 @@ export async function updateProfessionalInfo(data: Partial<ProfessionalInformati
     throw new Error('No access token available')
   }
 
-  const url = `${PROFILE_API_URL}/api/profiles/me/professional`;
-  const options = {
+  const response = await fetchWithRetry('/api/profile/professional', {
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -226,9 +221,7 @@ export async function updateProfessionalInfo(data: Partial<ProfessionalInformati
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(data)
-  };
-
-  const response = await fetchWithRetry(url, options);
+  })
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null)
