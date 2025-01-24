@@ -150,7 +150,9 @@ export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpp
                 <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                   <Clock className="h-4 w-4" />
                   <span className="text-sm">
-                    {format(new Date(project.data.metadata.submittedAt), 'PP')}
+                    {project.data.metadata?.submittedAt 
+                      ? format(new Date(project.data.metadata.submittedAt), 'PP')
+                      : 'No date available'}
                   </span>
                 </div>
               </div>

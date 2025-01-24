@@ -29,6 +29,15 @@ import {
 import { MechBadge } from "@/components/ui/mech-badge"
 import { categoryColors, simplifiedLabels } from "@/constants/map-categories"
 
+interface PhoneObject {
+  countryCode: string
+  number: string
+}
+
+function isPhoneObject(phone: string | PhoneObject): phone is PhoneObject {
+  return typeof phone === 'object' && 'number' in phone
+}
+
 interface OpportunityDetails {
   _id: string
   type: string
@@ -50,10 +59,8 @@ interface OpportunityDetails {
     contact: {
       fullName: string
       email: string
-      phone: {
-        countryCode: string
-        number: string
-      }
+      phone: string
+      countryCode?: string
     }
     metadata?: {
       submittedAt: string
@@ -403,7 +410,7 @@ export default function OpportunityDetailsPage() {
                       phones: [
                         {
                           type: 'mobile',
-                          number: opportunity.data.contact.phone.number,
+                          number: opportunity.data.contact.phone,
                           primary: true
                         }
                       ],
@@ -449,15 +456,15 @@ export default function OpportunityDetailsPage() {
                     <Phone className="size-4" />
                     <div className="flex flex-wrap items-center gap-2">
                       <a 
-                        href={`tel:${opportunity.data.contact.phone.number}`} 
+                        href={`tel:${opportunity.data.contact.phone}`} 
                         className="font-medium text-blue-600 hover:underline dark:text-blue-400"
                       >
-                        {opportunity.data.contact.phone.number}
+                        {opportunity.data.contact.phone}
                       </a>
                       <div className="flex gap-2">
-                        {opportunity.data.contact.phone.countryCode && (
+                        {opportunity.data.contact.countryCode && (
                           <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs dark:bg-gray-700">
-                            {opportunity.data.contact.phone.countryCode}
+                            {opportunity.data.contact.countryCode}
                           </span>
                         )}
                         <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
