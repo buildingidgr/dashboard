@@ -59,9 +59,10 @@ export default function PublicOpportunitiesPage() {
         </Card>
         <Card className="p-4">
           <h3 className="text-sm font-medium text-muted-foreground">New This Week</h3>
-          <p className="text-2xl font-bold">{projects.filter((p: Opportunity) => 
-            new Date(p.data.metadata.submittedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-          ).length}</p>
+          <p className="text-2xl font-bold">{projects.filter((p: Opportunity) => {
+            const submittedAt = p.metadata?.submittedAt || p.data.metadata?.submittedAt
+            return submittedAt && new Date(submittedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+          }).length}</p>
         </Card>
         <Card className="p-4">
           <h3 className="text-sm font-medium text-muted-foreground">Active Areas</h3>
@@ -125,34 +126,34 @@ export default function PublicOpportunitiesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects
             .filter((p: Opportunity) => 
-              (selectedType === "all" || p.data.projectType === selectedType) &&
+              (selectedType === "all" || p.data.project.category === selectedType) &&
               (searchQuery === "" || 
-                p.data.project.category.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                p.data.project.details.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 p.data.project.location.address.toLowerCase().includes(searchQuery.toLowerCase())
               )
             )
             .map((project: Opportunity) => (
               <Card 
-                key={project.data.id} 
+                key={project._id} 
                 className="flex flex-col"
               >
                 <div className="p-6 flex-1 space-y-4">
                   {/* Header */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <MechBadge dotColor={categoryColors[project.data.projectType]}>
-                        {simplifiedLabels[project.data.projectType]}
+                      <MechBadge dotColor={categoryColors[project.data.project.category]}>
+                        {simplifiedLabels[project.data.project.category]}
                       </MechBadge>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
-                        {format(new Date(project.data.metadata.submittedAt), 'PP')}
+                        {format(new Date(project.metadata?.submittedAt || project.data.metadata?.submittedAt || new Date()), 'PP')}
                       </div>
                     </div>
-                    <h3 className="font-semibold">{project.data.project.category.title}</h3>
+                    <h3 className="font-semibold">{project.data.project.details.title}</h3>
                   </div>
 
                   {/* Description */}
-                  <p className="text-sm text-muted-foreground line-clamp-2">
+                  <p className="text-sm text-muted-foreground line-clamp-3">
                     {project.data.project.details.description}
                   </p>
                 </div>

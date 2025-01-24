@@ -63,9 +63,9 @@ export function GreeceOpportunitiesMap({
 
   const filteredProjects = projects
     .filter(project => {
-      const matchesType = projectTypeFilter === "all" || project.data.projectType === projectTypeFilter
+      const matchesType = projectTypeFilter === "all" || project.data.project.category === projectTypeFilter
       const matchesSearch = !searchQuery || 
-        project.data.project.category.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.data.project.details.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         project.data.project.location.address.toLowerCase().includes(searchQuery.toLowerCase())
       
       if (!matchesType || !matchesSearch) return false
@@ -85,11 +85,11 @@ export function GreeceOpportunitiesMap({
     })
 
   const mapPoints = filteredProjects.map(project => ({
-    id: project.data.id,
+    id: project._id,
     coordinates: project.data.project.location.coordinates,
     category: {
-      title: project.data.projectType,
-      description: project.data.project.category.description
+      title: project.data.project.category,
+      description: project.data.project.details.description
     },
     address: project.data.project.location.address
   }))
@@ -116,7 +116,7 @@ export function GreeceOpportunitiesMap({
 
   const handleMarkerClick = (pointId: string) => {
     if (pointId === 'professional-location') return
-    const project = filteredProjects.find(p => p.data.id === pointId)
+    const project = projects.find(p => p._id === pointId)
     if (project) {
       setSelectedProject(project)
       setIsDrawerOpen(true)
@@ -146,43 +146,33 @@ export function GreeceOpportunitiesMap({
           {selectedProject && (
             <MechDialog
               open={isDrawerOpen}
-              onOpenChange={setIsDrawerOpen}
-              title={selectedProject.data.project.category.title}
-              description={
-                <div className="text-sm text-muted-foreground line-clamp-2">
-                  {selectedProject.data.project.details.description}
-                </div>
-              }
+              onOpenChange={(open) => {
+                setIsDrawerOpen(open)
+                if (!open) {
+                  setSelectedProject(null)
+                }
+              }}
+              title={selectedProject.data.project.details.title}
               footer={
-                <>
-                  <Link href={`/opportunities/${selectedProject._id}`}>
-                    <Button className="gap-2">
-                      View Details
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                </>
+                <Link href={`/opportunities/${selectedProject._id}`} className="w-full">
+                  <Button className="w-full gap-2">
+                    View Details
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
               }
             >
               <div className="space-y-4">
-                {/* Project Type */}
-                <MechBadge
-                  dotColor={categoryColors[selectedProject.data.projectType]}
-                >
-                  {selectedProject.data.projectType}
-                </MechBadge>
+                <div className="space-y-2">
+                  <MechBadge dotColor={categoryColors[selectedProject.data.project.category]}>
+                    {selectedProject.data.project.category}
+                  </MechBadge>
+                </div>
 
-                {/* Posted Date */}
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-secondary rounded-md">
-                    <Clock className="h-4 w-4 text-foreground" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium text-sm">Posted</p>
-                    <p className="text-sm text-muted-foreground">
-                      {format(new Date(selectedProject.data.metadata.submittedAt), 'PPp')}
-                    </p>
-                  </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground line-clamp-3">
+                    {selectedProject.data.project.details.description}
+                  </p>
                 </div>
               </div>
             </MechDialog>

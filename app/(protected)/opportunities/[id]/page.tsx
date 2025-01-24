@@ -33,13 +33,8 @@ interface OpportunityDetails {
   _id: string
   type: string
   data: {
-    id: string
-    projectType: string
     project: {
-      category: {
-        title: string
-        description: string
-      }
+      category: string
       location: {
         address: string
         coordinates: {
@@ -48,39 +43,32 @@ interface OpportunityDetails {
         }
       }
       details: {
+        title: string
         description: string
       }
     }
     contact: {
-      firstName: string
-      lastName: string
+      fullName: string
       email: string
-      phones: Array<{
-        type: string
+      phone: {
+        countryCode: string
         number: string
-        primary: boolean
-      }>
-      address: {
-        city: string
-        unit?: string
-        state: string
-        street: string
-        country: string
-        postalCode: string
-      }
-      company: {
-        name: string
-        title: string
       }
     }
-    metadata: {
+    metadata?: {
       submittedAt: string
-      locale: string
       source: string
-      version: string
+      environment: string
+      messageId: string
     }
   }
   status: string
+  metadata?: {
+    submittedAt: string
+    source: string
+    environment: string
+    messageId: string
+  }
   lastStatusChange: {
     from: string
     to: string
@@ -191,8 +179,8 @@ export default function OpportunityDetailsPage() {
 
   useEffect(() => {
     if (opportunity) {
-      setTitle(opportunity.data.project.category.title)
-      setDescription(opportunity.data.project.category.description)
+      setTitle(opportunity.data.project.details.title)
+      setDescription(opportunity.data.project.details.description)
     }
   }, [opportunity, setTitle, setDescription])
 
@@ -352,11 +340,8 @@ export default function OpportunityDetailsPage() {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-            {opportunity.data.project.category.title}
+            {opportunity.data.project.details.title}
           </h1>
-          <p className="text-base text-gray-600 dark:text-gray-300">
-            {opportunity.data.project.category.description}
-          </p>
         </div>
         <div className="flex gap-2">
           <Button 
@@ -378,8 +363,8 @@ export default function OpportunityDetailsPage() {
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
-                <MechBadge dotColor={categoryColors[opportunity.data.projectType]}>
-                  {simplifiedLabels[opportunity.data.projectType]}
+                <MechBadge dotColor={categoryColors[opportunity.type]}>
+                  {simplifiedLabels[opportunity.type]}
                 </MechBadge>
               </div>
               <div className="mt-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800/50">
@@ -391,7 +376,7 @@ export default function OpportunityDetailsPage() {
               <div className="flex items-center gap-2 border-t border-gray-100 pt-4 text-gray-500 dark:border-gray-700 dark:text-gray-400">
                 <Clock className="size-4" />
                 <span className="text-sm">
-                  Posted {format(new Date(opportunity.data.metadata.submittedAt), 'PPp')}
+                  Posted {format(new Date(opportunity.metadata?.submittedAt || opportunity.data.metadata?.submittedAt || new Date()), 'PPp')}
                 </span>
               </div>
             </div>
@@ -412,12 +397,28 @@ export default function OpportunityDetailsPage() {
                   size="sm"
                   onClick={() => {
                     const contactData = {
-                      firstName: opportunity.data.contact.firstName,
-                      lastName: opportunity.data.contact.lastName,
+                      firstName: opportunity.data.contact.fullName.split(' ')[0],
+                      lastName: opportunity.data.contact.fullName.split(' ')[1],
                       email: opportunity.data.contact.email,
-                      phones: opportunity.data.contact.phones,
-                      address: opportunity.data.contact.address,
-                      company: opportunity.data.contact.company,
+                      phones: [
+                        {
+                          type: 'mobile',
+                          number: opportunity.data.contact.phone.number,
+                          primary: true
+                        }
+                      ],
+                      address: {
+                        city: opportunity.data.project.location.address.split(', ')[0],
+                        unit: opportunity.data.project.location.address.split(', ')[1],
+                        state: opportunity.data.project.location.address.split(', ')[2],
+                        street: opportunity.data.project.location.address.split(', ')[3],
+                        country: opportunity.data.project.location.address.split(', ')[4],
+                        postalCode: opportunity.data.project.location.address.split(', ')[5]
+                      },
+                      company: {
+                        name: opportunity.data.project.details.title,
+                        title: opportunity.data.project.details.title
+                      },
                       opportunityIds: [opportunity._id]
                     }
                     const encodedData = encodeURIComponent(JSON.stringify(contactData))
@@ -431,47 +432,40 @@ export default function OpportunityDetailsPage() {
               <div className="pl-12 space-y-6">
                 <div className="space-y-1">
                   <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    {opportunity.data.contact.firstName} {opportunity.data.contact.lastName}
+                    {opportunity.data.contact.fullName}
                   </p>
-                  {opportunity.data.contact.company && (
+                  {opportunity.data.project.details.title && (
                     <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
                       <Building2 className="size-4" />
                       <div>
-                        <p className="font-medium">{opportunity.data.contact.company.name}</p>
-                        {opportunity.data.contact.company.title && (
-                          <p className="text-sm text-gray-500">{opportunity.data.contact.company.title}</p>
-                        )}
+                        <p className="font-medium">{opportunity.data.project.details.title}</p>
                       </div>
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-3">
-                  {opportunity.data.contact.phones.map((phone, index) => (
-                    <div key={index} className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                      <Phone className="size-4" />
-                      <div className="flex flex-wrap items-center gap-2">
-                        <a 
-                          href={`tel:${phone.number}`} 
-                          className="font-medium text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {phone.number}
-                        </a>
-                        <div className="flex gap-2">
-                          {phone.type && (
-                            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs dark:bg-gray-700">
-                              {phone.type}
-                            </span>
-                          )}
-                          {phone.primary && (
-                            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                              Primary
-                            </span>
-                          )}
-                        </div>
+                  <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                    <Phone className="size-4" />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a 
+                        href={`tel:${opportunity.data.contact.phone.number}`} 
+                        className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {opportunity.data.contact.phone.number}
+                      </a>
+                      <div className="flex gap-2">
+                        {opportunity.data.contact.phone.countryCode && (
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs dark:bg-gray-700">
+                            {opportunity.data.contact.phone.countryCode}
+                          </span>
+                        )}
+                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                          Primary
+                        </span>
                       </div>
                     </div>
-                  ))}
+                  </div>
                   {opportunity.data.contact.email && (
                     <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
                       <Mail className="size-4" />
@@ -483,18 +477,11 @@ export default function OpportunityDetailsPage() {
                       </a>
                     </div>
                   )}
-                  {opportunity.data.contact.address && (
+                  {opportunity.data.project.location.address && (
                     <div className="flex items-start gap-3 text-gray-600 dark:text-gray-300">
                       <MapPin className="size-4" />
                       <div className="space-y-0.5">
-                        <p>{opportunity.data.contact.address.street}</p>
-                        {opportunity.data.contact.address.unit && (
-                          <p>Unit {opportunity.data.contact.address.unit}</p>
-                        )}
-                        <p>
-                          {opportunity.data.contact.address.city}, {opportunity.data.contact.address.state} {opportunity.data.contact.address.postalCode}
-                        </p>
-                        <p>{opportunity.data.contact.address.country}</p>
+                        <p>{opportunity.data.project.location.address}</p>
                       </div>
                     </div>
                   )}
@@ -581,7 +568,7 @@ export default function OpportunityDetailsPage() {
                       <Calendar className="size-4" />
                     </div>
                     <span className="text-sm">
-                      Created {format(new Date(opportunity.data.metadata.submittedAt), 'PP')}
+                      Created {format(new Date(opportunity.metadata?.submittedAt || opportunity.data.metadata?.submittedAt || new Date()), 'PP')}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">

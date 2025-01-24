@@ -7,13 +7,8 @@ export interface Opportunity {
   _id: string
   type: string
   data: {
-    id: string
-    projectType: string
     project: {
-      category: {
-        title: string
-        description: string
-      }
+      category: string
       location: {
         address: string
         coordinates: {
@@ -22,39 +17,32 @@ export interface Opportunity {
         }
       }
       details: {
+        title: string
         description: string
       }
     }
     contact: {
-      firstName: string
-      lastName: string
+      fullName: string
       email: string
-      phones: Array<{
-        type: string
+      phone: {
+        countryCode: string
         number: string
-        primary: boolean
-      }>
-      address: {
-        city: string
-        unit?: string
-        state: string
-        street: string
-        country: string
-        postalCode: string
-      }
-      company: {
-        name: string
-        title: string
       }
     }
-    metadata: {
+    metadata?: {
       submittedAt: string
-      locale: string
       source: string
-      version: string
+      environment: string
+      messageId: string
     }
   }
   status: string
+  metadata?: {
+    submittedAt: string
+    source: string
+    environment: string
+    messageId: string
+  }
   lastStatusChange: {
     from: string
     to: string
