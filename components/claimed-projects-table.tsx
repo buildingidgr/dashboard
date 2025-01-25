@@ -1,7 +1,7 @@
 "use client"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Clock, ArrowUpRight, Search, MapPin, Filter } from "lucide-react"
+import { Clock, ArrowUpRight, Search, MapPin, Filter, FolderPlus } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "@/components/ui/use-toast"
 import { getAccessToken } from "@/lib/services/auth"
@@ -102,6 +103,7 @@ interface ClaimedOpportunitiesProps {
 }
 
 export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpportunitiesProps) {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [unclaimingId, setUnclaimingId] = useState<string | null>(null)
@@ -248,7 +250,8 @@ export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpp
               <TableHead>Location</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Category</TableHead>
-              <TableHead>Last Updated</TableHead>
+              <TableHead>Last Update</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -261,70 +264,83 @@ export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpp
               </TableRow>
             ) : (
               filteredProjects.map((project) => (
-                <TableRow key={project._id} className="group">
+                <TableRow key={project._id}>
                   <TableCell className="font-medium">
-                    {project.data.project.details.title}
+                    <Link 
+                      href={`/opportunities/${project._id}`}
+                      className="hover:text-blue-600 dark:hover:text-blue-400"
+                    >
+                      {project.data.project.details.title}
+                    </Link>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-gray-500" />
-                      {project.data.project.location.address.split(', ').slice(0, 2).join(', ')}
+                      <span>{project.data.project.location.address.split(', ').slice(0, 2).join(', ')}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
-                      <div className="text-sm font-medium">
-                        {project.data.contact.fullName}
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <a 
-                          href={`mailto:${project.data.contact.email}`}
-                          className="hover:text-blue-600"
-                        >
-                          {project.data.contact.email}
-                        </a>
-                        {project.data.contact.phone && (
-                          <a 
-                            href={`tel:${project.data.contact.phone}`}
-                            className="hover:text-blue-600"
-                          >
-                            {project.data.contact.phone}
-                          </a>
-                        )}
-                      </div>
+                      <p className="font-medium">{project.data.contact.fullName}</p>
+                      <p className="text-sm text-muted-foreground">{project.data.contact.email}</p>
                     </div>
                   </TableCell>
-                  <TableCell>{project.data.project.category}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2 text-gray-500">
+                    <Badge variant="secondary">
+                      {project.data.project.category}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
-                      <span className="text-sm">
-                        {project.lastChange?.changedAt 
-                          ? format(new Date(project.lastChange.changedAt), 'PP')
-                          : project.myChanges?.[project.myChanges.length - 1]?.changedAt
-                            ? format(new Date(project.myChanges[project.myChanges.length - 1].changedAt), 'PP')
-                            : 'No date available'
-                        }
-                      </span>
+                      {format(new Date(project.lastChange.changedAt), 'PP')}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={project.currentStatus === 'private' ? 'default' : 'secondary'}>
+                      {project.currentStatus === 'private' ? 'Claimed' : 'Available'}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/opportunities/${project._id}`}>
-                          View Details
-                          <ArrowUpRight className="ml-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/projects/new?opportunity=${project._id}`)}
+                        className="flex items-center gap-2"
+                      >
+                        <FolderPlus className="h-4 w-4" />
+                        <span className="hidden sm:inline">Promote to Project</span>
+                        <span className="sm:hidden">Promote</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                      >
+                        <Link href={`/opportunities/${project._id}`} className="flex items-center gap-2">
+                          <ArrowUpRight className="h-4 w-4" />
+                          <span className="hidden sm:inline">View Details</span>
+                          <span className="sm:hidden">View</span>
                         </Link>
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => setUnclaimingId(project._id)}
-                        disabled={isUnclaiming}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        {isUnclaiming && unclaimingId === project._id ? "Unclaiming..." : "Unclaim"}
-                      </Button>
+                      {project.currentStatus === 'private' && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setUnclaimingId(project._id)}
+                          disabled={isUnclaiming && unclaimingId === project._id}
+                        >
+                          {isUnclaiming && unclaimingId === project._id ? (
+                            "Unclaiming..."
+                          ) : (
+                            <>
+                              <span className="hidden sm:inline">Unclaim</span>
+                              <span className="sm:hidden">Remove</span>
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
