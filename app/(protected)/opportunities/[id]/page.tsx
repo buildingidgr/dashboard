@@ -351,45 +351,6 @@ export default function OpportunityDetailsPage() {
             Back to Opportunities
           </Link>
         </Button>
-        {opportunity.status === 'private' ? (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setIsUnclaimDialogOpen(true)}
-            disabled={isUnclaiming}
-            className="flex items-center gap-2"
-          >
-            {isUnclaiming ? (
-              <>
-                <Skeleton className="h-4 w-4" />
-                Unclaiming...
-              </>
-            ) : (
-              <>
-                <History className="h-4 w-4" />
-                Unclaim Opportunity
-              </>
-            )}
-          </Button>
-        ) : (
-          <Button
-            onClick={handleClaimOpportunity}
-            disabled={isClaiming}
-            className="flex items-center gap-2"
-          >
-            {isClaiming ? (
-              <>
-                <Skeleton className="h-4 w-4" />
-                Claiming...
-              </>
-            ) : (
-              <>
-                <ArrowRight className="h-4 w-4" />
-                Claim Opportunity
-              </>
-            )}
-          </Button>
-        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -411,9 +372,50 @@ export default function OpportunityDetailsPage() {
                   {opportunity.status === 'private' ? 'Claimed' : 'Available'}
                 </Badge>
               </div>
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                {opportunity.data.project.details.title}
-              </h1>
+              <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  {opportunity.data.project.details.title}
+                </h1>
+                {opportunity.status === 'private' ? (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setIsUnclaimDialogOpen(true)}
+                    disabled={isUnclaiming}
+                    className="flex items-center gap-2"
+                  >
+                    {isUnclaiming ? (
+                      <>
+                        <Skeleton className="h-4 w-4" />
+                        Unclaiming...
+                      </>
+                    ) : (
+                      <>
+                        <History className="h-4 w-4" />
+                        Unclaim Opportunity
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleClaimOpportunity}
+                    disabled={isClaiming}
+                    className="flex items-center gap-2"
+                  >
+                    {isClaiming ? (
+                      <>
+                        <Skeleton className="h-4 w-4" />
+                        Claiming...
+                      </>
+                    ) : (
+                      <>
+                        <ArrowRight className="h-4 w-4" />
+                        Claim Opportunity
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4" />
                 Posted {format(new Date(opportunity.metadata?.submittedAt || opportunity.data.metadata?.submittedAt || new Date()), 'PPp')}
@@ -435,22 +437,31 @@ export default function OpportunityDetailsPage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <h3 className="text-lg font-medium">Location</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {address}
-                  </p>
+                  {opportunity.status === 'public' ? (
+                    <p className="text-sm text-muted-foreground">
+                      Approximate location shown for privacy. Claim this opportunity to see the exact address.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">{address}</p>
+                  )}
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleShareLocation}
-                  className="flex items-center gap-2"
-                >
-                  <MapPin className="h-4 w-4" />
-                  Share Location
-                </Button>
+                {opportunity.status === 'private' && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleShareLocation}
+                    className="flex items-center gap-2"
+                  >
+                    <MapPin className="h-4 w-4" />
+                    Share Location
+                  </Button>
+                )}
               </div>
             </div>
-            <div className="h-[400px] w-full">
+            <div className="h-[400px] w-full relative">
+              {opportunity.status === 'public' && (
+                <div className="absolute inset-0 z-10 bg-gradient-to-t from-background/80 to-transparent" />
+              )}
               <GoogleMapsProvider>
                 <OpportunityLocationMap
                   coordinates={coordinates}
