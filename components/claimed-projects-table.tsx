@@ -1,7 +1,7 @@
 "use client"
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Clock, ArrowUpRight, Search, MapPin, Filter, FolderPlus } from "lucide-react"
+import { Clock, ArrowUpRight, Search, MapPin, Filter, FolderPlus, History, MoreVertical } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -30,6 +30,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface Opportunity {
   _id: string
@@ -246,19 +253,19 @@ export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpp
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Last Update</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-[25%]">Title</TableHead>
+              <TableHead className="w-[20%]">Location</TableHead>
+              <TableHead className="w-[15%]">Contact</TableHead>
+              <TableHead className="w-[10%]">Category</TableHead>
+              <TableHead className="w-[12%]">Last Update</TableHead>
+              <TableHead className="w-[8%]">Status</TableHead>
+              <TableHead className="w-[10%] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                   No opportunities found
                 </TableCell>
               </TableRow>
@@ -301,47 +308,53 @@ export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpp
                       {project.currentStatus === 'private' ? 'Claimed' : 'Available'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push(`/projects/new?opportunity=${project._id}`)}
-                        className="flex items-center gap-2"
-                      >
-                        <FolderPlus className="h-4 w-4" />
-                        <span className="hidden sm:inline">Promote to Project</span>
-                        <span className="sm:hidden">Promote</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        asChild
-                      >
-                        <Link href={`/opportunities/${project._id}`} className="flex items-center gap-2">
-                          <ArrowUpRight className="h-4 w-4" />
-                          <span className="hidden sm:inline">View Details</span>
-                          <span className="sm:hidden">View</span>
-                        </Link>
-                      </Button>
-                      {project.currentStatus === 'private' && (
+                  <TableCell className="w-[60px]">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
                         <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => setUnclaimingId(project._id)}
-                          disabled={isUnclaiming && unclaimingId === project._id}
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 p-0"
                         >
-                          {isUnclaiming && unclaimingId === project._id ? (
-                            "Unclaiming..."
-                          ) : (
-                            <>
-                              <span className="hidden sm:inline">Unclaim</span>
-                              <span className="sm:hidden">Remove</span>
-                            </>
-                          )}
+                          <MoreVertical className="h-4 w-4" />
+                          <span className="sr-only">Open menu</span>
                         </Button>
-                      )}
-                    </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => router.push(`/projects/new?opportunity=${project._id}`)}
+                          className="cursor-pointer"
+                        >
+                          <FolderPlus className="h-4 w-4 mr-2" />
+                          Promote to Project
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/opportunities/${project._id}`}>
+                            <ArrowUpRight className="h-4 w-4 mr-2" />
+                            View Details
+                          </Link>
+                        </DropdownMenuItem>
+                        {project.currentStatus === 'private' && (
+                          <DropdownMenuItem
+                            onClick={() => setUnclaimingId(project._id)}
+                            disabled={isUnclaiming && unclaimingId === project._id}
+                            className="text-red-600 dark:text-red-400"
+                          >
+                            {isUnclaiming && unclaimingId === project._id ? (
+                              <>
+                                <Skeleton className="h-4 w-4 mr-2" />
+                                Unclaiming...
+                              </>
+                            ) : (
+                              <>
+                                <History className="h-4 w-4 mr-2" />
+                                Unclaim Opportunity
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
