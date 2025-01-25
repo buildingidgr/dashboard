@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { MechBadge } from "@/components/ui/mech-badge"
 import { categoryColors, simplifiedLabels } from "@/constants/map-categories"
+import { GoogleMapsProvider } from "@/components/maps/google-maps-provider"
 
 interface PhoneObject {
   countryCode: string
@@ -88,6 +89,39 @@ interface OpportunityDetails {
     changedBy: string
     changedAt: string
   }>
+}
+
+function PageSkeleton() {
+  return (
+    <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content Skeleton */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-6 w-32" />
+            </div>
+            <Skeleton className="h-8 w-96" />
+            <Skeleton className="h-6 w-48" />
+          </div>
+
+          <Skeleton className="h-[400px] w-full rounded-lg" />
+
+          <div className="grid gap-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        </div>
+
+        {/* Sidebar Skeleton */}
+        <div className="space-y-6">
+          <Skeleton className="h-[200px] w-full rounded-lg" />
+          <Skeleton className="h-[150px] w-full rounded-lg" />
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function OpportunityDetailsPage() {
@@ -279,91 +313,45 @@ export default function OpportunityDetailsPage() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content Skeleton */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Skeleton className="h-6 w-24" />
-                <Skeleton className="h-6 w-32" />
-              </div>
-              <Skeleton className="h-8 w-96" />
-              <Skeleton className="h-6 w-48" />
-            </div>
-
-            <Skeleton className="h-[300px] w-full rounded-lg" />
-
-            <div className="grid gap-4">
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-            </div>
-          </div>
-
-          {/* Sidebar Skeleton */}
-          <div className="space-y-6">
-            <Skeleton className="h-[200px] w-full rounded-lg" />
-            <Skeleton className="h-[150px] w-full rounded-lg" />
-          </div>
-        </div>
-      </div>
-    )
+  if (isLoading || !opportunity) {
+    return <PageSkeleton />
   }
 
-  if (error || !opportunity) {
-    return (
-      <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
-        <Card className="flex flex-col items-center justify-center p-8 space-y-4">
-          <h1 className="text-2xl font-bold">Opportunity Not Found</h1>
-          <p className="text-muted-foreground">The requested opportunity could not be found.</p>
-          <Button variant="outline" asChild>
-            <Link href="/opportunities">
-              <ArrowLeft className="mr-2 size-4" />
-              Back to Opportunities
-            </Link>
-          </Button>
-        </Card>
-      </div>
-    )
-  }
+  const coordinates = opportunity.data.project.location.coordinates
+  const address = opportunity.data.project.location.address
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return 'bg-green-500/10 text-green-500 border-green-500/20'
-      case 'pending':
-        return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-      case 'closed':
-        return 'bg-red-500/10 text-red-500 border-red-500/20'
-      default:
-        return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+  const handleShareLocation = () => {
+    // Create a Google Maps URL with the location
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${coordinates.lat},${coordinates.lng}`
+    
+    // Try to use the Web Share API if available
+    if (navigator.share) {
+      navigator.share({
+        title: opportunity.data.project.details.title,
+        text: `Location: ${address}`,
+        url: mapsUrl
+      }).catch(error => {
+        console.log('Error sharing:', error)
+        // Fallback to opening in new tab
+        window.open(mapsUrl, '_blank')
+      })
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      window.open(mapsUrl, '_blank')
     }
   }
 
   return (
     <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-            {opportunity.data.project.details.title}
-          </h1>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => router.back()} 
-            className="bg-white/50 border-gray-200 px-3 h-8 backdrop-blur-sm dark:bg-gray-900/50 dark:border-gray-800"
-          >
-            <ArrowLeft className="size-4" />
-            Back to Opportunities
-          </Button>
-        </div>
-      </div>
+      {/* Back button */}
+      <Button variant="ghost" size="sm" asChild>
+        <Link href="/opportunities" className="flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Opportunities
+        </Link>
+      </Button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-6">
           {/* Header Section */}
@@ -386,6 +374,36 @@ export default function OpportunityDetailsPage() {
                   Posted {format(new Date(opportunity.metadata?.submittedAt || opportunity.data.metadata?.submittedAt || new Date()), 'PPp')}
                 </span>
               </div>
+            </div>
+          </div>
+
+          {/* Map Section */}
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">Location</h3>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleShareLocation}
+                  className="flex items-center gap-2"
+                >
+                  <MapPin className="h-4 w-4" />
+                  Share Location
+                </Button>
+              </div>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {address}
+              </p>
+            </div>
+            <div className="h-[400px] w-full rounded-b-xl overflow-hidden">
+              <GoogleMapsProvider>
+                <OpportunityLocationMap
+                  coordinates={coordinates}
+                  zoom={16}
+                  isDarkMode={false}
+                />
+              </GoogleMapsProvider>
             </div>
           </div>
 

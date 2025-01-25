@@ -14,9 +14,16 @@ import { ProjectTypesLegend } from "@/components/opportunities/project-types-leg
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { MechBadge } from "@/components/ui/mech-badge"
-import { Clock, ArrowRight } from "lucide-react"
+import { Clock, ArrowRight, Search, MapPin, Filter } from "lucide-react"
 import { format } from "date-fns"
 import { categoryColors, simplifiedLabels } from "@/constants/map-categories"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const projectTypes = [
   "Αρχιτεκτονικός Σχεδιασμός",
@@ -35,7 +42,7 @@ export default function PublicOpportunitiesPage() {
   const [selectedType, setSelectedType] = useState<string>("all")
   const [viewMode, setViewMode] = useState<"map" | "list">("map")
   const [searchQuery, setSearchQuery] = useState("")
-  const [radiusKm, setRadiusKm] = useState<number>(10)
+  const [radiusKm, setRadiusKm] = useState<number>(30)
 
   const { projects } = useOpportunities({
     page: 1,
@@ -71,44 +78,103 @@ export default function PublicOpportunitiesPage() {
       </div>
 
       {/* Filters and View Toggle */}
-      <Card className="space-y-4 border-none">
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-          <div className="flex-1 w-full md:w-auto">
-            <Input
-              placeholder="Search opportunities..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
+      <Card className="p-6">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              Filters
+            </h3>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                setSearchQuery("")
+                setSelectedType("all")
+                setRadiusKm(30)
+              }}
+            >
+              Reset Filters
+            </Button>
           </div>
-          <div className="w-[200px] space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Radius</span>
-              <span className="text-sm font-medium">{radiusKm} km</span>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Search */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Search</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+                <Input
+                  placeholder="Search by title or location..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 w-full"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Search in project titles and locations
+              </p>
             </div>
-            <Slider
-              value={[radiusKm]}
-              onValueChange={(value) => setRadiusKm(value[0])}
-              min={1}
-              max={100}
-              step={1}
-              className="w-full"
-            />
+
+            {/* Project Type */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Project Type</label>
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select project type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {projectTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {simplifiedLabels[type] || type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Filter by specific project category
+              </p>
+            </div>
+
+            {/* Search Radius */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Search Radius</label>
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-gray-500" />
+                <Slider
+                  value={[radiusKm]}
+                  onValueChange={(value) => setRadiusKm(value[0])}
+                  min={1}
+                  max={100}
+                  step={1}
+                  className="flex-1"
+                />
+                <span className="text-sm font-medium min-w-[4rem] text-right">
+                  {radiusKm} km
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Show opportunities within this distance
+              </p>
+            </div>
+
+            {/* View Mode */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">View Mode</label>
+              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "map" | "list")} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="map">Map View</TabsTrigger>
+                  <TabsTrigger value="list">List View</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <p className="text-xs text-muted-foreground">
+                Switch between map and list view
+              </p>
+            </div>
           </div>
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "map" | "list")} className="w-[200px]">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="map">Map View</TabsTrigger>
-              <TabsTrigger value="list">List View</TabsTrigger>
-            </TabsList>
-          </Tabs>
         </div>
       </Card>
-
-      {/* Project Types Legend */}
-      <ProjectTypesLegend 
-        selectedType={selectedType}
-        onTypeChange={setSelectedType}
-      />
 
       {/* Content */}
       {viewMode === "map" ? (

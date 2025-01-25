@@ -16,20 +16,20 @@ import { Badge } from "@/components/ui/badge"
 interface Project {
   _id: string
   type: string
-  currentStatus: string
   data: {
     project: {
-      category: {
-        title: string
-        description: string
-      }
+      category: string
       location: {
-        address: {
+        address: string
+        lat: number
+        lng: number
+        parsedAddress: {
+          streetNumber: string
           street: string
-          unit: string
           city: string
-          state: string
+          area: string
           country: string
+          countryCode: string
           postalCode: string
         }
         coordinates: {
@@ -38,39 +38,31 @@ interface Project {
         }
       }
       details: {
+        title: string
         description: string
       }
     }
     contact: {
-      firstName: string
-      lastName: string
+      fullName: string
       email: string
-      phones: Array<{
-        type: string
-        number: string
-        primary: boolean
-      }>
-    }
-    metadata: {
-      submittedAt: string
-      locale: string
-      source: string
-      version: string
+      phone: string
+      countryCode: string
     }
   }
-  lastChange: {
-    changedAt: string
-    changedBy: string
-    from: string
-    to: string
-  }
+  currentStatus: string
   myChanges: Array<{
-    changedAt: string
     from: string
     to: string
+    changedAt: string
   }>
-  myChangesCount: number
   totalChanges: number
+  myChangesCount: number
+  lastChange: {
+    from: string
+    to: string
+    changedBy: string
+    changedAt: string
+  }
 }
 
 function PageSkeleton() {
@@ -113,7 +105,6 @@ function PageSkeleton() {
 export default function ClaimedProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
   const { session } = useSession()
   const { user } = useUser()
   const { setTitle, setDescription } = usePageTitle()
@@ -191,71 +182,55 @@ export default function ClaimedProjectsPage() {
 
   // Map Project objects to Opportunity format
   const opportunities = projects.map(project => {
-    // Format address as a string with null checks
-    const location = project.data.project.location;
-    const address = location?.address;
-    const addressStr = address ? [
-      address.street,
-      address.unit,
-      address.city,
-      address.state,
-      address.country,
-      address.postalCode
-    ].filter(Boolean).join(', ') : 'Address not available';
-
     return {
       _id: project._id,
       type: project.type,
       data: {
-        id: project._id,
-        projectType: project.type,
         project: {
-          ...project.data.project,
+          category: project.data.project.category,
           location: {
-            address: addressStr,
-            coordinates: location?.coordinates || { lat: 0, lng: 0 }
+            address: project.data.project.location.address,
+            lat: project.data.project.location.lat,
+            lng: project.data.project.location.lng,
+            parsedAddress: project.data.project.location.parsedAddress,
+            coordinates: project.data.project.location.coordinates
+          },
+          details: {
+            title: project.data.project.details.title,
+            description: project.data.project.details.description
           }
         },
         contact: {
-          ...project.data.contact,
-          // Add missing fields required by Opportunity interface
-          address: address ? {
-            city: address.city || '',
-            unit: address.unit || '',
-            state: address.state || '',
-            street: address.street || '',
-            country: address.country || '',
-            postalCode: address.postalCode || ''
-          } : {
-            city: '',
-            unit: '',
-            state: '',
-            street: '',
-            country: '',
-            postalCode: ''
-          },
-          company: {
-            name: "N/A",
-            title: "N/A"
-          }
-        },
-        metadata: project.data.metadata
+          fullName: project.data.contact.fullName,
+          email: project.data.contact.email,
+          phone: project.data.contact.phone,
+          countryCode: project.data.contact.countryCode
+        }
       },
-      status: project.currentStatus,
-      lastStatusChange: {
-        from: project.lastChange.from,
-        to: project.lastChange.to,
-        changedBy: project.lastChange.changedBy,
-        changedAt: project.lastChange.changedAt
-      },
-      statusHistory: project.myChanges.map(change => ({
-        from: change.from,
-        to: change.to,
-        changedBy: project.lastChange.changedBy, // Using lastChange.changedBy since myChanges doesn't have it
-        changedAt: change.changedAt
-      }))
+      currentStatus: project.currentStatus,
+      myChanges: project.myChanges,
+      totalChanges: project.totalChanges,
+      myChangesCount: project.myChangesCount,
+      lastChange: project.lastChange
     }
   })
+
+  // Create the response object with pagination and summary
+  const response = {
+    opportunities,
+    pagination: {
+      currentPage: 1,
+      totalPages: 1,
+      totalItems: opportunities.length,
+      itemsPerPage: opportunities.length,
+      hasNextPage: false,
+      hasPreviousPage: false
+    },
+    summary: {
+      totalOpportunities: opportunities.length,
+      totalChanges: opportunities.reduce((acc, opp) => acc + (opp.totalChanges || 0), 0)
+    }
+  }
 
   return (
     <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
@@ -270,23 +245,6 @@ export default function ClaimedProjectsPage() {
               <p className="text-gray-500 dark:text-gray-400">
                 Manage and track your claimed opportunities
               </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="size-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search opportunities..."
-                  className="w-[250px] bg-white pl-8 dark:bg-gray-900"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <Button variant="outline" size="icon" className="shrink-0">
-                <Filter className="size-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="shrink-0">
-                <ArrowUpDown className="size-4" />
-              </Button>
             </div>
           </div>
 
@@ -305,24 +263,11 @@ export default function ClaimedProjectsPage() {
               </Card>
             ))}
           </div>
-
-          {/* Status Filter */}
-          <div className="flex gap-2">
-            {['All', 'Active', 'Pending', 'Completed'].map((status) => (
-              <Badge
-                key={status}
-                variant={status === 'All' ? 'default' : 'outline'}
-                className="px-3 py-1 rounded-full cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                {status}
-              </Badge>
-            ))}
-          </div>
         </div>
 
         {/* Projects */}
         <ClaimedOpportunities
-          projects={opportunities}
+          projects={response}
           isLoading={isLoading}
         />
       </div>
