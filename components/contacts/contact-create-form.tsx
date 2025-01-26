@@ -25,6 +25,9 @@ import { toast } from "sonner"
 import { getAccessToken } from "@/lib/services/auth"
 import { PhoneInput } from "@/components/ui/phone-input"
 import { CountryDropdown } from "@/components/ui/country-dropdown"
+import { User, Mail, Phone, MapPin, Building2, Loader2 } from "lucide-react"
+import { Plus, Trash2 } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 
 // Validation schema based on API documentation
 const phoneSchema = z.object({
@@ -37,20 +40,41 @@ const phoneSchema = z.object({
 })
 
 const addressSchema = z.object({
-  streetNumber: z.string().min(1).max(20),
-  street: z.string().min(1).max(100),
-  city: z.string().min(2).max(50),
-  area: z.string().min(2).max(50),
-  country: z.string().min(2).max(100),
-  countryCode: z.string().length(2),
+  street: z.string().min(1).max(100).optional(),
+  streetNumber: z.string().min(1).max(20).optional(),
+  city: z.string().min(2).max(50).optional(),
+  area: z.string().min(2).max(50).optional(),
+  country: z.string().min(2).max(100).optional(),
+  countryCode: z.string().length(2).optional(),
   postalCode: z.string().optional()
 }).optional()
+  .refine(
+    data => {
+      if (!data) return true;
+      // If any address field is provided, ensure required fields are present
+      const hasAnyField = Object.values(data).some(value => value);
+      if (!hasAnyField) return true;
+      
+      return (!data.street || data.street.length >= 1) &&
+             (!data.streetNumber || data.streetNumber.length >= 1) &&
+             (!data.city || data.city.length >= 2) &&
+             (!data.area || data.area.length >= 2) &&
+             (!data.country || data.country.length >= 2) &&
+             (!data.countryCode || data.countryCode.length === 2);
+    },
+    {
+      message: "If providing address, please fill in all required fields correctly"
+    }
+  )
 
 const companySchema = z.object({
   name: z.string().min(2).max(100).optional(),
   title: z.string().min(2).max(50).optional(),
   type: z.string().min(2).max(50).optional()
-}).optional()
+}).refine(
+  data => !data?.type || (data?.type && data?.name),
+  { message: "Company name is required when type is provided" }
+).optional()
 
 const formSchema = z.object({
   firstName: z.string()
@@ -103,30 +127,16 @@ export function ContactCreateForm({ onSuccess, onCancel }: ContactCreateFormProp
         number: "",
         primary: true
       }],
-      address: {
-        streetNumber: "",
-        street: "",
-        city: "",
-        area: "",
-        country: "Greece",
-        countryCode: "GR",
-        postalCode: ""
-      },
+      address: undefined,
       company: undefined,
       tags: []
     }
   })
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log('Form submission started');
     setIsLoading(true)
     try {
       const accessToken = getAccessToken()
-      console.log('Token check:', {
-        hasToken: !!accessToken,
-        tokenPreview: accessToken ? `${accessToken.substring(0, 10)}...` : 'null'
-      });
-
       if (!accessToken) {
         throw new Error("No access token available")
       }
@@ -134,9 +144,17 @@ export function ContactCreateForm({ onSuccess, onCancel }: ContactCreateFormProp
       // Clean up empty optional fields
       const cleanedValues = {
         ...values,
-        address: values.address && Object.keys(values.address).length > 0
-          ? values.address
-          : undefined,
+        // Only include address if all required fields are filled
+        address: values.address ? {
+          ...values.address,
+          street: values.address.street?.trim() || undefined,
+          streetNumber: values.address.streetNumber?.trim() || undefined,
+          city: values.address.city?.trim() || undefined,
+          area: values.address.area?.trim() || undefined,
+          country: values.address.country?.trim() || undefined,
+          countryCode: values.address.countryCode?.trim() || undefined,
+          postalCode: values.address.postalCode?.trim() || undefined
+        } : undefined,
         company: values.company && Object.keys(values.company).filter(key => !!values.company?.[key as keyof typeof values.company]).length > 0
           ? values.company
           : undefined,
@@ -145,7 +163,12 @@ export function ContactCreateForm({ onSuccess, onCancel }: ContactCreateFormProp
         opportunityIds: values.opportunityIds?.length ? values.opportunityIds : undefined
       }
 
-      console.log('Preparing to submit form with values:', cleanedValues)
+      // Remove address if all fields are empty or undefined
+      if (cleanedValues.address && 
+          !Object.values(cleanedValues.address).some(value => value)) {
+        delete cleanedValues.address;
+      }
+
       const response = await fetch('/api/contacts', {
         method: 'POST',
         headers: {
@@ -155,23 +178,14 @@ export function ContactCreateForm({ onSuccess, onCancel }: ContactCreateFormProp
         body: JSON.stringify(cleanedValues)
       })
 
-      console.log('API Response received:', {
-        status: response.status,
-        ok: response.ok,
-        statusText: response.statusText
-      })
-
       if (!response.ok) {
         const error = await response.json()
-        console.error('Error response:', error)
         if (response.status === 409) {
           throw new Error(`Email already in use (Contact ID: ${error.conflictingContactId})`)
         }
         throw new Error(error.message || error.error || 'Failed to create contact')
       }
 
-      const data = await response.json()
-      console.log('Contact created successfully:', data)
       toast.success("Contact created successfully")
       onSuccess?.()
     } catch (error) {
@@ -184,287 +198,382 @@ export function ContactCreateForm({ onSuccess, onCancel }: ContactCreateFormProp
 
   return (
     <Form {...form}>
-      <form 
-        onSubmit={form.handleSubmit((values) => {
-          console.log('Form submit event triggered');
-          console.log('Form values:', values);
-          onSubmit(values);
-        }, (errors) => {
-          console.log('Form validation failed:', errors);
-          
-          // Type-safe error handling
-          if (errors.firstName) {
-            toast.error(`First Name: ${errors.firstName.message}`);
-          }
-          if (errors.lastName) {
-            toast.error(`Last Name: ${errors.lastName.message}`);
-          }
-          if (errors.email) {
-            toast.error(`Email: ${errors.email.message}`);
-          }
-          if (errors.phones) {
-            toast.error(`Phone: ${errors.phones.message}`);
-          }
-          if (errors.address) {
-            toast.error(`Address: ${errors.address.message}`);
-          }
-          if (errors.company) {
-            toast.error(`Company: ${errors.company.message}`);
-          }
-        })} 
-        className="space-y-6"
-      >
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="firstName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>First Name</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Last Name</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {form.watch('phones')?.map((_, index) => (
-          <div key={index} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        {/* Basic Information */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">Basic Information</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
-              name={`phones.${index}.type`}
+              name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select phone type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="mobile">Mobile</SelectItem>
-                      <SelectItem value="work">Work</SelectItem>
-                      <SelectItem value="home">Home</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>First Name *</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="John" />
+                  </FormControl>
                   <FormMessage />
+                  <p className="text-sm text-muted-foreground">
+                    2-50 characters, letters only (including Greek)
+                  </p>
                 </FormItem>
               )}
             />
             <FormField
               control={form.control}
-              name={`phones.${index}.number`}
+              name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone Number</FormLabel>
+                  <FormLabel>Last Name *</FormLabel>
                   <FormControl>
-                    <PhoneInput
-                      defaultCountry="GR"
-                      value={field.value}
-                      onChange={(value) => {
-                        console.log('Phone number changed:', value);
-                        field.onChange(formatToE164(value) || '');
-                      }}
-                    />
+                    <Input {...field} placeholder="Doe" />
                   </FormControl>
                   <FormMessage />
                   <p className="text-sm text-muted-foreground">
-                    Select a country code and enter the phone number
+                    2-50 characters, letters only (including Greek)
                   </p>
                 </FormItem>
               )}
             />
           </div>
-        ))}
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="address.streetNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Street Number</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="address.street"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Street</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="address.city"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="address.area"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Area</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="address.country"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Country</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="address.countryCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Country Code</FormLabel>
-                  <FormControl>
-                    <CountryDropdown
-                      defaultValue={field.value || 'GR'}
-                      onChange={(country) => {
-                        field.onChange(country.alpha2);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
           <FormField
             control={form.control}
-            name="address.postalCode"
+            name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Postal Code</FormLabel>
+                <FormLabel>Email *</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <div className="flex items-center">
+                    <Mail className="w-4 h-4 mr-2 text-muted-foreground" />
+                    <Input {...field} type="email" placeholder="john.doe@example.com" />
+                  </div>
                 </FormControl>
                 <FormMessage />
+                <p className="text-sm text-muted-foreground">
+                  Must be a valid email address, maximum 100 characters
+                </p>
               </FormItem>
             )}
           />
         </div>
 
+        {/* Phone Numbers */}
         <div className="space-y-4">
-          <FormField
-            control={form.control}
-            name="company.name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Company Name</FormLabel>
-                <FormControl>
-                  <Input 
-                    {...field} 
-                    value={field.value || ''} 
-                    onChange={(e) => field.onChange(e.target.value.trim())}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Phone className="h-5 w-5" />
+              <h2 className="text-lg font-semibold">Phone Numbers</h2>
+            </div>
+            {form.watch('phones').length < 3 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const phones = form.getValues('phones')
+                  form.setValue('phones', [
+                    ...phones,
+                    { type: 'mobile', number: '', primary: false }
+                  ])
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Phone
+              </Button>
             )}
-          />
-          <FormField
-            control={form.control}
-            name="company.title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Job Title</FormLabel>
-                <FormControl>
-                  <Input 
-                    {...field} 
-                    value={field.value || ''} 
-                    onChange={(e) => field.onChange(e.target.value.trim())}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          </div>
+
+          {form.watch('phones').map((phone, index) => (
+            <div key={index} className="grid gap-4 p-4 border rounded-lg">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">
+                  Phone {index + 1}
+                  {phone.primary && " (Primary)"}
+                </h3>
+                {index > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const phones = form.getValues('phones').filter((_, i) => i !== index)
+                      form.setValue('phones', phones)
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name={`phones.${index}.type`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="mobile">Mobile</SelectItem>
+                          <SelectItem value="work">Work</SelectItem>
+                          <SelectItem value="home">Home</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name={`phones.${index}.number`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Number</FormLabel>
+                      <FormControl>
+                        <PhoneInput
+                          defaultCountry="GR"
+                          value={field.value}
+                          onChange={(value) => field.onChange(formatToE164(value))}
+                          className="flex-1"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <p className="text-sm text-muted-foreground">
+                        E.164 format (e.g. +306973359331)
+                      </p>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {!phone.primary && (
+                <FormField
+                  control={form.control}
+                  name={`phones.${index}.primary`}
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => {
+                            // Update all phones to not primary
+                            const phones = form.getValues('phones').map((p, i) => ({
+                              ...p,
+                              primary: i === index ? Boolean(checked) : false
+                            }))
+                            form.setValue('phones', phones)
+                          }}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Set as primary phone number
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+          ))}
         </div>
 
-        <div className="flex justify-end gap-4 mt-6">
-          {onCancel && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-          )}
-          <Button 
-            type="submit" 
+        {/* Address */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">Address</h2>
+          </div>
+
+          <div className="grid gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="address.street"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Street</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Main Street" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address.streetNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Street Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="123" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="address.city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Athens" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address.area"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Area</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Attica" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="address.country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country</FormLabel>
+                    <FormControl>
+                      <CountryDropdown
+                        defaultValue={field.value || "GR"}
+                        onChange={(country) => {
+                          // Initialize address object if it doesn't exist
+                          if (!form.getValues('address')) {
+                            form.setValue('address', {});
+                          }
+                          field.onChange(country.name);
+                          form.setValue('address.countryCode', country.alpha2);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address.postalCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Postal Code</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="12345" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Company Information */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            <h2 className="text-lg font-semibold">Company Information</h2>
+          </div>
+
+          <div className="grid gap-4">
+            <FormField
+              control={form.control}
+              name="company.name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Company Name" />
+                  </FormControl>
+                  <FormMessage />
+                  <p className="text-sm text-muted-foreground">
+                    2-100 characters if provided
+                  </p>
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="company.title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Job Title</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Software Engineer" />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-sm text-muted-foreground">
+                      2-50 characters if provided
+                    </p>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="company.type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Type</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Technology" />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-sm text-muted-foreground">
+                      2-50 characters if provided
+                    </p>
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Form Actions */}
+        <div className="flex justify-end gap-4 pt-6">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
             disabled={isLoading}
           >
-            {isLoading ? "Creating..." : "Create Contact"}
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              'Create Contact'
+            )}
           </Button>
         </div>
       </form>

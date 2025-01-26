@@ -50,7 +50,10 @@ const companySchema = z.object({
   name: z.string().min(2).max(100).optional(),
   title: z.string().min(2).max(50).optional(),
   type: z.string().min(2).max(50).optional()
-}).optional()
+}).refine(
+  data => !data?.type || (data?.type && data?.name),
+  { message: "Company name is required when type is provided" }
+).optional()
 
 const formSchema = z.object({
   firstName: z.string()
