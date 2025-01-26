@@ -98,18 +98,25 @@ interface Contact {
     primary: boolean;
   }>;
   address: {
-    city: string;
-    unit?: string;
-    state: string;
+    streetNumber: string;
     street: string;
+    city: string;
+    area: string;
     country: string;
+    countryCode: string;
     postalCode?: string;
   };
   company: {
     name: string;
     title?: string;
+    type?: string;
   };
   opportunityIds: string[];
+  projectIds: string[];
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
 }
 
 // Custom filter function for multi-column searching
@@ -199,10 +206,10 @@ const columns: ColumnDef<Contact>[] = [
   },
   {
     header: "Location",
-    accessorFn: (row) => `${row.address.city}, ${row.address.state}`,
+    accessorFn: (row) => row.address ? `${row.address.city}, ${row.address.area}, ${row.address.country}` : '',
     cell: ({ row }) => (
       <div>
-        {row.original.address.city}, {row.original.address.state}
+        {row.original.address ? `${row.original.address.city}, ${row.original.address.area}, ${row.original.address.country}` : '-'}
       </div>
     ),
     size: 150,

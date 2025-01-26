@@ -30,36 +30,46 @@ import { CountryDropdown } from "@/components/ui/country-dropdown"
 const phoneSchema = z.object({
   type: z.enum(["work", "mobile", "home"]),
   number: z.string()
-    .min(1, "Phone number is required")
-    .regex(/^\+?[1-9][0-9\s-()]*$/, {
-      message: "Please enter a valid phone number"
+    .regex(/^\+[1-9]\d{7,19}$/, {
+      message: "Phone number must be in E.164 format (e.g. +306973359331)"
     }),
   primary: z.boolean()
 })
 
 const addressSchema = z.object({
-  street: z.string().min(1, "Street is required").max(100),
-  unit: z.string().max(20).optional(),
-  city: z.string().min(1, "City is required").max(50),
-  state: z.string().min(1, "State is required").max(50),
-  country: z.string().min(2).max(2),
-  postalCode: z.string().max(20).optional()
+  streetNumber: z.string().min(1).max(20),
+  street: z.string().min(1).max(100),
+  city: z.string().min(2).max(50),
+  area: z.string().min(2).max(50),
+  country: z.string().min(2).max(100),
+  countryCode: z.string().length(2),
+  postalCode: z.string().optional()
 }).optional()
 
 const companySchema = z.object({
-  name: z.string().min(1, "Company name is required").max(100),
-  title: z.string().max(50).optional(),
-  type: z.string().max(50).optional()
+  name: z.string().min(2).max(100).optional(),
+  title: z.string().min(2).max(50).optional(),
+  type: z.string().min(2).max(50).optional()
 }).optional()
 
 const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required").max(50),
-  lastName: z.string().min(1, "Last name is required").max(50),
-  email: z.string().email().max(100),
-  phones: z.array(phoneSchema).min(1).refine(
-    phones => phones.filter(p => p.primary).length === 1,
-    "Exactly one phone must be primary"
-  ),
+  firstName: z.string()
+    .min(2, "First name must be at least 2 characters")
+    .max(50, "First name must be at most 50 characters")
+    .regex(/^[\p{L}]+$/u, "First name must contain only letters (including Greek)"),
+  lastName: z.string()
+    .min(2, "Last name must be at least 2 characters")
+    .max(50, "Last name must be at most 50 characters")
+    .regex(/^[\p{L}]+$/u, "Last name must contain only letters (including Greek)"),
+  email: z.string()
+    .email("Invalid email format")
+    .max(100, "Email must be at most 100 characters"),
+  phones: z.array(phoneSchema)
+    .min(1, "At least one phone number is required")
+    .refine(
+      phones => phones.filter(p => p.primary).length === 1,
+      "Exactly one phone must be primary"
+    ),
   address: addressSchema,
   company: companySchema,
   projectIds: z.array(z.string()).optional(),
@@ -96,11 +106,12 @@ export function ContactEditForm({ contactId, initialData, onSuccess, onCancel }:
       number: formatToE164(phone.number) || ''
     })),
     address: initialData.address ? {
+      streetNumber: initialData.address.streetNumber || '',
       street: initialData.address.street || '',
-      unit: initialData.address.unit || '',
       city: initialData.address.city || '',
-      state: initialData.address.state || '',
-      country: initialData.address.country || 'GR',
+      area: initialData.address.area || '',
+      country: initialData.address.country || '',
+      countryCode: initialData.address.countryCode || '',
       postalCode: initialData.address.postalCode || ''
     } : undefined,
     company: initialData.company ? {
@@ -138,18 +149,10 @@ export function ContactEditForm({ contactId, initialData, onSuccess, onCancel }:
       const cleanedValues = {
         ...values,
         address: values.address && Object.keys(values.address).length > 0
-          ? {
-              ...values.address,
-              unit: values.address.unit || undefined,
-              postalCode: values.address.postalCode || undefined
-            }
+          ? values.address
           : undefined,
-        company: values.company && Object.keys(values.company).length > 0
-          ? {
-              ...values.company,
-              title: values.company.title || undefined,
-              type: values.company.type || undefined
-            }
+        company: values.company && Object.keys(values.company).filter(key => !!values.company?.[key as keyof typeof values.company]).length > 0
+          ? values.company
           : undefined,
         tags: values.tags?.length ? values.tags : undefined,
         projectIds: values.projectIds?.length ? values.projectIds : undefined,
@@ -168,6 +171,9 @@ export function ContactEditForm({ contactId, initialData, onSuccess, onCancel }:
       if (!response.ok) {
         const errorData = await response.json()
         console.error('Failed to update contact:', errorData)
+        if (response.status === 409) {
+          throw new Error(`Email already in use (Contact ID: ${errorData.conflictingContactId})`)
+        }
         throw new Error(errorData.message || errorData.error || 'Failed to update contact')
       }
 
@@ -280,19 +286,34 @@ export function ContactEditForm({ contactId, initialData, onSuccess, onCancel }:
         ))}
 
         <div className="space-y-4">
-          <FormField
-            control={form.control}
-            name="address.street"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Street</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="address.streetNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Street Number</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address.street"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Street</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -309,10 +330,10 @@ export function ContactEditForm({ contactId, initialData, onSuccess, onCancel }:
             />
             <FormField
               control={form.control}
-              name="address.state"
+              name="address.area"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>State</FormLabel>
+                  <FormLabel>Area</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -329,6 +350,19 @@ export function ContactEditForm({ contactId, initialData, onSuccess, onCancel }:
                 <FormItem>
                   <FormLabel>Country</FormLabel>
                   <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address.countryCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Country Code</FormLabel>
+                  <FormControl>
                     <CountryDropdown
                       defaultValue={field.value || 'GR'}
                       onChange={(country) => {
@@ -340,20 +374,20 @@ export function ContactEditForm({ contactId, initialData, onSuccess, onCancel }:
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="address.postalCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Postal Code</FormLabel>
-                  <FormControl>
-                    <Input placeholder="XXXXX or XXXXX-XXXX" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
+          <FormField
+            control={form.control}
+            name="address.postalCode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Postal Code</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         <div className="space-y-4">

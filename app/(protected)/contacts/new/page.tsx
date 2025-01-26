@@ -23,14 +23,22 @@ interface ContactFormData {
     primary: boolean
   }>
   address?: {
+    streetNumber: string
     street: string
-    unit: string
     city: string
-    state: string
+    area: string
     country: string
-    postalCode: string
+    countryCode: string
+    postalCode?: string
   }
+  company?: {
+    name: string
+    title?: string
+    type?: string
+  }
+  projectIds: string[]
   opportunityIds: string[]
+  tags: string[]
 }
 
 interface ParsedPhoneData {
@@ -52,7 +60,9 @@ export default function NewContactPage() {
     lastName: "",
     email: "",
     phones: [{ type: "mobile" as const, number: "", primary: true }],
-    opportunityIds: []
+    projectIds: [],
+    opportunityIds: [],
+    tags: []
   })
 
   useEffect(() => {
@@ -104,14 +114,17 @@ export default function NewContactPage() {
           lastName: parsedData.lastName || "",
           email: parsedData.email || "",
           phones,
+          projectIds: parsedData.projectIds || [],
           opportunityIds: parsedData.opportunityIds || [],
+          tags: parsedData.tags || [],
           ...(parsedData.address ? {
             address: {
+              streetNumber: parsedData.address.streetNumber || "",
               street: parsedData.address.street || "",
-              unit: parsedData.address.unit || "",
               city: parsedData.address.city || "",
-              state: parsedData.address.state || "",
-              country: parsedData.address.country || "GR",
+              area: parsedData.address.area || "",
+              country: parsedData.address.country || "",
+              countryCode: parsedData.address.countryCode || "GR",
               postalCode: parsedData.address.postalCode || ""
             }
           } : {})
@@ -312,7 +325,30 @@ export default function NewContactPage() {
           
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="street">Street Address</Label>
+              <Label htmlFor="streetNumber">Street Number</Label>
+              <Input
+                id="streetNumber"
+                value={formData.address?.streetNumber || ""}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  address: {
+                    ...(prev.address || {
+                      street: "",
+                      city: "",
+                      area: "",
+                      country: "",
+                      countryCode: "GR",
+                      postalCode: ""
+                    }),
+                    streetNumber: e.target.value
+                  }
+                }))}
+                placeholder="123"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="street">Street</Label>
               <Input
                 id="street"
                 value={formData.address?.street || ""}
@@ -320,38 +356,17 @@ export default function NewContactPage() {
                   ...prev,
                   address: {
                     ...(prev.address || {
-                      unit: "",
+                      streetNumber: "",
                       city: "",
-                      state: "",
-                      country: "GR",
+                      area: "",
+                      country: "",
+                      countryCode: "GR",
                       postalCode: ""
                     }),
                     street: e.target.value
                   }
                 }))}
-                placeholder="123 Main St"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="unit">Unit/Suite/Apartment</Label>
-              <Input
-                id="unit"
-                value={formData.address?.unit || ""}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  address: {
-                    ...(prev.address || {
-                      street: "",
-                      city: "",
-                      state: "",
-                      country: "GR",
-                      postalCode: ""
-                    }),
-                    unit: e.target.value
-                  }
-                }))}
-                placeholder="Apt 4B"
+                placeholder="Main St"
               />
             </div>
 
@@ -365,37 +380,39 @@ export default function NewContactPage() {
                     ...prev,
                     address: {
                       ...(prev.address || {
+                        streetNumber: "",
                         street: "",
-                        unit: "",
-                        state: "",
-                        country: "GR",
+                        area: "",
+                        country: "",
+                        countryCode: "GR",
                         postalCode: ""
                       }),
                       city: e.target.value
                     }
                   }))}
-                  placeholder="New York"
+                  placeholder="Athens"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="state">State/Province</Label>
+                <Label htmlFor="area">Area</Label>
                 <Input
-                  id="state"
-                  value={formData.address?.state || ""}
+                  id="area"
+                  value={formData.address?.area || ""}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
                     address: {
                       ...(prev.address || {
+                        streetNumber: "",
                         street: "",
-                        unit: "",
                         city: "",
-                        country: "GR",
+                        country: "",
+                        countryCode: "GR",
                         postalCode: ""
                       }),
-                      state: e.target.value
+                      area: e.target.value
                     }
                   }))}
-                  placeholder="NY"
+                  placeholder="Attica"
                 />
               </div>
             </div>
@@ -403,44 +420,69 @@ export default function NewContactPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="country">Country</Label>
-                <CountryDropdown
-                  defaultValue={formData.address?.country || "GR"}
-                  onChange={(country) => setFormData(prev => ({
-                    ...prev,
-                    address: {
-                      ...(prev.address || {
-                        street: "",
-                        unit: "",
-                        city: "",
-                        state: "",
-                        postalCode: ""
-                      }),
-                      country: country.alpha2
-                    }
-                  }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="postalCode">Postal Code</Label>
                 <Input
-                  id="postalCode"
-                  value={formData.address?.postalCode || ""}
+                  id="country"
+                  value={formData.address?.country || ""}
                   onChange={(e) => setFormData(prev => ({
                     ...prev,
                     address: {
                       ...(prev.address || {
+                        streetNumber: "",
                         street: "",
-                        unit: "",
                         city: "",
-                        state: "",
-                        country: "GR"
+                        area: "",
+                        countryCode: "GR",
+                        postalCode: ""
                       }),
-                      postalCode: e.target.value
+                      country: e.target.value
                     }
                   }))}
-                  placeholder="10001"
+                  placeholder="Greece"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="countryCode">Country Code</Label>
+                <CountryDropdown
+                  defaultValue={formData.address?.countryCode || "GR"}
+                  onChange={(country) => setFormData(prev => ({
+                    ...prev,
+                    address: {
+                      ...(prev.address || {
+                        streetNumber: "",
+                        street: "",
+                        city: "",
+                        area: "",
+                        country: "",
+                        postalCode: ""
+                      }),
+                      countryCode: country.alpha2
+                    }
+                  }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="postalCode">Postal Code</Label>
+              <Input
+                id="postalCode"
+                value={formData.address?.postalCode || ""}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  address: {
+                    ...(prev.address || {
+                      streetNumber: "",
+                      street: "",
+                      city: "",
+                      area: "",
+                      country: "",
+                      countryCode: "GR"
+                    }),
+                    postalCode: e.target.value
+                  }
+                }))}
+                placeholder="10001"
+              />
             </div>
           </div>
         </div>

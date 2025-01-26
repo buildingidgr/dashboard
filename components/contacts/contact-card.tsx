@@ -17,32 +17,40 @@ import { ContactEditForm } from "./contact-edit-form"
 import { toast } from "sonner"
 import { getAccessToken } from "@/lib/services/auth"
 
-interface ContactCardProps {
-  contact: {
-    id: string
-    firstName: string
-    lastName: string
-    email: string
-    phones: Array<{
-      type: 'work' | 'mobile' | 'home'
-      number: string
-      primary: boolean
-    }>
-    address?: {
-      street: string
-      unit?: string
-      city: string
-      state: string
-      country: string
-      postalCode?: string
-    }
-    company?: {
-      name: string
-      title?: string
-      type?: string
-    }
-    tags: string[]
+interface Contact {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  phones: {
+    type: "work" | "mobile" | "home"
+    number: string
+    primary: boolean
+  }[]
+  address?: {
+    streetNumber: string
+    street: string
+    city: string
+    area: string
+    country: string
+    countryCode: string
+    postalCode?: string
   }
+  company?: {
+    name: string
+    title?: string
+    type?: string
+  }
+  projectIds: string[]
+  opportunityIds: string[]
+  tags: string[]
+  createdAt: string
+  updatedAt: string
+  createdBy: string
+}
+
+interface ContactCardProps {
+  contact: Contact
   onUpdate?: () => void
 }
 
@@ -147,7 +155,7 @@ export default function ContactCard({ contact, onUpdate }: ContactCardProps) {
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="h-4 w-4 text-gray-500" />
                   <span>
-                    {contact.address.city}, {contact.address.state}
+                    {contact.address.city}, {contact.address.area}, {contact.address.country}
                   </span>
                 </div>
               )}

@@ -36,16 +36,25 @@ export interface Contact {
     primary: boolean
   }[]
   address?: {
+    streetNumber: string
     street: string
     city: string
-    state: string
+    area: string
     country: string
+    countryCode: string
+    postalCode?: string
   }
   company?: {
     name: string
+    title?: string
+    type?: string
   }
+  projectIds: string[]
+  opportunityIds: string[]
+  tags: string[]
   createdAt: string
   updatedAt: string
+  createdBy: string
 }
 
 // Helper function to format dates

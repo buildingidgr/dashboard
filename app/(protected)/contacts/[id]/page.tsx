@@ -70,11 +70,12 @@ interface Contact {
     primary: boolean
   }[]
   address?: {
+    streetNumber: string
     street: string
-    unit?: string
     city: string
-    state: string
+    area: string
     country: string
+    countryCode: string
     postalCode?: string
   }
   company?: {
@@ -263,10 +264,10 @@ export default function ContactDetailsPage() {
   const getFullAddress = () => {
     if (!contact.address) return null;
     const parts = [
+      contact.address.streetNumber,
       contact.address.street,
-      contact.address.unit,
       contact.address.city,
-      contact.address.state,
+      contact.address.area,
       contact.address.country,
       contact.address.postalCode
     ].filter(Boolean);

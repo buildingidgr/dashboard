@@ -31,50 +31,45 @@ const phoneSchema = z.object({
   type: z.enum(["work", "mobile", "home"]),
   number: z.string()
     .regex(/^\+[1-9]\d{7,19}$/, {
-      message: "Please select a country code and enter a valid phone number"
+      message: "Phone number must be in E.164 format (e.g. +306973359331)"
     }),
   primary: z.boolean()
 })
 
 const addressSchema = z.object({
-  street: z.string().min(5).max(100),
-  unit: z.string().max(20).optional(),
-  city: z.string().min(2).max(50).regex(/^[a-zA-Z\s]+$/),
-  state: z.string().min(2).max(50),
-  country: z.string().length(2),
-  postalCode: z.string().regex(/^\d{5}(-\d{4})?$/).optional()
+  streetNumber: z.string().min(1).max(20),
+  street: z.string().min(1).max(100),
+  city: z.string().min(2).max(50),
+  area: z.string().min(2).max(50),
+  country: z.string().min(2).max(100),
+  countryCode: z.string().length(2),
+  postalCode: z.string().optional()
 }).optional()
 
 const companySchema = z.object({
-  name: z.string().trim().min(2).max(100).optional(),
-  title: z.string().trim().min(2).max(50).optional(),
-  type: z.string().trim().min(2).max(50).optional()
-}).optional().transform(data => {
-  if (!data) return undefined;
-  
-  // Remove empty string fields
-  const cleanedData = {
-    name: data.name || undefined,
-    title: data.title || undefined,
-    type: data.type || undefined
-  };
-  
-  // If all fields are undefined, return undefined
-  if (!cleanedData.name && !cleanedData.title && !cleanedData.type) {
-    return undefined;
-  }
-  
-  return cleanedData;
-});
+  name: z.string().min(2).max(100).optional(),
+  title: z.string().min(2).max(50).optional(),
+  type: z.string().min(2).max(50).optional()
+}).optional()
 
 const formSchema = z.object({
-  firstName: z.string().min(2).max(50).regex(/^[a-zA-Z]+$/),
-  lastName: z.string().min(2).max(50).regex(/^[a-zA-Z]+$/),
-  email: z.string().email().max(100),
-  phones: z.array(phoneSchema).min(1).refine(
-    phones => phones.filter(p => p.primary).length === 1,
-    "Exactly one phone must be primary"
-  ),
+  firstName: z.string()
+    .min(2, "First name must be at least 2 characters")
+    .max(50, "First name must be at most 50 characters")
+    .regex(/^[\p{L}]+$/u, "First name must contain only letters (including Greek)"),
+  lastName: z.string()
+    .min(2, "Last name must be at least 2 characters")
+    .max(50, "Last name must be at most 50 characters")
+    .regex(/^[\p{L}]+$/u, "Last name must contain only letters (including Greek)"),
+  email: z.string()
+    .email("Invalid email format")
+    .max(100, "Email must be at most 100 characters"),
+  phones: z.array(phoneSchema)
+    .min(1, "At least one phone number is required")
+    .refine(
+      phones => phones.filter(p => p.primary).length === 1,
+      "Exactly one phone must be primary"
+    ),
   address: addressSchema,
   company: companySchema,
   projectIds: z.array(z.string()).optional(),
@@ -109,10 +104,12 @@ export function ContactCreateForm({ onSuccess, onCancel }: ContactCreateFormProp
         primary: true
       }],
       address: {
+        streetNumber: "",
         street: "",
         city: "",
-        state: "",
-        country: "GR",
+        area: "",
+        country: "Greece",
+        countryCode: "GR",
         postalCode: ""
       },
       company: undefined,
@@ -134,14 +131,28 @@ export function ContactCreateForm({ onSuccess, onCancel }: ContactCreateFormProp
         throw new Error("No access token available")
       }
 
-      console.log('Preparing to submit form with values:', values)
+      // Clean up empty optional fields
+      const cleanedValues = {
+        ...values,
+        address: values.address && Object.keys(values.address).length > 0
+          ? values.address
+          : undefined,
+        company: values.company && Object.keys(values.company).filter(key => !!values.company?.[key as keyof typeof values.company]).length > 0
+          ? values.company
+          : undefined,
+        tags: values.tags?.length ? values.tags : undefined,
+        projectIds: values.projectIds?.length ? values.projectIds : undefined,
+        opportunityIds: values.opportunityIds?.length ? values.opportunityIds : undefined
+      }
+
+      console.log('Preparing to submit form with values:', cleanedValues)
       const response = await fetch('/api/contacts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`
         },
-        body: JSON.stringify(values)
+        body: JSON.stringify(cleanedValues)
       })
 
       console.log('API Response received:', {
@@ -297,19 +308,34 @@ export function ContactCreateForm({ onSuccess, onCancel }: ContactCreateFormProp
         ))}
 
         <div className="space-y-4">
-          <FormField
-            control={form.control}
-            name="address.street"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Street</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="address.streetNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Street Number</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address.street"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Street</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -326,10 +352,10 @@ export function ContactCreateForm({ onSuccess, onCancel }: ContactCreateFormProp
             />
             <FormField
               control={form.control}
-              name="address.state"
+              name="address.area"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>State</FormLabel>
+                  <FormLabel>Area</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -346,6 +372,19 @@ export function ContactCreateForm({ onSuccess, onCancel }: ContactCreateFormProp
                 <FormItem>
                   <FormLabel>Country</FormLabel>
                   <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="address.countryCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Country Code</FormLabel>
+                  <FormControl>
                     <CountryDropdown
                       defaultValue={field.value || 'GR'}
                       onChange={(country) => {
@@ -357,20 +396,20 @@ export function ContactCreateForm({ onSuccess, onCancel }: ContactCreateFormProp
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="address.postalCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Postal Code</FormLabel>
-                  <FormControl>
-                    <Input placeholder="XXXXX or XXXXX-XXXX" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
+          <FormField
+            control={form.control}
+            name="address.postalCode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Postal Code</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         <div className="space-y-4">
