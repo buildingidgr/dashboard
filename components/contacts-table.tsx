@@ -623,7 +623,7 @@ export function ContactsTable() {
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center justify-center min-h-[400px] rounded-lg border border-border bg-background p-8">
+        <div className="flex flex-col items-center justify-center min-h-[400px] bg-background p-8">
           <div className="w-60 h-60">
             {/* This is a placeholder for the SVG. Replace src with your actual SVG path */}
             <img

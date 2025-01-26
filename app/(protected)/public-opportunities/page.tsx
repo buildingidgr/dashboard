@@ -262,96 +262,151 @@ export default function PublicOpportunitiesPage() {
           </GoogleMapsProvider>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {projects
-            .filter((p: Opportunity) => {
-              // Filter by project type and search query
-              const matchesType = selectedType === "all" || p.data.project.category === selectedType
-              const matchesSearch = searchQuery === "" || 
-                p.data.project.details.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                p.data.project.location.address.toLowerCase().includes(searchQuery.toLowerCase())
-              
-              // Filter by distance if user location is available
-              let withinRadius = true
-              if (userLocation) {
-                const distance = calculateDistance(
-                  userLocation.lat,
-                  userLocation.lng,
-                  p.data.project.location.coordinates.lat,
-                  p.data.project.location.coordinates.lng
-                )
-                withinRadius = distance <= radiusKm
-              }
-              
-              return matchesType && matchesSearch && withinRadius
-            })
-            .map((project: Opportunity) => (
-              <Card 
-                key={project._id} 
-                className="flex flex-col"
-              >
-                <div className="p-6 flex-1 space-y-4">
-                  {/* Header */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <MechBadge dotColor={categoryColors[project.data.project.category]}>
-                        {simplifiedLabels[project.data.project.category]}
-                      </MechBadge>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        {format(new Date(project.metadata?.submittedAt || project.data.metadata?.submittedAt || new Date()), 'PP')}
+        <>
+          {projects.filter((p: Opportunity) => {
+            // Filter by project type and search query
+            const matchesType = selectedType === "all" || p.data.project.category === selectedType
+            const matchesSearch = searchQuery === "" || 
+              p.data.project.details.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              p.data.project.location.address.toLowerCase().includes(searchQuery.toLowerCase())
+            
+            // Filter by distance if user location is available
+            let withinRadius = true
+            if (userLocation) {
+              const distance = calculateDistance(
+                userLocation.lat,
+                userLocation.lng,
+                p.data.project.location.coordinates.lat,
+                p.data.project.location.coordinates.lng
+              )
+              withinRadius = distance <= radiusKm
+            }
+            
+            return matchesType && matchesSearch && withinRadius
+          }).length === 0 ? (
+            <div className="flex flex-col items-center justify-center min-h-[400px] bg-background p-8">
+              <div className="w-60 h-60">
+                <img
+                  src="/empty-opportunities.svg"
+                  alt="No opportunities"
+                  className="w-full h-full"
+                />
+              </div>
+              <div className="max-w-[420px] space-y-2 text-center">
+                <h3 className="text-xl font-semibold">No opportunities found</h3>
+                <p className="text-muted-foreground text-sm">
+                  {searchQuery || selectedType !== "all" || radiusKm < maxRadius ? 
+                    "Try adjusting your filters to see more opportunities." :
+                    "There are currently no available opportunities. Check back later for new opportunities."}
+                </p>
+                {(searchQuery || selectedType !== "all" || radiusKm < maxRadius) && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setSearchQuery("")
+                      setSelectedType("all")
+                      setRadiusKm(30)
+                    }}
+                    className="mt-4"
+                  >
+                    Reset Filters
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {projects
+                .filter((p: Opportunity) => {
+                  // Filter by project type and search query
+                  const matchesType = selectedType === "all" || p.data.project.category === selectedType
+                  const matchesSearch = searchQuery === "" || 
+                    p.data.project.details.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    p.data.project.location.address.toLowerCase().includes(searchQuery.toLowerCase())
+                  
+                  // Filter by distance if user location is available
+                  let withinRadius = true
+                  if (userLocation) {
+                    const distance = calculateDistance(
+                      userLocation.lat,
+                      userLocation.lng,
+                      p.data.project.location.coordinates.lat,
+                      p.data.project.location.coordinates.lng
+                    )
+                    withinRadius = distance <= radiusKm
+                  }
+                  
+                  return matchesType && matchesSearch && withinRadius
+                })
+                .map((project: Opportunity) => (
+                  <Card 
+                    key={project._id} 
+                    className="flex flex-col"
+                  >
+                    <div className="p-6 flex-1 space-y-4">
+                      {/* Header */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <MechBadge dotColor={categoryColors[project.data.project.category]}>
+                            {simplifiedLabels[project.data.project.category]}
+                          </MechBadge>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            {format(new Date(project.metadata?.submittedAt || project.data.metadata?.submittedAt || new Date()), 'PP')}
+                          </div>
+                        </div>
+                        <h3 className="font-semibold">{project.data.project.details.title}</h3>
                       </div>
+
+                      {/* Description */}
+                      <p className="text-sm text-muted-foreground line-clamp-3">
+                        {project.data.project.details.description}
+                      </p>
                     </div>
-                    <h3 className="font-semibold">{project.data.project.details.title}</h3>
-                  </div>
 
-                  {/* Description */}
-                  <p className="text-sm text-muted-foreground line-clamp-3">
-                    {project.data.project.details.description}
-                  </p>
-                </div>
-
-                {/* Footer */}
-                <div className="p-6 pt-0">
-                  {project.status === 'private' ? (
-                    <div className="flex flex-col gap-2">
-                      <Button 
-                        className="w-full gap-2" 
-                        variant="default"
-                        onClick={() => handlePromoteToProject(project._id)}
-                        disabled={isPromoting === project._id}
-                      >
-                        {isPromoting === project._id ? (
-                          <>
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                            Promoting...
-                          </>
-                        ) : (
-                          <>
-                            Promote to Project
+                    {/* Footer */}
+                    <div className="p-6 pt-0">
+                      {project.status === 'private' ? (
+                        <div className="flex flex-col gap-2">
+                          <Button 
+                            className="w-full gap-2" 
+                            variant="default"
+                            onClick={() => handlePromoteToProject(project._id)}
+                            disabled={isPromoting === project._id}
+                          >
+                            {isPromoting === project._id ? (
+                              <>
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                Promoting...
+                              </>
+                            ) : (
+                              <>
+                                Promote to Project
+                                <ArrowRight className="h-4 w-4" />
+                              </>
+                            )}
+                          </Button>
+                          <Link href={`/opportunities/${project._id}`} className="w-full">
+                            <Button className="w-full gap-2" variant="outline">
+                              View Details
+                              <ArrowRight className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </div>
+                      ) : (
+                        <Link href={`/opportunities/${project._id}`} className="w-full">
+                          <Button className="w-full gap-2" variant="outline">
+                            View Details
                             <ArrowRight className="h-4 w-4" />
-                          </>
-                        )}
-                      </Button>
-                      <Link href={`/opportunities/${project._id}`} className="w-full">
-                        <Button className="w-full gap-2" variant="outline">
-                          View Details
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </Link>
+                          </Button>
+                        </Link>
+                      )}
                     </div>
-                  ) : (
-                    <Link href={`/opportunities/${project._id}`} className="w-full">
-                      <Button className="w-full gap-2" variant="outline">
-                        View Details
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </Card>
-            ))}
-        </div>
+                  </Card>
+                ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
