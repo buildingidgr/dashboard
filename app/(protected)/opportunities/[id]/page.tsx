@@ -346,7 +346,7 @@ export default function OpportunityDetailsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/opportunities" className="flex items-center gap-2">
+          <Link href="/public-opportunities" className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back to Opportunities
           </Link>

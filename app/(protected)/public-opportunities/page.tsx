@@ -26,6 +26,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { calculateDistance } from "@/lib/utils"
+import { useProfessionalInfo } from "@/hooks/use-professional-info"
+import { useRouter } from "next/navigation"
 
 const projectTypes = [
   "Αρχιτεκτονικός Σχεδιασμός",
@@ -47,11 +50,19 @@ export default function PublicOpportunitiesPage() {
   const [radiusKm, setRadiusKm] = useState<number>(30)
   const [maxRadius, setMaxRadius] = useState<number>(100)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const { professionalInfo, isLoading: isLoadingProfessionalInfo } = useProfessionalInfo()
+  const router = useRouter()
+  const [isPromoting, setIsPromoting] = useState<string | null>(null)
 
   const { projects } = useOpportunities({
     page: 1,
     limit: 50
   })
+
+  useEffect(() => {
+    console.log('Projects with status:', projects.map(p => ({ id: p._id, status: p.status })))
+  }, [projects])
 
   const totalCount = projects.length
 
@@ -61,42 +72,61 @@ export default function PublicOpportunitiesPage() {
   }, [setTitle, setDescription])
 
   useEffect(() => {
-    const fetchProfessionalInfo = async () => {
-      try {
-        const token = getAccessToken()
-        if (!token) throw new Error('No access token available')
-
-        const response = await fetch('https://profile-service-production.up.railway.app/api/profiles/me/professional', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+    if (professionalInfo?.areaOfOperation) {
+      const profileMaxRadius = professionalInfo.areaOfOperation.radius || 100
+      setMaxRadius(profileMaxRadius)
+      
+      if (professionalInfo.areaOfOperation.coordinates) {
+        setUserLocation({
+          lat: professionalInfo.areaOfOperation.coordinates.latitude,
+          lng: professionalInfo.areaOfOperation.coordinates.longitude
         })
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch professional info')
-        }
-
-        const data = await response.json()
-        const profileMaxRadius = data.areaOfOperation?.radius || 100
-        setMaxRadius(profileMaxRadius)
-        // If current radius is larger than max, adjust it
-        if (radiusKm > profileMaxRadius) {
-          setRadiusKm(profileMaxRadius)
-        }
-      } catch (error) {
-        console.error('Error fetching professional info:', error)
-        toast({
-          title: "Warning",
-          description: "Could not fetch maximum radius. Using default value.",
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoadingProfile(false)
+      }
+      
+      // If current radius is larger than max, adjust it
+      if (radiusKm > profileMaxRadius) {
+        setRadiusKm(profileMaxRadius)
       }
     }
+    setIsLoadingProfile(false)
+  }, [professionalInfo, radiusKm])
 
-    fetchProfessionalInfo()
-  }, [radiusKm])
+  const handlePromoteToProject = async (opportunityId: string) => {
+    try {
+      setIsPromoting(opportunityId)
+      const token = getAccessToken()
+      if (!token) throw new Error('No access token available')
+
+      const response = await fetch(`/api/opportunities/${opportunityId}/promote`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to promote opportunity')
+      }
+
+      toast({
+        title: "Success!",
+        description: "Opportunity has been promoted to a project.",
+      })
+      
+      // Redirect to the projects page
+      router.push('/projects')
+    } catch (error) {
+      console.error('Error promoting opportunity:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to promote opportunity",
+        variant: "destructive",
+      })
+    } finally {
+      setIsPromoting(null)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -234,13 +264,27 @@ export default function PublicOpportunitiesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects
-            .filter((p: Opportunity) => 
-              (selectedType === "all" || p.data.project.category === selectedType) &&
-              (searchQuery === "" || 
+            .filter((p: Opportunity) => {
+              // Filter by project type and search query
+              const matchesType = selectedType === "all" || p.data.project.category === selectedType
+              const matchesSearch = searchQuery === "" || 
                 p.data.project.details.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 p.data.project.location.address.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-            )
+              
+              // Filter by distance if user location is available
+              let withinRadius = true
+              if (userLocation) {
+                const distance = calculateDistance(
+                  userLocation.lat,
+                  userLocation.lng,
+                  p.data.project.location.coordinates.lat,
+                  p.data.project.location.coordinates.lng
+                )
+                withinRadius = distance <= radiusKm
+              }
+              
+              return matchesType && matchesSearch && withinRadius
+            })
             .map((project: Opportunity) => (
               <Card 
                 key={project._id} 
@@ -269,12 +313,41 @@ export default function PublicOpportunitiesPage() {
 
                 {/* Footer */}
                 <div className="p-6 pt-0">
-                  <Link href={`/opportunities/${project._id}`} className="w-full">
-                    <Button className="w-full gap-2" variant="outline">
-                      View Details
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
+                  {project.status === 'private' ? (
+                    <div className="flex flex-col gap-2">
+                      <Button 
+                        className="w-full gap-2" 
+                        variant="default"
+                        onClick={() => handlePromoteToProject(project._id)}
+                        disabled={isPromoting === project._id}
+                      >
+                        {isPromoting === project._id ? (
+                          <>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            Promoting...
+                          </>
+                        ) : (
+                          <>
+                            Promote to Project
+                            <ArrowRight className="h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
+                      <Link href={`/opportunities/${project._id}`} className="w-full">
+                        <Button className="w-full gap-2" variant="outline">
+                          View Details
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <Link href={`/opportunities/${project._id}`} className="w-full">
+                      <Button className="w-full gap-2" variant="outline">
+                        View Details
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </Card>
             ))}

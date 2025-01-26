@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       return new Response("Authorization token is required", { status: 401 })
     }
 
-    const url = `${baseUrl}/opportunities?page=${page}&limit=${limit}`
+    const url = `${baseUrl}/opportunities?page=${page}&limit=${limit}&include=status`
     console.log('\n🌐 EXTERNAL API REQUEST 🌐')
     console.log('URL:', url)
     console.log('Method: GET')

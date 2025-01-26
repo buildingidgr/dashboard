@@ -14,6 +14,7 @@ import { useProfessionalInfo } from "@/hooks/use-professional-info"
 import { MechDialog } from "@/components/ui/mech-dialog"
 import { MechBadge } from "@/components/ui/mech-badge"
 import { categoryColors } from "@/constants/map-categories"
+import { calculateDistance } from "@/lib/utils"
 
 interface GreeceOpportunitiesMapProps {
   isDarkMode: boolean
@@ -42,25 +43,6 @@ export function GreeceOpportunitiesMap({
   const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
-  const calculateDistance = (
-    point1: { lat: number; lng: number },
-    point2: { lat: number; lng: number }
-  ): number | null => {
-    if (!window.google?.maps?.geometry?.spherical) {
-      return null
-    }
-
-    try {
-      return window.google.maps.geometry.spherical.computeDistanceBetween(
-        new window.google.maps.LatLng(point1),
-        new window.google.maps.LatLng(point2)
-      )
-    } catch (error) {
-      console.error('Error calculating distance:', error)
-      return null
-    }
-  }
-
   const filteredProjects = projects
     .filter(project => {
       const matchesType = projectTypeFilter === "all" || project.data.project.category === projectTypeFilter
@@ -72,13 +54,12 @@ export function GreeceOpportunitiesMap({
 
       if (searchRadius && professionalInfo?.areaOfOperation?.coordinates) {
         const distance = calculateDistance(
-          {
-            lat: professionalInfo.areaOfOperation.coordinates.latitude,
-            lng: professionalInfo.areaOfOperation.coordinates.longitude
-          },
-          project.data.project.location.coordinates
+          professionalInfo.areaOfOperation.coordinates.latitude,
+          professionalInfo.areaOfOperation.coordinates.longitude,
+          project.data.project.location.coordinates.lat,
+          project.data.project.location.coordinates.lng
         )
-        return distance !== null ? distance <= searchRadius * 1000 : true // Convert km to meters
+        return distance <= searchRadius
       }
 
       return true
