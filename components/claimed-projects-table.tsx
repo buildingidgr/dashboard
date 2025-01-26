@@ -181,6 +181,48 @@ export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpp
     return matchesSearch && matchesStatus
   })
 
+  if (filteredProjects.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] bg-background p-8">
+        <div className="w-60 h-60">
+          <img
+            src="/empty-claimed.svg"
+            alt="No claimed projects"
+            className="w-full h-full"
+          />
+        </div>
+        <div className="max-w-[420px] space-y-2 text-center">
+          <h3 className="text-xl font-semibold">No claimed opportunities</h3>
+          <p className="text-muted-foreground text-sm">
+            {searchQuery || statusFilter ? 
+              "Try adjusting your filters to see more opportunities." :
+              "You haven't claimed any opportunities yet. Browse public opportunities to find projects that interest you."}
+          </p>
+          {searchQuery || statusFilter ? (
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setSearchQuery("")
+                setStatusFilter(null)
+              }}
+              className="mt-4"
+            >
+              Reset Filters
+            </Button>
+          ) : (
+            <Button 
+              onClick={() => router.push('/public-opportunities')}
+              className="mt-4"
+            >
+              <FolderPlus className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+              Browse Opportunities
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -263,102 +305,94 @@ export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpp
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredProjects.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                  No opportunities found
+            {filteredProjects.map((project) => (
+              <TableRow key={project._id}>
+                <TableCell className="font-medium">
+                  <Link 
+                    href={`/opportunities/${project._id}`}
+                    className="hover:text-blue-600 dark:hover:text-blue-400"
+                  >
+                    {project.data.project.details.title}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <span>{project.data.project.location.address.split(', ').slice(0, 2).join(', ')}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <p className="font-medium">{project.data.contact.fullName}</p>
+                    <p className="text-sm text-muted-foreground">{project.data.contact.email}</p>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary">
+                    {project.data.project.category}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    {format(new Date(project.lastChange.changedAt), 'PP')}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={project.currentStatus === 'private' ? 'default' : 'secondary'}>
+                    {project.currentStatus === 'private' ? 'Claimed' : 'Available'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="w-[60px]">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 p-0"
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                        <span className="sr-only">Open menu</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => router.push(`/projects/new?opportunity=${project._id}`)}
+                        className="cursor-pointer"
+                      >
+                        <FolderPlus className="h-4 w-4 mr-2" />
+                        Promote to Project
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/opportunities/${project._id}`}>
+                          <ArrowUpRight className="h-4 w-4 mr-2" />
+                          View Details
+                        </Link>
+                      </DropdownMenuItem>
+                      {project.currentStatus === 'private' && (
+                        <DropdownMenuItem
+                          onClick={() => setUnclaimingId(project._id)}
+                          disabled={isUnclaiming && unclaimingId === project._id}
+                          className="text-red-600 dark:text-red-400"
+                        >
+                          {isUnclaiming && unclaimingId === project._id ? (
+                            <>
+                              <Skeleton className="h-4 w-4 mr-2" />
+                              Unclaiming...
+                            </>
+                          ) : (
+                            <>
+                              <History className="h-4 w-4 mr-2" />
+                              Unclaim Opportunity
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ) : (
-              filteredProjects.map((project) => (
-                <TableRow key={project._id}>
-                  <TableCell className="font-medium">
-                    <Link 
-                      href={`/opportunities/${project._id}`}
-                      className="hover:text-blue-600 dark:hover:text-blue-400"
-                    >
-                      {project.data.project.details.title}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-gray-500" />
-                      <span>{project.data.project.location.address.split(', ').slice(0, 2).join(', ')}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <p className="font-medium">{project.data.contact.fullName}</p>
-                      <p className="text-sm text-muted-foreground">{project.data.contact.email}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {project.data.project.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      {format(new Date(project.lastChange.changedAt), 'PP')}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={project.currentStatus === 'private' ? 'default' : 'secondary'}>
-                      {project.currentStatus === 'private' ? 'Claimed' : 'Available'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="w-[60px]">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 p-0"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => router.push(`/projects/new?opportunity=${project._id}`)}
-                          className="cursor-pointer"
-                        >
-                          <FolderPlus className="h-4 w-4 mr-2" />
-                          Promote to Project
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/opportunities/${project._id}`}>
-                            <ArrowUpRight className="h-4 w-4 mr-2" />
-                            View Details
-                          </Link>
-                        </DropdownMenuItem>
-                        {project.currentStatus === 'private' && (
-                          <DropdownMenuItem
-                            onClick={() => setUnclaimingId(project._id)}
-                            disabled={isUnclaiming && unclaimingId === project._id}
-                            className="text-red-600 dark:text-red-400"
-                          >
-                            {isUnclaiming && unclaimingId === project._id ? (
-                              <>
-                                <Skeleton className="h-4 w-4 mr-2" />
-                                Unclaiming...
-                              </>
-                            ) : (
-                              <>
-                                <History className="h-4 w-4 mr-2" />
-                                Unclaim Opportunity
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
       </div>

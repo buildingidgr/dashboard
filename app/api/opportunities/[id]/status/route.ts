@@ -18,6 +18,9 @@ export async function PATCH(
       )
     }
 
+    const body = await request.json()
+    const { status } = body
+
     const response = await fetch(
       `${OPPORTUNITY_API_URL}/opportunities/${params.id}/status`,
       {
@@ -26,18 +29,13 @@ export async function PATCH(
           'Authorization': authHeader,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          status: 'private'
-        })
+        body: JSON.stringify({ status })
       }
     )
 
     if (!response.ok) {
       const error = await response.text()
-      return new NextResponse(
-        JSON.stringify({ error: error || 'Failed to update opportunity status' }),
-        { status: response.status }
-      )
+      return new NextResponse(error, { status: response.status })
     }
 
     const data = await response.json()
