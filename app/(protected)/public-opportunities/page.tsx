@@ -17,6 +17,8 @@ import { MechBadge } from "@/components/ui/mech-badge"
 import { Clock, ArrowRight, Search, MapPin, Filter } from "lucide-react"
 import { format } from "date-fns"
 import { categoryColors, simplifiedLabels } from "@/constants/map-categories"
+import { getAccessToken } from "@/lib/services/auth"
+import { toast } from "@/components/ui/use-toast"
 import {
   Select,
   SelectContent,
@@ -43,6 +45,8 @@ export default function PublicOpportunitiesPage() {
   const [viewMode, setViewMode] = useState<"map" | "list">("map")
   const [searchQuery, setSearchQuery] = useState("")
   const [radiusKm, setRadiusKm] = useState<number>(30)
+  const [maxRadius, setMaxRadius] = useState<number>(100)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
 
   const { projects } = useOpportunities({
     page: 1,
@@ -55,6 +59,44 @@ export default function PublicOpportunitiesPage() {
     setTitle("Public Opportunities")
     setDescription("Discover available opportunities across Greece")
   }, [setTitle, setDescription])
+
+  useEffect(() => {
+    const fetchProfessionalInfo = async () => {
+      try {
+        const token = getAccessToken()
+        if (!token) throw new Error('No access token available')
+
+        const response = await fetch('https://profile-service-production.up.railway.app/api/profiles/me/professional', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch professional info')
+        }
+
+        const data = await response.json()
+        const profileMaxRadius = data.areaOfOperation?.radius || 100
+        setMaxRadius(profileMaxRadius)
+        // If current radius is larger than max, adjust it
+        if (radiusKm > profileMaxRadius) {
+          setRadiusKm(profileMaxRadius)
+        }
+      } catch (error) {
+        console.error('Error fetching professional info:', error)
+        toast({
+          title: "Warning",
+          description: "Could not fetch maximum radius. Using default value.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoadingProfile(false)
+      }
+    }
+
+    fetchProfessionalInfo()
+  }, [radiusKm])
 
   return (
     <div className="space-y-6">
@@ -146,16 +188,17 @@ export default function PublicOpportunitiesPage() {
                   value={[radiusKm]}
                   onValueChange={(value) => setRadiusKm(value[0])}
                   min={1}
-                  max={100}
+                  max={maxRadius}
                   step={1}
                   className="flex-1"
+                  disabled={isLoadingProfile}
                 />
                 <span className="text-sm font-medium min-w-[4rem] text-right">
                   {radiusKm} km
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Show opportunities within this distance
+                Show opportunities within {radiusKm}km of your location (max {maxRadius}km)
               </p>
             </div>
 
