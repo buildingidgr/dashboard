@@ -52,19 +52,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  ColumnDef,
-  ColumnFiltersState,
-  FilterFn,
-  PaginationState,
-  Row,
-  SortingState,
-  VisibilityState,
-  flexRender,
+  type ColumnDef,
+  type Table as TableInstance,
+  type Row,
+  type ColumnFiltersState,
+  type FilterFn,
+  type PaginationState,
+  type SortingState,
+  type VisibilityState,
+  type ColumnMeta as TColumnMeta,
   getCoreRowModel,
-  getFacetedUniqueValues,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  getFacetedUniqueValues,
+  flexRender,
   useReactTable,
 } from "@tanstack/react-table";
 import {
@@ -119,6 +121,10 @@ interface Contact {
   createdBy: string;
 }
 
+type ColumnMetaType = {
+  className?: string;
+}
+
 // Custom filter function for multi-column searching
 const multiColumnFilterFn: FilterFn<Contact> = (row, columnId, filterValue) => {
   const searchableRowContent = `${row.original.firstName} ${row.original.lastName} ${row.original.email}`.toLowerCase();
@@ -126,26 +132,27 @@ const multiColumnFilterFn: FilterFn<Contact> = (row, columnId, filterValue) => {
   return searchableRowContent.includes(searchTerm);
 };
 
-const columns: ColumnDef<Contact>[] = [
+const columns: ColumnDef<Contact, any>[] = [
   {
     id: "select",
-    header: ({ table }) => (
+    header: ({ table }: { table: TableInstance<Contact> }) => (
       <Checkbox
         checked={
-          table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
       />
     ),
-    cell: ({ row }) => (
+    cell: ({ row }: { row: Row<Contact> }) => (
       <Checkbox
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
       />
     ),
-    size: 28,
+    size: 48,
     enableSorting: false,
     enableHiding: false,
   },
@@ -361,315 +368,285 @@ export function ContactsTable() {
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          {/* Filter by name or email */}
-          <div className="relative">
-            <Input
-              id={`${id}-input`}
-              ref={inputRef}
-              className={cn(
-                "peer min-w-60 ps-9",
-                Boolean(table.getColumn("fullName")?.getFilterValue()) && "pe-9",
-              )}
-              value={(table.getColumn("fullName")?.getFilterValue() ?? "") as string}
-              onChange={(e) => table.getColumn("fullName")?.setFilterValue(e.target.value)}
-              placeholder="Filter by name or email..."
-              type="text"
-              aria-label="Filter by name or email"
-            />
-            <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-muted-foreground/80 peer-disabled:opacity-50">
-              <ListFilter size={16} strokeWidth={2} aria-hidden="true" />
+      {table.getRowModel().rows?.length > 0 ? (
+        <>
+          {/* Filters */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {/* Filter by name or email */}
+              <div className="relative">
+                <Input
+                  id={`${id}-input`}
+                  ref={inputRef}
+                  className={cn(
+                    "peer min-w-60 ps-9",
+                    Boolean(table.getColumn("fullName")?.getFilterValue()) && "pe-9",
+                  )}
+                  value={(table.getColumn("fullName")?.getFilterValue() ?? "") as string}
+                  onChange={(e) => table.getColumn("fullName")?.setFilterValue(e.target.value)}
+                  placeholder="Filter by name or email..."
+                  type="text"
+                  aria-label="Filter by name or email"
+                />
+                <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center justify-center ps-3 text-muted-foreground/80 peer-disabled:opacity-50">
+                  <ListFilter size={16} strokeWidth={2} aria-hidden="true" />
+                </div>
+                {Boolean(table.getColumn("fullName")?.getFilterValue()) && (
+                  <button
+                    className="absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-lg text-muted-foreground/80 outline-offset-2 transition-colors hover:text-foreground focus:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
+                    aria-label="Clear filter"
+                    onClick={() => {
+                      table.getColumn("fullName")?.setFilterValue("");
+                      if (inputRef.current) {
+                        inputRef.current.focus();
+                      }
+                    }}
+                  >
+                    <CircleX size={16} strokeWidth={2} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+              {/* Toggle columns visibility */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Columns3
+                      className="-ms-1 me-2 opacity-60"
+                      size={16}
+                      strokeWidth={2}
+                      aria-hidden="true"
+                    />
+                    View
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                  {table
+                    .getAllColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => {
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={column.id}
+                          className="capitalize"
+                          checked={column.getIsVisible()}
+                          onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                          onSelect={(event) => event.preventDefault()}
+                        >
+                          {column.id}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            {Boolean(table.getColumn("fullName")?.getFilterValue()) && (
-              <button
-                className="absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-lg text-muted-foreground/80 outline-offset-2 transition-colors hover:text-foreground focus:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring/70 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label="Clear filter"
-                onClick={() => {
-                  table.getColumn("fullName")?.setFilterValue("");
-                  if (inputRef.current) {
-                    inputRef.current.focus();
-                  }
+
+            <div className="flex items-center gap-3">
+              {table.getSelectedRowModel().rows.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="text-red-600">
+                      <Trash className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+                      Delete {table.getSelectedRowModel().rows.length}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete the selected contacts.
+                        This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-red-600 hover:bg-red-700"
+                        onClick={handleDeleteRows}
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              {/* Add contact button */}
+              <Button 
+                className="ml-auto" 
+                variant="outline"
+                onClick={() => router.push('/contacts/new')}
+              >
+                <Plus className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+                Add contact
+              </Button>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-hidden rounded-lg border border-border bg-background">
+            <Table className="table-fixed">
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                    {headerGroup.headers.map((header) => (
+                      <TableHead 
+                        key={header.id} 
+                        style={{ width: header.column.getSize() }}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="last:py-0">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between gap-8">
+            {/* Results per page */}
+            <div className="flex items-center gap-3">
+              <Label htmlFor={id} className="max-sm:sr-only">
+                Rows per page
+              </Label>
+              <Select
+                value={table.getState().pagination.pageSize.toString()}
+                onValueChange={(value) => {
+                  table.setPageSize(Number(value));
                 }}
               >
-                <CircleX size={16} strokeWidth={2} aria-hidden="true" />
-              </button>
-            )}
-          </div>
-          {/* Toggle columns visibility */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Columns3
-                  className="-ms-1 me-2 opacity-60"
-                  size={16}
-                  strokeWidth={2}
-                  aria-hidden="true"
-                />
-                View
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                      onSelect={(event) => event.preventDefault()}
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Delete button */}
-          {table.getSelectedRowModel().rows.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button className="ml-auto" variant="outline">
-                  <Trash
-                    className="-ms-1 me-2 opacity-60"
-                    size={16}
-                    strokeWidth={2}
-                    aria-hidden="true"
-                  />
-                  Delete
-                  <span className="-me-1 ms-3 inline-flex h-5 max-h-full items-center rounded border border-border bg-background px-1 font-[inherit] text-[0.625rem] font-medium text-muted-foreground/70">
-                    {table.getSelectedRowModel().rows.length}
-                  </span>
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <div className="flex flex-col gap-2 max-sm:items-center sm:flex-row sm:gap-4">
-                  <div
-                    className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border"
-                    aria-hidden="true"
-                  >
-                    <CircleAlert className="opacity-80" size={16} strokeWidth={2} />
-                  </div>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete{" "}
-                      {table.getSelectedRowModel().rows.length} selected{" "}
-                      {table.getSelectedRowModel().rows.length === 1 ? "contact" : "contacts"}.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                </div>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteRows}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-          {/* Add contact button */}
-          <Button 
-            className="ml-auto" 
-            variant="outline"
-            onClick={() => router.push('/contacts/new')}
-          >
-            <Plus className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
-            Add contact
-          </Button>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="overflow-hidden rounded-lg border border-border bg-background">
-        <Table className="table-fixed">
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent">
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead
-                      key={header.id}
-                      style={{ width: `${header.getSize()}px` }}
-                      className="h-11"
-                    >
-                      {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                        <div
-                          className={cn(
-                            header.column.getCanSort() &&
-                              "flex h-full cursor-pointer select-none items-center justify-between gap-2",
-                          )}
-                          onClick={header.column.getToggleSortingHandler()}
-                          onKeyDown={(e) => {
-                            if (
-                              header.column.getCanSort() &&
-                              (e.key === "Enter" || e.key === " ")
-                            ) {
-                              e.preventDefault();
-                              header.column.getToggleSortingHandler()?.(e);
-                            }
-                          }}
-                          tabIndex={header.column.getCanSort() ? 0 : undefined}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {{
-                            asc: (
-                              <ChevronUp
-                                className="shrink-0 opacity-60"
-                                size={16}
-                                strokeWidth={2}
-                                aria-hidden="true"
-                              />
-                            ),
-                            desc: (
-                              <ChevronDown
-                                className="shrink-0 opacity-60"
-                                size={16}
-                                strokeWidth={2}
-                                aria-hidden="true"
-                              />
-                            ),
-                          }[header.column.getIsSorted() as string] ?? null}
-                        </div>
-                      ) : (
-                        flexRender(header.column.columnDef.header, header.getContext())
-                      )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="last:py-0">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+                <SelectTrigger id={id} className="w-fit whitespace-nowrap">
+                  <SelectValue placeholder="Select number of results" />
+                </SelectTrigger>
+                <SelectContent className="[&_*[role=option]>span]:end-2 [&_*[role=option]>span]:start-auto [&_*[role=option]]:pe-8 [&_*[role=option]]:ps-2">
+                  {[5, 10, 25, 50].map((pageSize) => (
+                    <SelectItem key={pageSize} value={pageSize.toString()}>
+                      {pageSize}
+                    </SelectItem>
                   ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No contacts found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Page number information */}
+            <div className="flex grow justify-end whitespace-nowrap text-sm text-muted-foreground">
+              <p className="whitespace-nowrap text-sm text-muted-foreground" aria-live="polite">
+                <span className="text-foreground">
+                  {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
+                  {Math.min(
+                    Math.max(
+                      table.getState().pagination.pageIndex * table.getState().pagination.pageSize +
+                        table.getState().pagination.pageSize,
+                      0,
+                    ),
+                    table.getRowCount(),
+                  )}
+                </span>{" "}
+                of <span className="text-foreground">{table.getRowCount().toString()}</span>
+              </p>
+            </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between gap-8">
-        {/* Results per page */}
-        <div className="flex items-center gap-3">
-          <Label htmlFor={id} className="max-sm:sr-only">
-            Rows per page
-          </Label>
-          <Select
-            value={table.getState().pagination.pageSize.toString()}
-            onValueChange={(value) => {
-              table.setPageSize(Number(value));
-            }}
-          >
-            <SelectTrigger id={id} className="w-fit whitespace-nowrap">
-              <SelectValue placeholder="Select number of results" />
-            </SelectTrigger>
-            <SelectContent className="[&_*[role=option]>span]:end-2 [&_*[role=option]>span]:start-auto [&_*[role=option]]:pe-8 [&_*[role=option]]:ps-2">
-              {[5, 10, 25, 50].map((pageSize) => (
-                <SelectItem key={pageSize} value={pageSize.toString()}>
-                  {pageSize}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {/* Pagination buttons */}
+            <div>
+              <Pagination>
+                <PaginationContent>
+                  {/* First page button */}
+                  <PaginationItem>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="disabled:pointer-events-none disabled:opacity-50"
+                      onClick={() => table.firstPage()}
+                      disabled={!table.getCanPreviousPage()}
+                      aria-label="Go to first page"
+                    >
+                      <ChevronFirst size={16} strokeWidth={2} aria-hidden="true" />
+                    </Button>
+                  </PaginationItem>
+                  {/* Previous page button */}
+                  <PaginationItem>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="disabled:pointer-events-none disabled:opacity-50"
+                      onClick={() => table.previousPage()}
+                      disabled={!table.getCanPreviousPage()}
+                      aria-label="Go to previous page"
+                    >
+                      <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
+                    </Button>
+                  </PaginationItem>
+                  {/* Next page button */}
+                  <PaginationItem>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="disabled:pointer-events-none disabled:opacity-50"
+                      onClick={() => table.nextPage()}
+                      disabled={!table.getCanNextPage()}
+                      aria-label="Go to next page"
+                    >
+                      <ChevronRight size={16} strokeWidth={2} aria-hidden="true" />
+                    </Button>
+                  </PaginationItem>
+                  {/* Last page button */}
+                  <PaginationItem>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="disabled:pointer-events-none disabled:opacity-50"
+                      onClick={() => table.lastPage()}
+                      disabled={!table.getCanNextPage()}
+                      aria-label="Go to last page"
+                    >
+                      <ChevronLast size={16} strokeWidth={2} aria-hidden="true" />
+                    </Button>
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-col items-center justify-center min-h-[400px] rounded-lg border border-border bg-background p-8">
+          <div className="w-60 h-60">
+            {/* This is a placeholder for the SVG. Replace src with your actual SVG path */}
+            <img
+              src="/empty-contacts.svg"
+              alt="No contacts"
+              className="w-full h-full"
+            />
+          </div>
+          <div className="max-w-[420px] space-y-2 text-center">
+            <h3 className="text-xl font-semibold">No contacts found</h3>
+            <p className="text-muted-foreground text-sm">
+              Get started by creating your first contact. You can add basic information, phone numbers, and more.
+            </p>
+            <Button 
+              onClick={() => router.push('/contacts/new')}
+              className="mt-4"
+            >
+              <Plus className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+              Add your first contact
+            </Button>
+          </div>
         </div>
-        {/* Page number information */}
-        <div className="flex grow justify-end whitespace-nowrap text-sm text-muted-foreground">
-          <p className="whitespace-nowrap text-sm text-muted-foreground" aria-live="polite">
-            <span className="text-foreground">
-              {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
-              {Math.min(
-                Math.max(
-                  table.getState().pagination.pageIndex * table.getState().pagination.pageSize +
-                    table.getState().pagination.pageSize,
-                  0,
-                ),
-                table.getRowCount(),
-              )}
-            </span>{" "}
-            of <span className="text-foreground">{table.getRowCount().toString()}</span>
-          </p>
-        </div>
-
-        {/* Pagination buttons */}
-        <div>
-          <Pagination>
-            <PaginationContent>
-              {/* First page button */}
-              <PaginationItem>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="disabled:pointer-events-none disabled:opacity-50"
-                  onClick={() => table.firstPage()}
-                  disabled={!table.getCanPreviousPage()}
-                  aria-label="Go to first page"
-                >
-                  <ChevronFirst size={16} strokeWidth={2} aria-hidden="true" />
-                </Button>
-              </PaginationItem>
-              {/* Previous page button */}
-              <PaginationItem>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="disabled:pointer-events-none disabled:opacity-50"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                  aria-label="Go to previous page"
-                >
-                  <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
-                </Button>
-              </PaginationItem>
-              {/* Next page button */}
-              <PaginationItem>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="disabled:pointer-events-none disabled:opacity-50"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                  aria-label="Go to next page"
-                >
-                  <ChevronRight size={16} strokeWidth={2} aria-hidden="true" />
-                </Button>
-              </PaginationItem>
-              {/* Last page button */}
-              <PaginationItem>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="disabled:pointer-events-none disabled:opacity-50"
-                  onClick={() => table.lastPage()}
-                  disabled={!table.getCanNextPage()}
-                  aria-label="Go to last page"
-                >
-                  <ChevronLast size={16} strokeWidth={2} aria-hidden="true" />
-                </Button>
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

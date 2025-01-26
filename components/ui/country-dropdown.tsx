@@ -72,19 +72,11 @@ const CountryDropdownComponent = (
   useEffect(() => {
     if (defaultValue) {
       const initialCountry = options.find(
-        (country) => country.alpha2 === defaultValue || country.alpha3 === defaultValue
+        (country) => country.alpha2 === defaultValue || country.alpha3 === defaultValue || country.name === defaultValue
       );
       if (initialCountry) {
         setSelectedCountry(initialCountry);
-      } else {
-        // Set Greece as default if no country is selected
-        const greece = options.find(country => country.alpha2 === 'GR');
-        setSelectedCountry(greece);
       }
-    } else {
-      // Set Greece as default if no value provided
-      const greece = options.find(country => country.alpha2 === 'GR');
-      setSelectedCountry(greece);
     }
   }, [defaultValue, options]);
 

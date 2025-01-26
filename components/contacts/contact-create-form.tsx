@@ -142,32 +142,47 @@ export function ContactCreateForm({ onSuccess, onCancel }: ContactCreateFormProp
       }
 
       // Clean up empty optional fields
-      const cleanedValues = {
-        ...values,
-        // Only include address if all required fields are filled
-        address: values.address ? {
-          ...values.address,
-          street: values.address.street?.trim() || undefined,
-          streetNumber: values.address.streetNumber?.trim() || undefined,
-          city: values.address.city?.trim() || undefined,
-          area: values.address.area?.trim() || undefined,
-          country: values.address.country?.trim() || undefined,
-          countryCode: values.address.countryCode?.trim() || undefined,
-          postalCode: values.address.postalCode?.trim() || undefined
-        } : undefined,
-        company: values.company && Object.keys(values.company).filter(key => !!values.company?.[key as keyof typeof values.company]).length > 0
-          ? values.company
-          : undefined,
-        tags: values.tags?.length ? values.tags : undefined,
-        projectIds: values.projectIds?.length ? values.projectIds : undefined,
-        opportunityIds: values.opportunityIds?.length ? values.opportunityIds : undefined
+      const cleanedValues: Partial<typeof values> = {
+        // Required fields always included
+        firstName: values.firstName,
+        lastName: values.lastName,
+        email: values.email,
+        phones: values.phones,
       }
 
-      // Remove address if all fields are empty or undefined
-      if (cleanedValues.address && 
-          !Object.values(cleanedValues.address).some(value => value)) {
-        delete cleanedValues.address;
+      // Optional fields - only include if they have values
+      if (values.address) {
+        const addressFields: Record<string, string> = {
+          street: values.address.street?.trim() || "",
+          streetNumber: values.address.streetNumber?.trim() || "",
+          city: values.address.city?.trim() || "",
+          area: values.address.area?.trim() || "",
+          country: values.address.country?.trim() || "",
+          countryCode: values.address.countryCode?.trim() || "",
+          postalCode: values.address.postalCode?.trim() || ""
+        }
+
+        // Only include address if any field has a value
+        if (Object.values(addressFields).some(value => value)) {
+          cleanedValues.address = addressFields
+        }
       }
+
+      if (values.company) {
+        const companyFields: Record<string, string | undefined> = {}
+        if (values.company.name?.trim()) companyFields.name = values.company.name.trim()
+        if (values.company.title?.trim()) companyFields.title = values.company.title.trim()
+        if (values.company.type?.trim()) companyFields.type = values.company.type.trim()
+
+        if (Object.keys(companyFields).length > 0) {
+          cleanedValues.company = companyFields
+        }
+      }
+
+      // Only include arrays if they have items
+      if (values.tags?.length) cleanedValues.tags = values.tags
+      if (values.projectIds?.length) cleanedValues.projectIds = values.projectIds
+      if (values.opportunityIds?.length) cleanedValues.opportunityIds = values.opportunityIds
 
       const response = await fetch('/api/contacts', {
         method: 'POST',
@@ -461,7 +476,7 @@ export function ContactCreateForm({ onSuccess, onCancel }: ContactCreateFormProp
                     <FormLabel>Country</FormLabel>
                     <FormControl>
                       <CountryDropdown
-                        defaultValue={field.value || "GR"}
+                        defaultValue={field.value}
                         onChange={(country) => {
                           // Initialize address object if it doesn't exist
                           if (!form.getValues('address')) {
