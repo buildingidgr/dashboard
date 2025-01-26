@@ -13,7 +13,7 @@ import { Document, DocumentsService } from "@/lib/services/documents";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -88,6 +88,19 @@ export function DocumentsTable() {
     }
   };
 
+  const handleCreateDocument = async () => {
+    try {
+      const document = await DocumentsService.createDocument();
+      router.push(`/editor?id=${document.id}`);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create document. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -97,8 +110,41 @@ export function DocumentsTable() {
   const startItem = ((currentPage - 1) * (data?.pagination.pageSize || 10)) + 1;
   const endItem = Math.min(startItem + (data?.pagination.pageSize || 10) - 1, data?.pagination.totalCount || 0);
 
+  if (!data?.items.length) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] bg-background p-8">
+        <div className="w-60 h-60">
+          <img
+            src="/empty-documents.svg"
+            alt="No documents"
+            className="w-full h-full"
+          />
+        </div>
+        <div className="max-w-[420px] space-y-2 text-center">
+          <h3 className="text-xl font-semibold">No documents found</h3>
+          <p className="text-muted-foreground text-sm">
+            Get started by creating your first document. You can write, edit, and manage your documents here.
+          </p>
+          <Button 
+            onClick={handleCreateDocument}
+            className="mt-4"
+          >
+            <Plus className="-ms-1 me-2 opacity-60" size={16} strokeWidth={2} aria-hidden="true" />
+            Create your first document
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      <div className="flex justify-end mb-4">
+        <Button onClick={handleCreateDocument}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create Document
+        </Button>
+      </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
