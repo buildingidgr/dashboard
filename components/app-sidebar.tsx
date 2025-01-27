@@ -111,10 +111,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           {
             title: "All Contacts",
             url: "/contacts",
-          },
-          {
-            title: "Add Contact",
-            url: "/contacts/new",
           }
         ],
       },
