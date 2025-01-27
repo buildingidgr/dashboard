@@ -19,14 +19,16 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Switch } from "@/components/ui/switch"
-import { Sun, Moon } from "lucide-react"
+import { Sun, Moon, ArrowRight, Eclipse } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toaster"
 import { useToast } from "@/hooks/use-toast"
 import { useSession, useUser } from '@clerk/nextjs'
 import { getAccessToken, setAccessToken } from '@/lib/services/auth'
+import { getMyProfessionalInfo } from '@/lib/services/profile'
 import { OnboardingGuide } from "@/components/onboarding-guide"
 import { exchangeClerkToken } from "@/lib/services/auth"
+import Link from "next/link"
 
 interface ClientLayoutProps {
   children: React.ReactNode
@@ -83,11 +85,25 @@ function ClientLayout({ children }: ClientLayoutProps) {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState<string>()
+  const [hasProfessionalData, setHasProfessionalData] = useState<boolean | null>(null)
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { session, isLoaded: isSessionLoaded } = useSession()
   const { user, isLoaded: isUserLoaded } = useUser()
+
+  // Check professional data
+  useEffect(() => {
+    const checkProfessionalData = async () => {
+      try {
+        await getMyProfessionalInfo()
+        setHasProfessionalData(true)
+      } catch (error) {
+        setHasProfessionalData(false)
+      }
+    }
+    checkProfessionalData()
+  }, [])
 
   // Redirect from /editor to /documents when no document ID is present
   useEffect(() => {
@@ -226,6 +242,39 @@ function ClientLayout({ children }: ClientLayoutProps) {
             <SidebarProvider>
               <AppSidebar className="shrink-0" />
               <SidebarInset className="flex flex-col">
+                {/* Professional Data Alert */}
+                {hasProfessionalData === false && (
+                  <div className="dark:bg-muted bg-muted px-4 py-3 text-foreground">
+                    <div className="flex flex-col justify-between gap-2 md:flex-row">
+                      <div className="flex grow gap-3">
+                        <Eclipse
+                          className="mt-0.5 shrink-0 opacity-60"
+                          size={16}
+                          strokeWidth={2}
+                          aria-hidden="true"
+                        />
+                        <div className="flex grow flex-col justify-between gap-2 md:flex-row md:items-center">
+                          <p className="text-sm">
+                            Complete your professional profile to get personalized opportunities and connect with the right professionals.
+                          </p>
+                          <Link 
+                            href="/profile" 
+                            className="group whitespace-nowrap text-sm font-medium"
+                          >
+                            Update Profile
+                            <ArrowRight
+                              className="-mt-0.5 ms-1 inline-flex opacity-60 transition-transform group-hover:translate-x-0.5"
+                              size={16}
+                              strokeWidth={2}
+                              aria-hidden="true"
+                            />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                   <div className="flex items-center gap-4 px-4 w-full">
                     <SidebarTrigger className="-ml-2" />

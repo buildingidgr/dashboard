@@ -10,7 +10,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useOpportunities, type Opportunity } from "@/hooks/use-opportunities"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
-import { ProjectTypesLegend } from "@/components/opportunities/project-types-legend"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { MechBadge } from "@/components/ui/mech-badge"
@@ -42,8 +41,13 @@ const projectTypes = [
 ] as const;
 
 export default function PublicOpportunitiesPage() {
+  // Core hooks
   const { isDarkMode } = useTheme()
   const { setTitle, setDescription } = usePageTitle()
+  const router = useRouter()
+  const { professionalInfo, isLoading: isLoadingProfessionalInfo } = useProfessionalInfo()
+
+  // All state hooks must be declared regardless of conditions
   const [selectedType, setSelectedType] = useState<string>("all")
   const [viewMode, setViewMode] = useState<"map" | "list">("map")
   const [searchQuery, setSearchQuery] = useState("")
@@ -51,38 +55,21 @@ export default function PublicOpportunitiesPage() {
   const [maxRadius, setMaxRadius] = useState<number>(100)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
-  const { professionalInfo, isLoading: isLoadingProfessionalInfo } = useProfessionalInfo()
-  const router = useRouter()
   const [isPromoting, setIsPromoting] = useState<string | null>(null)
 
+  // Always fetch opportunities, but we'll only use them if profile is complete
   const { projects } = useOpportunities({
     page: 1,
     limit: 50
   })
 
-  useEffect(() => {
-    console.log('Projects with status:', projects.map(p => ({ id: p._id, status: p.status })))
-  }, [projects])
-
-  const totalCount = projects.length
-
-  // Calculate active opportunities within user's radius
-  const activeOpportunitiesInArea = userLocation ? 
-    projects.filter((p: Opportunity) => {
-      const distance = calculateDistance(
-        userLocation.lat,
-        userLocation.lng,
-        p.data.project.location.coordinates.lat,
-        p.data.project.location.coordinates.lng
-      )
-      return distance <= radiusKm
-    }).length : projects.length
-
+  // Set page title
   useEffect(() => {
     setTitle("Public Opportunities")
     setDescription("Discover available opportunities across Greece")
   }, [setTitle, setDescription])
 
+  // Handle professional info updates
   useEffect(() => {
     if (professionalInfo?.areaOfOperation) {
       const profileMaxRadius = professionalInfo.areaOfOperation.radius || 100
@@ -140,6 +127,57 @@ export default function PublicOpportunitiesPage() {
     }
   }
 
+  // Check if professional info is properly set up
+  const isProfessionalInfoComplete = professionalInfo && 
+    professionalInfo.profession?.current &&
+    professionalInfo.areaOfOperation?.coordinates?.latitude &&
+    professionalInfo.areaOfOperation?.coordinates?.longitude &&
+    professionalInfo.areaOfOperation?.radius
+
+  // Calculate derived values only if we're going to use them
+  const totalCount = isProfessionalInfoComplete ? projects.length : 0
+  const activeOpportunitiesInArea = isProfessionalInfoComplete && userLocation ? 
+    projects.filter((p: Opportunity) => {
+      const distance = calculateDistance(
+        userLocation.lat,
+        userLocation.lng,
+        p.data.project.location.coordinates.lat,
+        p.data.project.location.coordinates.lng
+      )
+      return distance <= radiusKm
+    }).length : 0
+
+  // Render profile setup message if professional info is not complete
+  if (!isLoadingProfessionalInfo && !isProfessionalInfoComplete) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 bg-background border-none shadow-none">
+        <Card className="max-w-2xl w-full p-8 border-none bg-transparent shadow-none">
+          <div className="flex flex-col items-center text-center space-y-8">
+            <div className="w-64 h-64 relative">
+              <img
+                src="/profile-setup-required.svg"
+                alt="Profile setup required"
+                className="w-full h-full"
+              />
+            </div>
+            <div className="space-y-4">
+              <h1 className="text-2xl font-semibold">Complete Your Professional Profile</h1>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                To access and interact with opportunities in your area, please complete your professional profile setup. Set your professional title. Define your base location. Specify your operational radius
+              </p>
+              <Button asChild size="lg" className="mt-6">
+                <Link href="/profile">
+                  Complete Profile Setup
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
+  // Render main content
   return (
     <div className="space-y-6">
       {/* Statistics Overview */}
