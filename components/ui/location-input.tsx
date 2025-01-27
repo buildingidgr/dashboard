@@ -136,7 +136,7 @@ export default function LocationInput({ value, onChange, disabled }: LocationInp
       />
       <div 
         ref={mapRef} 
-        className="h-[500px] w-full rounded-md border border-input bg-background"
+        className="w-full h-[500px] rounded-md border border-input bg-background"
       />
     </div>
   )
