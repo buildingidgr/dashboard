@@ -59,6 +59,28 @@ export async function GET(request: NextRequest) {
     let data
     try {
       data = JSON.parse(responseText)
+      
+      // Transform the data
+      if (data.opportunities) {
+        data.opportunities = data.opportunities.map((opportunity: any) => {
+          // Shorten description to max 30 words
+          if (opportunity.data?.project?.details?.description) {
+            const words = opportunity.data.project.details.description.split(/\s+/)
+            if (words.length > 30) {
+              opportunity.data.project.details.description = words.slice(0, 30).join(' ') + '...'
+            }
+          }
+
+          // Remove specified fields
+          if (opportunity.data?.contact) {
+            delete opportunity.data.contact
+          }
+          delete opportunity.lastStatusChange
+          delete opportunity.statusHistory
+
+          return opportunity
+        })
+      }
     } catch {
       console.error('Failed to parse response as JSON:', responseText)
       return new Response("Invalid JSON response from server", { status: 500 })
