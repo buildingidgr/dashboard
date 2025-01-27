@@ -114,28 +114,28 @@ export default function ContactsGrid() {
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-[250px]" />
-          <Skeleton className="h-10 w-[200px]" />
+          <Skeleton className="w-[250px] h-10" />
+          <Skeleton className="w-[200px] h-10" />
         </div>
         <div className="rounded-lg border">
           <div className="border-b">
             <div className="grid grid-cols-5 p-4">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-4 w-[80%]" />
+                <Skeleton key={i} className="w-4/5 h-4" />
               ))}
             </div>
           </div>
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="grid grid-cols-5 items-center p-4 border-b last:border-b-0">
               {Array.from({ length: 5 }).map((_, j) => (
-                <Skeleton key={j} className="h-4 w-[80%]" />
+                <Skeleton key={j} className="w-4/5 h-4" />
               ))}
             </div>
           ))}
         </div>
         <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-[100px]" />
-          <Skeleton className="h-10 w-[200px]" />
+          <Skeleton className="w-[100px] h-10" />
+          <Skeleton className="w-[200px] h-10" />
         </div>
       </div>
     )
@@ -145,12 +145,12 @@ export default function ContactsGrid() {
   const endIndex = startIndex + ITEMS_PER_PAGE
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4">
+    <div className="w-full max-w-6xl p-4 mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-4xl font-bold">Contacts</h1>
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
               placeholder="Search contacts..."
               className="pl-8"
@@ -159,15 +159,15 @@ export default function ContactsGrid() {
             />
           </div>
           <Button variant="outline" size="icon">
-            <SortAsc className="h-4 w-4" />
+            <SortAsc className="size-4" />
           </Button>
           <Button variant="outline" size="icon">
-            <Zap className="h-4 w-4" />
+            <Zap className="size-4" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontal className="size-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -177,20 +177,20 @@ export default function ContactsGrid() {
             </DropdownMenuContent>
           </DropdownMenu>
           <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => router.push('/contacts/new')}>
-            New <Plus className="ml-2 h-4 w-4" />
+            New <Plus className="ml-2 size-4" />
           </Button>
         </div>
       </div>
 
-      <div className="border rounded-lg [&_td]:border-l [&_th]:border-l">
-        <Table className="[&_td]:py-2 [&_th]:py-2 text-sm">
+      <div className="rounded-lg border [&_td]:border-l [&_th]:border-l">
+        <Table className="text-sm [&_td]:py-2 [&_th]:py-2">
           <TableHeader className="bg-gray-50/50">
-            <TableRow className="hover:bg-transparent border-y">
-              <TableHead className="font-normal text-muted-foreground min-w-[200px]">Name</TableHead>
-              <TableHead className="font-normal text-muted-foreground min-w-[200px]">Email</TableHead>
-              <TableHead className="font-normal text-muted-foreground min-w-[150px]">Phone</TableHead>
-              <TableHead className="font-normal text-muted-foreground min-w-[200px]">Location</TableHead>
-              <TableHead className="font-normal text-muted-foreground min-w-[180px]">Updated</TableHead>
+            <TableRow className="border-y hover:bg-transparent">
+              <TableHead className="min-w-[200px] font-normal text-muted-foreground">Name</TableHead>
+              <TableHead className="min-w-[200px] font-normal text-muted-foreground">Email</TableHead>
+              <TableHead className="min-w-[150px] font-normal text-muted-foreground">Phone</TableHead>
+              <TableHead className="min-w-[200px] font-normal text-muted-foreground">Location</TableHead>
+              <TableHead className="min-w-[180px] font-normal text-muted-foreground">Updated</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -226,10 +226,10 @@ export default function ContactsGrid() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                        className="size-6 opacity-0 group-hover:opacity-100"
                         onClick={(e) => e.stopPropagation()} // Prevent row click when clicking the menu
                       >
-                        <MoreHorizontal className="h-4 w-4" />
+                        <MoreHorizontal className="size-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -249,12 +249,6 @@ export default function ContactsGrid() {
                       >
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-red-600"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Delete
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -264,7 +258,7 @@ export default function ContactsGrid() {
         </Table>
       </div>
 
-      <div className="flex items-center justify-between px-2 py-4 border-t">
+      <div className="flex items-center justify-between mt-4">
         <div className="text-sm text-muted-foreground">
           Showing {startIndex + 1} to {Math.min(endIndex, contacts.length)} of {contacts.length} results
         </div>
@@ -272,21 +266,18 @@ export default function ContactsGrid() {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="size-4" />
           </Button>
-          <div className="text-sm font-medium">
-            Page {currentPage} of {totalPages}
-          </div>
           <Button
             variant="outline"
             size="icon"
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="size-4" />
           </Button>
         </div>
       </div>

@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 
 // Add country codes mapping
-const COUNTRY_CODES: { [key: string]: { code: string, flag: string } } = {
+const _COUNTRY_CODES: { [key: string]: { code: string, flag: string } } = {
   '+1': { code: 'US', flag: '🇺🇸' },   // United States
   '+44': { code: 'GB', flag: '🇬🇧' },  // United Kingdom
   '+49': { code: 'DE', flag: '🇩🇪' },  // Germany
@@ -96,28 +96,28 @@ interface Contact {
 
 function PageSkeleton() {
   return (
-    <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
+    <div className="px-4 py-16 mx-auto max-w-[1200px] space-y-8">
       {/* Header Skeleton */}
       <div className="mb-8 space-y-6">
         <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-24" />
+          <Skeleton className="w-24 h-10" />
           <div className="flex gap-2">
-            <Skeleton className="h-10 w-24" />
-            <Skeleton className="h-10 w-24" />
+            <Skeleton className="w-24 h-10" />
+            <Skeleton className="w-24 h-10" />
           </div>
         </div>
-        <Skeleton className="h-14 w-2/3" />
+        <Skeleton className="w-2/3 h-14" />
       </div>
 
       {/* Content Skeleton */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
           <Card>
             <div className="p-6 space-y-4">
-              <Skeleton className="h-6 w-32" />
+              <Skeleton className="w-32 h-6" />
               <div className="space-y-2">
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="w-full h-5" />
+                <Skeleton className="w-3/4 h-5" />
               </div>
             </div>
           </Card>
@@ -125,10 +125,10 @@ function PageSkeleton() {
         <div className="space-y-6">
           <Card>
             <div className="p-6 space-y-4">
-              <Skeleton className="h-6 w-32" />
+              <Skeleton className="w-32 h-6" />
               <div className="space-y-2">
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="w-full h-5" />
+                <Skeleton className="w-3/4 h-5" />
               </div>
             </div>
           </Card>
@@ -142,12 +142,12 @@ export default function ContactDetailsPage() {
   const [contact, setContact] = useState<Contact | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
-  const { toast } = useToast()
+  const { toast: _toast } = useToast()
   const params = useParams()
   const { user } = useUser()
   const { session } = useSession()
   const { setTitle, setDescription } = usePageTitle()
-  const router = useRouter()
+  const _router = useRouter()
 
   const fetchContact = useCallback(async (id: string) => {
     try {
@@ -229,13 +229,13 @@ export default function ContactDetailsPage() {
 
   if (error || !contact) {
     return (
-      <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-16">
-        <div className="flex h-32 flex-col items-center justify-center space-y-4">
+      <div className="px-4 py-16 mx-auto max-w-[1200px] space-y-8">
+        <div className="flex flex-col items-center justify-center h-32 space-y-4">
           <h1 className="text-2xl font-bold">Contact Not Found</h1>
           <p className="text-muted-foreground">The requested contact could not be found.</p>
           <Button variant="outline" className="flex items-center gap-2" asChild>
             <Link href="/contacts">
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="size-4" />
               Back to Contacts
             </Link>
           </Button>
@@ -245,97 +245,81 @@ export default function ContactDetailsPage() {
   }
 
   return (
-    <div className="container max-w-[1200px] py-8 space-y-6">
+    <div className="container py-8 max-w-[1200px] space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/contacts" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Contacts
-          </Link>
-        </Button>
-        <Button variant="outline" size="sm" asChild>
-          <Link href={`/contacts/${contact.id}/edit`} className="flex items-center gap-2">
-            <Pencil className="h-4 w-4" />
-            Edit Contact
-          </Link>
-        </Button>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/contacts">
+              <ArrowLeft className="size-4" />
+              <span className="sr-only">Back to Contacts</span>
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">{contact.firstName} {contact.lastName}</h1>
+            {contact.company?.title && (
+              <p className="text-muted-foreground">{contact.company.title} at {contact.company.name}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" asChild>
+            <Link href={`/contacts/${contact.id}/edit`}>
+              <Pencil className="size-4" />
+              <span className="sr-only">Edit Contact</span>
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Content */}
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Basic Information Card */}
-          <Card className="overflow-hidden">
-            <div className="p-6 space-y-6">
-              <div>
-                <h1 className="text-2xl font-semibold">
-                  {contact.firstName} {contact.lastName}
-                </h1>
-                {contact.company?.title && (
-                  <p className="text-muted-foreground mt-1">
-                    {contact.company.title}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-                    <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div>
-                    <a href={`mailto:${contact.email}`} className="text-sm font-medium hover:underline">
+        <div className="space-y-6 lg:col-span-2">
+          {/* Contact Information */}
+          <Card>
+            <div className="p-6">
+              <h2 className="mb-4 text-lg font-semibold">Contact Information</h2>
+              <div className="space-y-4">
+                {contact.email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="size-4 text-muted-foreground" />
+                    <a href={`mailto:${contact.email}`} className="text-sm hover:underline">
                       {contact.email}
                     </a>
-                    <p className="text-xs text-muted-foreground">Email</p>
                   </div>
-                </div>
-
+                )}
                 {contact.phones.map((phone, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-                      <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <a href={`tel:${phone.number}`} className="text-sm font-medium hover:underline">
+                  <div key={index} className="flex items-center gap-2">
+                    <Phone className="size-4 text-muted-foreground" />
+                    <div className="flex items-center gap-2">
+                      <a href={`tel:${phone.number}`} className="text-sm hover:underline">
                         {phone.number}
                       </a>
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs text-muted-foreground capitalize">{phone.type}</p>
-                        {phone.primary && (
-                          <Badge variant="secondary" className="text-xs">Primary</Badge>
-                        )}
-                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {phone.type}
+                      </Badge>
+                      {phone.primary && (
+                        <Badge variant="outline" className="text-xs">
+                          Primary
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 ))}
-
+                {contact.company && (
+                  <div className="flex items-center gap-2">
+                    <Building2 className="size-4 text-muted-foreground" />
+                    <span className="text-sm">{contact.company.name}</span>
+                  </div>
+                )}
                 {contact.address && (
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-                      <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {contact.address.streetNumber} {contact.address.street}
-                      </p>
-                      <p className="text-sm">
-                        {contact.address.city}, {contact.address.area} {contact.address.postalCode}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{contact.address.country}</p>
-                    </div>
-                  </div>
-                )}
-
-                {contact.company?.name && (
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-                      <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{contact.company.name}</p>
-                      <p className="text-xs text-muted-foreground">Company</p>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="size-4 mt-0.5 text-muted-foreground" />
+                    <div className="text-sm">
+                      <div>{contact.address.streetNumber} {contact.address.street}</div>
+                      <div>{contact.address.city}, {contact.address.area} {contact.address.postalCode}</div>
+                      <div>{contact.address.country}</div>
                     </div>
                   </div>
                 )}
@@ -343,86 +327,64 @@ export default function ContactDetailsPage() {
             </div>
           </Card>
 
-          {/* Linked Items Card */}
-          <Card className="overflow-hidden">
-            <div className="p-6 space-y-4">
-              <h3 className="font-medium">Linked Items</h3>
-              <div className="space-y-4">
-                {contact.opportunityIds.length > 0 && (
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-                      <LinkIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {contact.opportunityIds.length} Linked Opportunit{contact.opportunityIds.length === 1 ? 'y' : 'ies'}
-                      </p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {contact.opportunityIds.map((id) => (
-                          <Button
-                            key={id}
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="h-7 text-xs"
-                          >
-                            <Link href={`/opportunities/${id}`}>
-                              View Opportunity
-                            </Link>
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
+          {/* Projects */}
+          {contact.projectIds.length > 0 && (
+            <Card>
+              <div className="p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">Projects</h2>
+                  <LinkIcon className="size-4 text-muted-foreground" />
+                </div>
+                <div className="space-y-2">
+                  {contact.projectIds.map((projectId) => (
+                    <Button key={projectId} variant="outline" className="w-full justify-start" asChild>
+                      <Link href={`/projects/${projectId}`}>
+                        Project {projectId}
+                      </Link>
+                    </Button>
+                  ))}
+                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Tags Card */}
+          {/* Tags */}
           {contact.tags.length > 0 && (
-            <Card className="p-6 space-y-4">
-              <div className="flex items-center gap-2">
-                <Tag className="h-4 w-4" />
-                <h3 className="font-medium">Tags</h3>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {contact.tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary">
-                    {tag}
-                  </Badge>
-                ))}
+            <Card>
+              <div className="p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">Tags</h2>
+                  <Tag className="size-4 text-muted-foreground" />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {contact.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             </Card>
           )}
 
-          {/* Metadata Card */}
-          <Card className="p-6 space-y-4">
-            <h3 className="font-medium">Details</h3>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-                  <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Created</p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(contact.createdAt), 'PPp')}
-                  </p>
-                </div>
+          {/* Metadata */}
+          <Card>
+            <div className="p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Details</h2>
+                <Calendar className="size-4 text-muted-foreground" />
               </div>
-              <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
-                  <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <div className="space-y-4 text-sm">
+                <div>
+                  <div className="text-muted-foreground">Created</div>
+                  <div>{format(new Date(contact.createdAt), "PPP")}</div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Last Updated</p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(contact.updatedAt), 'PPp')}
-                  </p>
+                  <div className="text-muted-foreground">Last Updated</div>
+                  <div>{format(new Date(contact.updatedAt), "PPP")}</div>
                 </div>
               </div>
             </div>

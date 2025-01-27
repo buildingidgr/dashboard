@@ -27,7 +27,7 @@ export function MechDialog({
   description,
   children,
   footer,
-  className
+  className: _className
 }: MechDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
