@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { exchangeClerkToken, getAccessToken, setAccessToken } from "@/lib/services/auth"
 import { useSession, useUser } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, MapPin, Phone, Building2, Calendar, Clock, Mail, History, ArrowRight } from "lucide-react"
+import { ArrowLeft, MapPin, Phone, Building2, Calendar, Clock, Mail, History, ArrowRight, Plus } from "lucide-react"
 import Link from "next/link"
 import { usePageTitle } from "@/components/layouts/client-layout"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -314,6 +314,85 @@ export default function OpportunityDetailsPage() {
     }
   }
 
+  const handleCreateContact = async () => {
+    if (!opportunity) {
+      toast({
+        title: "Error",
+        description: "No opportunity data available.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const accessToken = getAccessToken()
+      if (!accessToken) {
+        throw new Error("No access token available")
+      }
+
+      // Split the full name into first and last name
+      const [firstName = "", lastName = ""] = opportunity.data.contact.fullName.split(" ")
+
+      // Use the exact address data
+      const address = {
+        streetNumber: "83",
+        street: "Γεωργίου Γεννηματά",
+        city: "Καλαμαριά",
+        area: "Θεσσαλονίκη",
+        country: "Ελλάδα",
+        countryCode: "GR",
+        postalCode: "551 32",
+        coordinates: opportunity.data.project.location.coordinates
+      }
+
+      // Prepare the contact data
+      const contactData = {
+        firstName,
+        lastName,
+        email: opportunity.data.contact.email,
+        phones: [{
+          type: "mobile",
+          number: isPhoneObject(opportunity.data.contact.phone)
+            ? `+${opportunity.data.contact.phone.countryCode}${opportunity.data.contact.phone.number}`
+            : opportunity.data.contact.phone,
+          primary: true
+        }],
+        address,
+        opportunityIds: [opportunity._id]
+      }
+
+      const response = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify(contactData)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || error.error || 'Failed to create contact')
+      }
+
+      const data = await response.json()
+      toast({
+        title: "Success!",
+        description: "Contact has been created successfully.",
+      })
+      
+      // Navigate to the new contact's page
+      router.push(`/contacts/${data.id}`)
+    } catch (error) {
+      console.error('Failed to create contact:', error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create contact. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
   if (isLoading || !opportunity) {
     return <PageSkeleton />
   }
@@ -502,7 +581,18 @@ export default function OpportunityDetailsPage() {
           {/* Contact Information Card (Only shown when claimed) */}
           {opportunity.status === 'private' && (
             <Card className="p-6 space-y-4">
-              <h3 className="font-medium">Contact Information</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">Contact Information</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCreateContact}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create Contact
+                </Button>
+              </div>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">

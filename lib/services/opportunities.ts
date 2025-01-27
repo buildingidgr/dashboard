@@ -11,7 +11,8 @@ export async function claimOpportunity(opportunityId: string): Promise<void> {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
-    }
+    },
+    body: JSON.stringify({ status: 'private' })
   })
 
   if (!response.ok) {
