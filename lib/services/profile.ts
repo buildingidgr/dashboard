@@ -151,7 +151,9 @@ export async function getMyPreferences(): Promise<ProfilePreferences> {
     throw new Error(errorData?.message || 'Failed to fetch preferences')
   }
 
-  return response.json()
+  const data = await response.json()
+  console.log('Preferences response:', data)
+  return data.preferences  // Extract preferences from the response
 }
 
 export async function updatePreferences(data: Partial<ProfilePreferences>): Promise<ProfilePreferences> {
@@ -159,6 +161,8 @@ export async function updatePreferences(data: Partial<ProfilePreferences>): Prom
   if (!token) {
     throw new Error('No access token available')
   }
+
+  console.log('Updating preferences with data:', data)
 
   const response = await fetchWithRetry('/api/profile/preferences', {
     method: 'PATCH',
@@ -171,10 +175,17 @@ export async function updatePreferences(data: Partial<ProfilePreferences>): Prom
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null)
+    console.error('Preferences update error:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorData
+    })
     throw new Error(errorData?.message || 'Failed to update preferences')
   }
 
-  return response.json()
+  const responseData = await response.json()
+  console.log('Preferences update response:', responseData)
+  return responseData.preferences  // Extract preferences from the response
 }
 
 export async function getMyProfessionalInfo(): Promise<ProfessionalInformation> {
@@ -204,7 +215,7 @@ export async function getMyProfessionalInfo(): Promise<ProfessionalInformation> 
 
   const data = await response.json()
   console.log('Professional info data:', data)
-  return data
+  return data.professionalInfo  // Extract professionalInfo from the response
 }
 
 export async function updateProfessionalInfo(data: Partial<ProfessionalInformation>): Promise<ProfessionalInformation> {
@@ -213,20 +224,43 @@ export async function updateProfessionalInfo(data: Partial<ProfessionalInformati
     throw new Error('No access token available')
   }
 
-  const response = await fetchWithRetry('/api/profile/professional', {
+  console.log('Updating professional info with data:', data)
+  console.log('Request Payload:', JSON.stringify({
     method: 'PATCH',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Accept': 'application/json',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(data)
-  })
+    body: data
+  }, null, 2))
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null)
-    throw new Error(errorData?.message || 'Failed to update professional information')
+  try {
+    const response = await fetchWithRetry('/api/profile/professional', {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      console.error('Professional info update error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData
+      })
+      throw new Error(errorData?.message || 'Failed to update professional information')
+    }
+
+    const responseData = await response.json()
+    console.log('Professional info update response:', responseData)
+    return responseData.professionalInfo  // Extract professionalInfo from the response
+  } catch (error) {
+    console.error('Unexpected error in updateProfessionalInfo:', error)
+    throw error
   }
-
-  return response.json()
 } 

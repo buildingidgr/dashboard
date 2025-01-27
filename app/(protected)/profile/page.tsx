@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import { useUploadFile } from '@/lib/hooks/use-upload-file'
 import { toast } from 'sonner'
 import debounce from 'lodash/debounce'
+import { useSession } from '@clerk/nextjs'
 
 const LANGUAGES = [
   { value: 'en-US', label: 'English (US)' },
@@ -88,13 +89,29 @@ interface FieldValue {
 }
 
 // Create a stable debounced function outside the component
-const createDebouncedSave = () => debounce((
-  values: TempValues,
-  save: (values: TempValues) => Promise<void>
-) => {
-  console.log('Debounced save executing with values:', values)
-  void save(values)
-}, 1000)
+const createDebouncedSave = () => {
+  let typingTimer: NodeJS.Timeout | null = null
+
+  return debounce((
+    values: TempValues,
+    save: (values: TempValues) => Promise<void>
+  ) => {
+    // Clear any existing typing timer
+    if (typingTimer) {
+      clearTimeout(typingTimer)
+      typingTimer = null
+    }
+
+    // Add an additional delay to ensure typing is complete
+    typingTimer = setTimeout(() => {
+      console.log('Debounced save executing with values:', values)
+      console.error('DEBOUNCED SAVE TRIGGERED')
+      void save(values).catch(error => {
+        console.error('Debounced save failed:', error)
+      })
+    }, 3000) // Increased to 3 seconds
+  }, 5000) // Increased outer debounce to 5 seconds
+}
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -102,6 +119,7 @@ export default function ProfilePage() {
   const { preferences, isLoading: isPreferencesLoading, updatePreferences } = usePreferences()
   const { professionalInfo, isLoading: isProfessionalLoading, updateInfo: updateProfessionalInfo } = useProfessionalInfo()
   const { uploadFile, isUploading } = useUploadFile()
+  const { session, isLoaded: isSessionLoaded } = useSession()
   
   const [isSaving, setIsSaving] = useState(false)
   const [values, setValues] = useState<TempValues>({
@@ -138,48 +156,86 @@ export default function ProfilePage() {
   const saveRef = useRef<(values: TempValues) => Promise<void>>()
   const debouncedSaveRef = useRef(createDebouncedSave())
 
+  // Log session and loading states
+  useEffect(() => {
+    console.log('Session Loading State:', {
+      isSessionLoaded,
+      sessionId: session?.id,
+      profileLoading: isProfileLoading,
+      preferencesLoading: isPreferencesLoading,
+      professionalInfoLoading: isProfessionalLoading
+    })
+  }, [isSessionLoaded, session, isProfileLoading, isPreferencesLoading, isProfessionalLoading])
+
   // Initialize values when data is loaded
   useEffect(() => {
-    if (profile && preferences && professionalInfo) {
-      setValues({
-        firstName: profile.firstName || '',
-        lastName: profile.lastName || '',
-        profession: professionalInfo.profession.current || '',
-        amtee: professionalInfo.amtee || '',
+    console.log('Data loading effect triggered')
+    console.log('Profile:', profile)
+    console.log('Preferences:', preferences)
+    console.log('Professional Info:', professionalInfo)
+
+    // Check if at least some data is available
+    if (profile || preferences || professionalInfo) {
+      console.log('Setting values from partially loaded data')
+      setValues(prev => ({
+        firstName: profile?.firstName || prev.firstName || '',
+        lastName: profile?.lastName || prev.lastName || '',
+        profession: professionalInfo?.profession?.current || prev.profession || '',
+        amtee: professionalInfo?.amtee || prev.amtee || '',
         area: {
-          address: professionalInfo.areaOfOperation?.address || '',
+          address: professionalInfo?.areaOfOperation?.address || prev.area.address || '',
           coordinates: {
-            lat: professionalInfo.areaOfOperation?.coordinates.latitude || 0,
-            lng: professionalInfo.areaOfOperation?.coordinates.longitude || 0
+            lat: professionalInfo?.areaOfOperation?.coordinates.latitude || prev.area.coordinates.lat || 0,
+            lng: professionalInfo?.areaOfOperation?.coordinates.longitude || prev.area.coordinates.lng || 0
           },
-          radius: professionalInfo.areaOfOperation?.radius || 50
+          radius: professionalInfo?.areaOfOperation?.radius || prev.area.radius || 50
         },
         preferences: {
           dashboard: {
-            language: preferences.dashboard.language || 'en-US',
-            timezone: preferences.dashboard.timezone || 'UTC'
+            language: preferences?.dashboard?.language || prev.preferences.dashboard.language || 'en-US',
+            timezone: preferences?.dashboard?.timezone || prev.preferences.dashboard.timezone || 'UTC'
           },
           notifications: {
             email: {
-              marketing: preferences.notifications.email.marketing || false,
-              updates: preferences.notifications.email.updates || false,
-              security: preferences.notifications.email.security || false,
-              newsletters: preferences.notifications.email.newsletters || false,
-              productAnnouncements: preferences.notifications.email.productAnnouncements || false
+              marketing: preferences?.notifications?.email?.marketing ?? prev.preferences.notifications.email.marketing ?? false,
+              updates: preferences?.notifications?.email?.updates ?? prev.preferences.notifications.email.updates ?? false,
+              security: preferences?.notifications?.email?.security ?? prev.preferences.notifications.email.security ?? false,
+              newsletters: preferences?.notifications?.email?.newsletters ?? prev.preferences.notifications.email.newsletters ?? false,
+              productAnnouncements: preferences?.notifications?.email?.productAnnouncements ?? prev.preferences.notifications.email.productAnnouncements ?? false
             }
           },
           display: {
-            theme: preferences.display.theme || 'light'
+            theme: preferences?.display?.theme || prev.preferences.display.theme || 'light'
           }
         }
+      }))
+    } else {
+      console.warn('No data is loaded', {
+        profileLoaded: !!profile,
+        preferencesLoaded: !!preferences,
+        professionalInfoLoaded: !!professionalInfo
       })
     }
   }, [profile, preferences, professionalInfo])
 
   // Update save function ref when dependencies change
   useEffect(() => {
+    console.log('Save function useEffect triggered')
+    console.log('Dependencies:', {
+      profile: !!profile,
+      preferences: !!preferences,
+      professionalInfo: !!professionalInfo,
+      isSaving
+    })
+
     saveRef.current = async (valuesToSave: TempValues) => {
       console.log('saveChanges executing with:', valuesToSave)
+      console.log('Current state:', {
+        profile: profile ? { ...profile } : null,
+        preferences: preferences ? { ...preferences } : null,
+        professionalInfo: professionalInfo ? { ...professionalInfo } : null
+      })
+      
       if (isSaving) {
         console.log('Already saving, skipping...')
         return
@@ -203,20 +259,64 @@ export default function ProfilePage() {
 
         // Update professional info
         const professionalChanges: ProfessionalChanges = {}
-        if (valuesToSave.profession !== professionalInfo?.profession.current) {
+        console.log('Professional Info Update Check:', {
+          professionalInfoExists: !!professionalInfo,
+          professionalInfoProfession: professionalInfo?.profession,
+          currentProfession: valuesToSave.profession,
+          storedProfession: professionalInfo?.profession?.current
+        })
+
+        // Force update if profession is different or not set
+        if (
+          valuesToSave.profession && 
+          (!professionalInfo?.profession || 
+           valuesToSave.profession !== professionalInfo.profession.current)
+        ) {
           professionalChanges.profession = {
             current: valuesToSave.profession,
-            allowedValues: professionalInfo?.profession.allowedValues || []
+            allowedValues: professionalInfo?.profession?.allowedValues || [
+              "Civil Engineer",
+              "Architectural Engineer",
+              "Mechanical Engineer",
+              "Chemical Engineer",
+              "Electrical Engineer",
+              "Surveying and Rural Engineer",
+              "Naval Architect and Marine Engineer",
+              "Electronics Engineer",
+              "Mining and Metallurgical Engineer",
+              "Urban, Regional and Development Planning Engineer",
+              "Automation Engineer",
+              "Environmental Engineer",
+              "Production and Management Engineer",
+              "Acoustical Engineer",
+              "Materials Engineer",
+              "Product and Systems Design Engineer"
+            ]
           }
+          console.log('Professional Info Profession Update Payload:', {
+            profession: {
+              current: valuesToSave.profession,
+              allowedValues: professionalChanges.profession.allowedValues
+            }
+          })
+        } else {
+          console.warn('Professional info update condition not met', {
+            profession: valuesToSave.profession,
+            currentProfession: professionalInfo?.profession?.current
+          })
         }
         if (valuesToSave.amtee !== professionalInfo?.amtee) {
           professionalChanges.amtee = valuesToSave.amtee
+          console.log('Professional Info AMTEE Update Payload:', {
+            amtee: valuesToSave.amtee
+          })
         }
+        // Force update of area of operation if any field is different or not set
         if (
-          valuesToSave.area.address !== professionalInfo?.areaOfOperation?.address ||
-          valuesToSave.area.coordinates.lat !== professionalInfo?.areaOfOperation?.coordinates.latitude ||
-          valuesToSave.area.coordinates.lng !== professionalInfo?.areaOfOperation?.coordinates.longitude ||
-          valuesToSave.area.radius !== professionalInfo?.areaOfOperation?.radius
+          valuesToSave.area.address || 
+          valuesToSave.area.coordinates.lat !== 0 || 
+          valuesToSave.area.coordinates.lng !== 0 || 
+          valuesToSave.area.radius !== 50
         ) {
           professionalChanges.areaOfOperation = {
             primary: valuesToSave.area.address,
@@ -227,22 +327,48 @@ export default function ProfilePage() {
             },
             radius: valuesToSave.area.radius
           }
+          console.log('Professional Info Area Update Payload:', {
+            areaOfOperation: {
+              primary: valuesToSave.area.address,
+              address: valuesToSave.area.address,
+              coordinates: {
+                latitude: valuesToSave.area.coordinates.lat,
+                longitude: valuesToSave.area.coordinates.lng
+              },
+              radius: valuesToSave.area.radius
+            }
+          })
+        } else {
+          console.warn('Area of operation update condition not met', {
+            savedAddress: valuesToSave.area.address,
+            savedLat: valuesToSave.area.coordinates.lat,
+            savedLng: valuesToSave.area.coordinates.lng,
+            savedRadius: valuesToSave.area.radius
+          })
         }
 
         if (Object.keys(professionalChanges).length > 0) {
-          console.log('Updating professional info with:', professionalChanges)
+          console.log('Full Professional Info Update Payload:', JSON.stringify(professionalChanges, null, 2))
+          console.error('ATTEMPTING PROFESSIONAL INFO UPDATE')
           await updateProfessionalInfo(professionalChanges)
         }
 
         // Update preferences
+        console.log('Current preferences:', preferences)
+        console.log('Preferences to save:', valuesToSave.preferences)
+        
         const preferencesChanged = 
-          valuesToSave.preferences.dashboard.language !== preferences?.dashboard.language ||
-          valuesToSave.preferences.dashboard.timezone !== preferences?.dashboard.timezone ||
-          valuesToSave.preferences.display.theme !== preferences?.display.theme ||
-          JSON.stringify(valuesToSave.preferences.notifications.email) !== JSON.stringify(preferences?.notifications.email)
+          preferences?.dashboard &&
+          (valuesToSave.preferences.dashboard.language !== preferences.dashboard.language ||
+          valuesToSave.preferences.dashboard.timezone !== preferences.dashboard.timezone ||
+          valuesToSave.preferences.display.theme !== preferences.display.theme ||
+          JSON.stringify(valuesToSave.preferences.notifications.email) !== JSON.stringify(preferences.notifications.email))
+
+        console.log('Preferences changed:', preferencesChanged)
 
         if (preferencesChanged) {
           console.log('Updating preferences with:', valuesToSave.preferences)
+          console.error('ATTEMPTING PREFERENCES UPDATE')
           await updatePreferences(valuesToSave.preferences)
         }
 
@@ -256,6 +382,8 @@ export default function ProfilePage() {
         setIsSaving(false)
       }
     }
+
+    console.log('saveRef.current has been set')
   }, [profile, preferences, professionalInfo, updateProfile, updatePreferences, updateProfessionalInfo, isSaving])
 
   // Cleanup on unmount
@@ -268,7 +396,7 @@ export default function ProfilePage() {
 
   // Handle field changes with auto-save
   const handleFieldChange = useCallback((field: string, value: FieldValue | string | boolean) => {
-    console.log('Field changed:', field, value)
+    console.log('Field changed:', field, 'Value:', value)
     
     setValues(prev => {
       let updatedValues: TempValues
@@ -309,11 +437,32 @@ export default function ProfilePage() {
         }
       }
 
-      // Call debouncedSave with the updated values and save function
-      console.log('Calling debouncedSave with:', updatedValues)
+      // More controlled save mechanism
       if (saveRef.current) {
-        debouncedSaveRef.current(updatedValues, saveRef.current)
+        // Log the field being changed
+        console.log(`Field ${field} changed. Preparing to save...`)
+        
+        // Use different save strategies based on the field
+        if (['firstName', 'lastName'].includes(field)) {
+          // Slightly delayed save for name changes
+          debouncedSaveRef.current(updatedValues, saveRef.current)
+        } else if (['profession', 'amtee'].includes(field)) {
+          // Very relaxed save for professional info
+          debouncedSaveRef.current(updatedValues, saveRef.current)
+        } else if (field.startsWith('preferences')) {
+          // Most relaxed save for preferences
+          debouncedSaveRef.current(updatedValues, saveRef.current)
+        } else if (field === 'area') {
+          // Delayed save for area to allow for precise selection
+          debouncedSaveRef.current(updatedValues, saveRef.current)
+        } else {
+          // Fallback to standard debounced save
+          debouncedSaveRef.current(updatedValues, saveRef.current)
+        }
+      } else {
+        console.error('saveRef.current is undefined')
       }
+      
       return updatedValues
     })
   }, [])
@@ -448,7 +597,16 @@ export default function ProfilePage() {
                   <div className="mt-1">
                     <Input
                       value={values.firstName}
-                      onChange={(e) => handleFieldChange('firstName', e.target.value)}
+                      onChange={(e) => {
+                        const newValue = e.target.value
+                        console.log('First Name Input Change:', {
+                          currentValue: newValue,
+                          previousValue: values.firstName
+                        })
+                        handleFieldChange('firstName', newValue)
+                      }}
+                      placeholder="Enter your first name"
+                      className="tracking-wider"
                     />
                   </div>
                 </div>
@@ -457,7 +615,16 @@ export default function ProfilePage() {
                   <div className="mt-1">
                     <Input
                       value={values.lastName}
-                      onChange={(e) => handleFieldChange('lastName', e.target.value)}
+                      onChange={(e) => {
+                        const newValue = e.target.value
+                        console.log('Last Name Input Change:', {
+                          currentValue: newValue,
+                          previousValue: values.lastName
+                        })
+                        handleFieldChange('lastName', newValue)
+                      }}
+                      placeholder="Enter your last name"
+                      className="tracking-wider"
                     />
                   </div>
                 </div>
@@ -552,8 +719,16 @@ export default function ProfilePage() {
                 <div className="mt-1">
                   <Input
                     value={values.amtee}
-                    onChange={(e) => handleFieldChange('amtee', e.target.value)}
+                    onChange={(e) => {
+                      const newValue = e.target.value
+                      console.log('AMTEE Input Change:', {
+                        currentValue: newValue,
+                        previousValue: values.amtee
+                      })
+                      handleFieldChange('amtee', newValue)
+                    }}
                     placeholder="e.g., 123456"
+                    className="tracking-wider"
                   />
                 </div>
               </div>

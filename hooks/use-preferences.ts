@@ -16,6 +16,7 @@ export function usePreferences() {
     try {
       setIsLoading(true)
       const data = await getMyPreferences()
+      console.log('Fetched preferences:', data)
       setPreferences(data)
       setError(null)
     } catch (err) {

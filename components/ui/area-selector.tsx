@@ -56,7 +56,18 @@ export default function AreaSelector({
   const debouncedOnChange = useCallback(
     (location: Parameters<typeof onChange>[0]) => {
       const updateKey = JSON.stringify(location)
-      if (updateKey === lastUpdateRef.current) return
+      console.log('Area Selector - Debounced Change Triggered:', {
+        address: location.address,
+        coordinates: location.coordinates,
+        radius: location.radius,
+        updateKey: updateKey
+      })
+      
+      if (updateKey === lastUpdateRef.current) {
+        console.log('Area Selector - Skipping Duplicate Update')
+        return
+      }
+      
       lastUpdateRef.current = updateKey
       isUserInteractionRef.current = false
       onChange(location)
@@ -65,7 +76,7 @@ export default function AreaSelector({
   )
 
   const debouncedOnChangeWithDebounce = useMemo(
-    () => debounce(debouncedOnChange, 1000),
+    () => debounce(debouncedOnChange, 500),
     [debouncedOnChange]
   )
 
@@ -132,6 +143,15 @@ export default function AreaSelector({
 
     const listener = autocomplete.addListener('place_changed', () => {
       const place = autocomplete.getPlace()
+      console.log('Area Selector - Place Selected:', {
+        formattedAddress: place.formatted_address,
+        location: place.geometry?.location ? {
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng()
+        } : null,
+        placeDetails: place
+      })
+      
       if (place.geometry?.location) {
         const location = {
           address: place.formatted_address || '',
@@ -147,6 +167,11 @@ export default function AreaSelector({
           marker.setPosition(place.geometry.location)
           updateCircle(place.geometry.location, radius)
         }
+        
+        // Immediately trigger onChange without debounce
+        onChange(location)
+        
+        // Still keep the debounced version for additional tracking
         debouncedOnChangeWithDebounce(location)
       }
     })
@@ -154,7 +179,7 @@ export default function AreaSelector({
     return () => {
       google.maps.event.removeListener(listener)
     }
-  }, [isLoaded, map, marker, circle, radius, debouncedOnChangeWithDebounce, updateCircle])
+  }, [isLoaded, map, marker, circle, radius, debouncedOnChangeWithDebounce, updateCircle, onChange])
 
   // Initialize map elements when loaded
   useEffect(() => {
@@ -223,6 +248,19 @@ export default function AreaSelector({
     adjustMapZoom(newPosition, newRadius)
   }, [map, marker, circle, value?.coordinates?.lat, value?.coordinates?.lng, value?.radius, adjustMapZoom])
 
+  // Add a new method to handle input changes more responsively
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newInputValue = e.target.value
+    setInputValue(newInputValue)
+
+    // Only trigger debounced change if input is not empty
+    if (newInputValue.trim()) {
+      console.log('Area Selector - Input Change:', {
+        inputValue: newInputValue
+      })
+    }
+  }
+
   if (loadError) {
     return <div>Error loading maps</div>
   }
@@ -239,7 +277,7 @@ export default function AreaSelector({
           type="text"
           placeholder="Search for a location"
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={handleInputChange}
           disabled={disabled}
           className="w-full"
         />
@@ -254,6 +292,11 @@ export default function AreaSelector({
           onValueChange={([newRadius]) => {
             isUserInteractionRef.current = true;
             const clampedRadius = Math.min(newRadius, maxRadius)
+            console.log('Area Selector - Radius Change:', {
+              originalRadius: newRadius,
+              clampedRadius: clampedRadius,
+              maxRadius: maxRadius
+            })
             setRadius(clampedRadius)
             const center = marker?.getPosition()
             if (center && circle) {
