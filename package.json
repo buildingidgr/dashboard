@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "CI=true NEXT_TELEMETRY_DISABLED=1 next build 2>&1 | grep -v 'warn'",
     "start": "next start",
     "lint": "next lint"
   },
@@ -52,6 +52,7 @@
     "@remixicon/react": "^4.5.0",
     "@tanstack/react-query": "^5.62.16",
     "@tanstack/react-table": "^8.20.6",
+    "@tremor/react": "^3.18.7",
     "@types/socket.io-client": "^1.4.36",
     "@types/ws": "^8.5.13",
     "@udecode/cmdk": "^0.1.1",

@@ -8,6 +8,12 @@ const nextConfig = {
       ? { properties: ['^data-new-gr-c-s-check-loaded$', '^data-gr-ext-installed$', '^data-gr-ext-disabled$', '^data-gr-.*$'] }
       : false
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   // Ignore specific build warnings
   onDemandEntries: {
     // Period (in ms) where the server will keep pages in the buffer

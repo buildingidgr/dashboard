@@ -3,14 +3,15 @@
 import { Card } from "@/components/ui/card"
 import { FileText } from "lucide-react"
 import { usePublicOpportunities } from "@/hooks/use-public-opportunities"
+import { OpportunityGrowthChart } from "@/components/dashboard/opportunity-growth-chart"
 
 export default function DashboardPage() {
   const { total, loading, error } = usePublicOpportunities();
 
   return (
     <div className="container space-y-8 py-8">
-      {/* Public Opportunities Stats */}
-      <div className="w-full md:w-1/3">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-4">
+        {/* Public Opportunities Stats */}
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="rounded-lg bg-muted p-2">
@@ -32,6 +33,9 @@ export default function DashboardPage() {
             </div>
           </div>
         </Card>
+
+        {/* Growth Chart */}
+        <OpportunityGrowthChart />
       </div>
     </div>
   )
