@@ -138,6 +138,7 @@ export default function OpportunityDetailsPage() {
   const [isUnclaimDialogOpen, setIsUnclaimDialogOpen] = useState(false)
   const [isUnclaiming, setIsUnclaiming] = useState(false)
   const [contactExists, setContactExists] = useState(false)
+  const [contactId, setContactId] = useState<string | null>(null)
 
   const fetchOpportunity = useCallback(async (id: string) => {
     try {
@@ -419,11 +420,13 @@ export default function OpportunityDetailsPage() {
 
       const { exists, contactId } = await response.json()
       setContactExists(exists)
+      setContactId(contactId)
       
       console.log('Contact check response:', { email, exists, contactId })
     } catch (error) {
       console.error('Error checking contact:', error)
       setContactExists(false)
+      setContactId(null)
     }
   }, [])
 
@@ -622,21 +625,8 @@ export default function OpportunityDetailsPage() {
 
           {/* Contact Information Card (Only shown when claimed) */}
           {opportunity.status === 'private' && (
-            <Card className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium">Contact Information</h3>
-                {!contactExists && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCreateContact}
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Create Contact
-                  </Button>
-                )}
-              </div>
+            <Card className="p-6">
+              <h3 className="font-medium mb-4">Contact Information</h3>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
@@ -668,6 +658,31 @@ export default function OpportunityDetailsPage() {
                     </p>
                     <p className="text-xs text-muted-foreground">Phone Number</p>
                   </div>
+                </div>
+                <div className="border-t border-border mt-4 pt-4">
+                  {contactExists ? (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      asChild
+                      className="w-full"
+                    >
+                      <Link href={`/contacts/${contactId}`} className="flex items-center justify-center gap-2">
+                        <ArrowRight className="h-4 w-4" />
+                        View Contact Details
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleCreateContact}
+                      className="w-full flex items-center justify-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Create Contact
+                    </Button>
+                  )}
                 </div>
               </div>
             </Card>

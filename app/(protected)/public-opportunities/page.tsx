@@ -66,6 +66,18 @@ export default function PublicOpportunitiesPage() {
 
   const totalCount = projects.length
 
+  // Calculate active opportunities within user's radius
+  const activeOpportunitiesInArea = userLocation ? 
+    projects.filter((p: Opportunity) => {
+      const distance = calculateDistance(
+        userLocation.lat,
+        userLocation.lng,
+        p.data.project.location.coordinates.lat,
+        p.data.project.location.coordinates.lng
+      )
+      return distance <= radiusKm
+    }).length : projects.length
+
   useEffect(() => {
     setTitle("Public Opportunities")
     setDescription("Discover available opportunities across Greece")
@@ -144,8 +156,11 @@ export default function PublicOpportunitiesPage() {
           }).length}</p>
         </Card>
         <Card className="p-4">
-          <h3 className="text-sm font-medium text-muted-foreground">Active Areas</h3>
-          <p className="text-2xl font-bold">{new Set(projects.map((p: Opportunity) => p.data.project.location.address)).size}</p>
+          <h3 className="text-sm font-medium text-muted-foreground">Active opportunities in your area</h3>
+          <p className="text-2xl font-bold">{activeOpportunitiesInArea}</p>
+          {userLocation && (
+            <p className="text-xs text-muted-foreground mt-1">Within {radiusKm}km of your location</p>
+          )}
         </Card>
       </div>
 
