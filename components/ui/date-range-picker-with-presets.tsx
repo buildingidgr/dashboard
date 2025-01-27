@@ -29,6 +29,7 @@ export function DateRangePickerWithPresets({
   className,
   align = "start",
 }: DateRangePickerWithPresetsProps) {
+  const [open, setOpen] = useState(false);
   const today = new Date();
   const yesterday = {
     from: subDays(today, 1),
@@ -60,9 +61,14 @@ export function DateRangePickerWithPresets({
   };
   const [month, setMonth] = useState(date?.from || today);
 
+  const handleSelect = (newDate?: DateRange) => {
+    onSelect(newDate);
+    setOpen(false);
+  };
+
   return (
     <div className={className}>
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant={"outline"}
@@ -100,7 +106,7 @@ export function DateRangePickerWithPresets({
                           from: today,
                           to: today,
                         };
-                        onSelect(newDate);
+                        handleSelect(newDate);
                         setMonth(today);
                       }}
                     >
@@ -111,7 +117,7 @@ export function DateRangePickerWithPresets({
                       size="sm"
                       className="w-full justify-start"
                       onClick={() => {
-                        onSelect(yesterday);
+                        handleSelect(yesterday);
                         setMonth(yesterday.to);
                       }}
                     >
@@ -122,7 +128,7 @@ export function DateRangePickerWithPresets({
                       size="sm"
                       className="w-full justify-start"
                       onClick={() => {
-                        onSelect(last7Days);
+                        handleSelect(last7Days);
                         setMonth(last7Days.to);
                       }}
                     >
@@ -133,7 +139,7 @@ export function DateRangePickerWithPresets({
                       size="sm"
                       className="w-full justify-start"
                       onClick={() => {
-                        onSelect(last30Days);
+                        handleSelect(last30Days);
                         setMonth(last30Days.to);
                       }}
                     >
@@ -144,7 +150,7 @@ export function DateRangePickerWithPresets({
                       size="sm"
                       className="w-full justify-start"
                       onClick={() => {
-                        onSelect(monthToDate);
+                        handleSelect(monthToDate);
                         setMonth(monthToDate.to);
                       }}
                     >
@@ -155,7 +161,7 @@ export function DateRangePickerWithPresets({
                       size="sm"
                       className="w-full justify-start"
                       onClick={() => {
-                        onSelect(lastMonth);
+                        handleSelect(lastMonth);
                         setMonth(lastMonth.to);
                       }}
                     >
@@ -166,7 +172,7 @@ export function DateRangePickerWithPresets({
                       size="sm"
                       className="w-full justify-start"
                       onClick={() => {
-                        onSelect(yearToDate);
+                        handleSelect(yearToDate);
                         setMonth(yearToDate.to);
                       }}
                     >
@@ -177,7 +183,7 @@ export function DateRangePickerWithPresets({
                       size="sm"
                       className="w-full justify-start"
                       onClick={() => {
-                        onSelect(lastYear);
+                        handleSelect(lastYear);
                         setMonth(lastYear.to);
                       }}
                     >
@@ -189,7 +195,7 @@ export function DateRangePickerWithPresets({
               <Calendar
                 mode="range"
                 selected={date}
-                onSelect={onSelect}
+                onSelect={handleSelect}
                 month={month}
                 onMonthChange={setMonth}
                 className="p-2"

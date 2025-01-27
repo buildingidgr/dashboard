@@ -10,7 +10,7 @@ export default function DashboardPage() {
 
   return (
     <div className="container space-y-8 py-8">
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
         {/* Public Opportunities Stats */}
         <Card className="p-6">
           <div className="flex items-center gap-4">
