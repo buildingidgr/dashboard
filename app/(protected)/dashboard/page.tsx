@@ -1,76 +1,38 @@
 "use client";
 
 import { Card } from "@/components/ui/card"
-import OpportunityTable from "@/components/opportunity-table"
-import { Building2, Users, FileText } from "lucide-react"
-import { RecentDocuments } from "@/components/recent-documents"
-
-// Sample data - replace with real data fetching
-const stats = [
-  {
-    label: "Total Projects",
-    value: "12",
-    icon: Building2,
-    change: "+2",
-  },
-  {
-    label: "Active Contacts",
-    value: "48",
-    icon: Users,
-    change: "+5",
-  },
-  {
-    label: "Open Opportunities",
-    value: "8",
-    icon: FileText,
-    change: "+1",
-  },
-]
+import { FileText } from "lucide-react"
+import { usePublicOpportunities } from "@/hooks/use-public-opportunities"
 
 export default function DashboardPage() {
+  const { total, loading, error } = usePublicOpportunities();
+
   return (
     <div className="container space-y-8 py-8">
-      {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {stats.map((stat) => {
-          const Icon = stat.icon
-          return (
-            <Card key={stat.label} className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-muted p-2">
-                  <Icon className="size-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {stat.label}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-2xl font-bold">{stat.value}</h3>
-                    <span className="text-sm text-green-500">{stat.change}</span>
-                  </div>
-                </div>
+      {/* Public Opportunities Stats */}
+      <div className="w-full md:w-1/3">
+        <Card className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="rounded-lg bg-muted p-2">
+              <FileText className="size-6" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Public Opportunities
+              </p>
+              <div className="flex items-center gap-2">
+                {loading ? (
+                  <h3 className="text-2xl font-bold">Loading...</h3>
+                ) : error ? (
+                  <h3 className="text-2xl font-bold text-red-500">Error</h3>
+                ) : (
+                  <h3 className="text-2xl font-bold">{total}</h3>
+                )}
               </div>
-            </Card>
-          )
-        })}
+            </div>
+          </div>
+        </Card>
       </div>
-
-      {/* Recent Documents */}
-      <RecentDocuments />
-
-      {/* Recent Opportunities */}
-      <Card>
-        <div className="p-6">
-          <div className="mb-4 font-semibold">Recent Opportunities</div>
-          <OpportunityTable 
-            opportunities={[]} 
-            currentPage={1}
-            totalPages={1}
-            onPageChange={() => {}}
-            onClaim={() => {}}
-          />
-        </div>
-      </Card>
     </div>
   )
 }

@@ -244,11 +244,11 @@ function ClientLayout({ children }: ClientLayoutProps) {
               <SidebarInset className="flex flex-col">
                 {/* Professional Data Alert */}
                 {hasProfessionalData === false && (
-                  <div className="dark:bg-muted bg-muted px-4 py-3 text-foreground">
+                  <div className="bg-black dark:bg-white text-white dark:text-black px-4 py-3">
                     <div className="flex flex-col justify-between gap-2 md:flex-row">
                       <div className="flex grow gap-3">
                         <Eclipse
-                          className="mt-0.5 shrink-0 opacity-60"
+                          className="mt-0.5 shrink-0 text-white dark:text-black opacity-60"
                           size={16}
                           strokeWidth={2}
                           aria-hidden="true"
@@ -259,11 +259,11 @@ function ClientLayout({ children }: ClientLayoutProps) {
                           </p>
                           <Link 
                             href="/profile" 
-                            className="group whitespace-nowrap text-sm font-medium"
+                            className="group whitespace-nowrap text-sm font-medium text-white dark:text-black hover:text-gray-200 dark:hover:text-gray-700"
                           >
                             Update Profile
                             <ArrowRight
-                              className="-mt-0.5 ms-1 inline-flex opacity-60 transition-transform group-hover:translate-x-0.5"
+                              className="-mt-0.5 ms-1 inline-flex text-white dark:text-black opacity-60 transition-transform group-hover:translate-x-0.5"
                               size={16}
                               strokeWidth={2}
                               aria-hidden="true"
