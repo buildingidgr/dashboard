@@ -112,7 +112,7 @@ interface ClaimedOpportunitiesProps {
 export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpportunitiesProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string | null>(null)
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
   const [unclaimingId, setUnclaimingId] = useState<string | null>(null)
   const [isUnclaiming, setIsUnclaiming] = useState(false)
 
@@ -170,15 +170,20 @@ export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpp
     ? projects.length 
     : projects?.summary?.totalOpportunities || 0
 
+  // Get unique categories from opportunities and filter out any empty strings
+  const categories = [...new Set(opportunities.map(project => project.data.project.category))]
+    .filter(category => category && category.trim() !== "")
+    .sort((a, b) => a.localeCompare(b))
+
   const filteredProjects = opportunities.filter(project => {
     const matchesSearch = searchQuery === "" || 
       project.data.project.details.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.data.project.details.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.data.project.location.address.toLowerCase().includes(searchQuery.toLowerCase())
     
-    const matchesStatus = !statusFilter || project.currentStatus === statusFilter
+    const matchesCategory = !categoryFilter || project.data.project.category === categoryFilter
 
-    return matchesSearch && matchesStatus
+    return matchesSearch && matchesCategory
   })
 
   if (filteredProjects.length === 0) {
@@ -194,16 +199,16 @@ export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpp
         <div className="max-w-[420px] space-y-2 text-center">
           <h3 className="text-xl font-semibold">No claimed opportunities</h3>
           <p className="text-muted-foreground text-sm">
-            {searchQuery || statusFilter ? 
+            {searchQuery || categoryFilter ? 
               "Try adjusting your filters to see more opportunities." :
               "You haven't claimed any opportunities yet. Browse public opportunities to find projects that interest you."}
           </p>
-          {searchQuery || statusFilter ? (
+          {searchQuery || categoryFilter ? (
             <Button 
               variant="outline"
               onClick={() => {
                 setSearchQuery("")
-                setStatusFilter(null)
+                setCategoryFilter(null)
               }}
               className="mt-4"
             >
@@ -242,50 +247,41 @@ export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpp
                 size="sm"
                 onClick={() => {
                   setSearchQuery("")
-                  setStatusFilter(null)
+                  setCategoryFilter(null)
                 }}
               >
                 Reset Filters
               </Button>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Search */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Search</label>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by title, description or location..."
+                  placeholder="Search opportunities..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 w-full"
+                  className="pl-8"
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Search in project titles, descriptions and locations
-              </p>
             </div>
-
-            {/* Status Filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Status</label>
-              <Select value={statusFilter || "all"} onValueChange={(value) => setStatusFilter(value === "all" ? null : value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="public">Public</SelectItem>
-                  <SelectItem value="private">Private</SelectItem>
-                  <SelectItem value="in review">In Review</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Filter opportunities by their current status
-              </p>
-            </div>
+            <Select
+              value={categoryFilter || "all"}
+              onValueChange={(value) => setCategoryFilter(value === "all" ? null : value)}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </Card>
@@ -295,13 +291,12 @@ export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpp
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[25%]">Title</TableHead>
-              <TableHead className="w-[20%]">Location</TableHead>
+              <TableHead className="w-[30%]">Title</TableHead>
+              <TableHead className="w-[25%]">Location</TableHead>
               <TableHead className="w-[15%]">Contact</TableHead>
-              <TableHead className="w-[10%]">Category</TableHead>
+              <TableHead className="w-[12%]">Category</TableHead>
               <TableHead className="w-[12%]">Last Update</TableHead>
-              <TableHead className="w-[8%]">Status</TableHead>
-              <TableHead className="w-[10%] text-right">Actions</TableHead>
+              <TableHead className="w-[6%] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -338,12 +333,7 @@ export function ClaimedOpportunities({ projects, isLoading = false }: ClaimedOpp
                     {format(new Date(project.lastChange.changedAt), 'PP')}
                   </div>
                 </TableCell>
-                <TableCell>
-                  <Badge variant={project.currentStatus === 'private' ? 'default' : 'secondary'}>
-                    {project.currentStatus === 'private' ? 'Claimed' : 'Available'}
-                  </Badge>
-                </TableCell>
-                <TableCell className="w-[60px]">
+                <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button

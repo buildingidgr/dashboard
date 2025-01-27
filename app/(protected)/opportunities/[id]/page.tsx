@@ -137,6 +137,7 @@ export default function OpportunityDetailsPage() {
   const { toast } = useToast()
   const [isUnclaimDialogOpen, setIsUnclaimDialogOpen] = useState(false)
   const [isUnclaiming, setIsUnclaiming] = useState(false)
+  const [contactExists, setContactExists] = useState(false)
 
   const fetchOpportunity = useCallback(async (id: string) => {
     try {
@@ -393,6 +394,47 @@ export default function OpportunityDetailsPage() {
     }
   }
 
+  const checkContactExists = useCallback(async (email: string) => {
+    try {
+      const accessToken = getAccessToken()
+      if (!accessToken) {
+        throw new Error('Authentication required')
+      }
+
+      // Ensure email is provided and properly encoded
+      if (!email) {
+        console.error('No email provided for contact check')
+        return
+      }
+
+      const response = await fetch(`/api/contacts/find-by-email?email=${encodeURIComponent(email)}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to check contact')
+      }
+
+      const { exists, contactId } = await response.json()
+      setContactExists(exists)
+      
+      console.log('Contact check response:', { email, exists, contactId })
+    } catch (error) {
+      console.error('Error checking contact:', error)
+      setContactExists(false)
+    }
+  }, [])
+
+  // Only check contact existence once when the opportunity is loaded and is private
+  useEffect(() => {
+    const email = opportunity?.data?.contact?.email
+    if (opportunity?.status === 'private' && email?.trim()) {
+      checkContactExists(email.trim())
+    }
+  }, [opportunity?.status, opportunity?.data?.contact?.email, checkContactExists])
+
   if (isLoading || !opportunity) {
     return <PageSkeleton />
   }
@@ -583,15 +625,17 @@ export default function OpportunityDetailsPage() {
             <Card className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-medium">Contact Information</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCreateContact}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Create Contact
-                </Button>
+                {!contactExists && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCreateContact}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create Contact
+                  </Button>
+                )}
               </div>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
