@@ -2,16 +2,16 @@ import { OpenAI } from 'openai';
 
 export const runtime = 'edge';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  maxRetries: 3, // Auto retry on rate limit errors
-});
-
 // Helper function to delay execution
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Helper function to create chat completion with retry
-async function createChatCompletion(messages: any[], retries = 3) {
+async function createChatCompletion(messages: any[], apiKey: string, retries = 3) {
+  const openai = new OpenAI({
+    apiKey,
+    maxRetries: 3,
+  });
+
   for (let i = 0; i < retries; i++) {
     try {
       return await openai.chat.completions.create({
@@ -37,7 +37,8 @@ async function createChatCompletion(messages: any[], retries = 3) {
 export async function POST(req: Request) {
   try {
     // Check for OpenAI API key at runtime
-    if (!process.env.OPENAI_API_KEY) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
       return new Response(
         JSON.stringify({ error: 'OpenAI API key not configured' }),
         {
@@ -76,7 +77,7 @@ export async function POST(req: Request) {
       return new Response('Missing messages in request body', { status: 400 });
     }
 
-    const stream = await createChatCompletion(messages);
+    const stream = await createChatCompletion(messages, apiKey);
 
     // Convert the stream to a ReadableStream
     const readableStream = new ReadableStream({
