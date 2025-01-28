@@ -128,7 +128,7 @@ export function OpportunityGrowthChart() {
                 )}
               </span>
               <span className="text-xs text-muted-foreground">
-                Total for Period
+                Total for {dateRange.from && dateRange.to ? `${format(dateRange.from, 'MMM d, yyyy')} - ${format(dateRange.to, 'MMM d, yyyy')}` : 'Period'}
               </span>
             </div>
           </div>
