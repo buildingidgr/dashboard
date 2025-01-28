@@ -31,7 +31,7 @@ export function DocumentsTable() {
     order: "desc",
   });
 
-  const { data, isLoading } = useQuery({
+  const { data } = useQuery({
     queryKey: ["documents", sortConfig, currentCursor],
     queryFn: () =>
       DocumentsService.getDocuments({
@@ -101,15 +101,6 @@ export function DocumentsTable() {
     }
   };
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  const currentPage = cursorStack.length + 1;
-  const totalPages = Math.ceil((data?.pagination.totalCount || 0) / (data?.pagination.pageSize || 10));
-  const startItem = ((currentPage - 1) * (data?.pagination.pageSize || 10)) + 1;
-  const endItem = Math.min(startItem + (data?.pagination.pageSize || 10) - 1, data?.pagination.totalCount || 0);
-
   if (!data?.items.length) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] bg-background p-8">
@@ -136,6 +127,11 @@ export function DocumentsTable() {
       </div>
     );
   }
+
+  const currentPage = cursorStack.length + 1;
+  const totalPages = Math.ceil((data?.pagination.totalCount || 0) / (data?.pagination.pageSize || 10));
+  const startItem = ((currentPage - 1) * (data?.pagination.pageSize || 10)) + 1;
+  const endItem = Math.min(startItem + (data?.pagination.pageSize || 10) - 1, data?.pagination.totalCount || 0);
 
   return (
     <div className="space-y-4">
