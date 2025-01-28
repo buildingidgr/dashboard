@@ -18,6 +18,8 @@ import { format } from "date-fns"
 import { categoryColors, simplifiedLabels } from "@/constants/map-categories"
 import { getAccessToken } from "@/lib/services/auth"
 import { toast } from "@/components/ui/use-toast"
+import { useSession } from "@clerk/nextjs"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -45,6 +47,7 @@ export default function PublicOpportunitiesPage() {
   const { isDarkMode } = useTheme()
   const { setTitle, setDescription } = usePageTitle()
   const router = useRouter()
+  const { isLoaded: isSessionLoaded } = useSession()
   const { professionalInfo, isLoading: isLoadingProfessionalInfo } = useProfessionalInfo()
 
   // All state hooks must be declared regardless of conditions
@@ -89,6 +92,62 @@ export default function PublicOpportunitiesPage() {
     }
     setIsLoadingProfile(false)
   }, [professionalInfo, radiusKm])
+
+  if (!isSessionLoaded) {
+    return (
+      <div className="space-y-6">
+        {/* Statistics Overview Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="p-4">
+              <Skeleton className="h-4 w-32 mb-2" />
+              <Skeleton className="h-8 w-16" />
+            </Card>
+          ))}
+        </div>
+
+        {/* Filters Skeleton */}
+        <Card className="p-6">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-9 w-28" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+
+        {/* Content Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="flex flex-col">
+              <div className="p-6 flex-1 space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-5 w-32" />
+                  </div>
+                  <Skeleton className="h-6 w-full" />
+                </div>
+                <Skeleton className="h-20 w-full" />
+              </div>
+              <div className="p-6 pt-0">
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const handlePromoteToProject = async (opportunityId: string) => {
     try {
