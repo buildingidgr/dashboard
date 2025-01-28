@@ -22,10 +22,6 @@ ENV NODE_ENV production
 # Build Next.js based on the preferred package manager
 RUN npm run build
 
-# Create the standalone directory structure
-RUN mkdir -p .next/standalone/.next/static && \
-    cp -r .next/static/* .next/standalone/.next/static/
-
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
@@ -38,10 +34,8 @@ RUN adduser --system --uid 1001 nextjs
 
 # Copy necessary files
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.mjs ./
-COPY --from=builder /app/package.json ./
-
-# Copy the standalone directory with proper structure
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/server.js ./server.js
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 

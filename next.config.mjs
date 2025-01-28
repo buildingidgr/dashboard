@@ -21,6 +21,8 @@ const nextConfig = {
     generateBuildId: async () => {
       return 'build'
     },
+    // Ensure server file is generated
+    generateEtags: false,
 }
 
 export default nextConfig;

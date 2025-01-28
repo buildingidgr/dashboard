@@ -84,11 +84,19 @@ export async function POST(req: Request) {
       async start(controller) {
         try {
           for await (const chunk of stream) {
-            const text = chunk.choices[0]?.delta?.content || '';
-            if (text) {
-              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ text })}\n\n`));
+            const content = chunk.choices[0]?.delta?.content;
+            if (content) {
+              // Format the chunk as expected by the Vercel AI SDK
+              const aiMessage = {
+                id: chunk.id,
+                role: 'assistant',
+                content,
+              };
+              controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(aiMessage)}\n\n`));
             }
           }
+          // Send the [DONE] message
+          controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
           controller.close();
         } catch (error) {
           console.error('Stream error:', error);
