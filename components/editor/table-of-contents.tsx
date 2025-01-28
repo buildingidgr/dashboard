@@ -143,28 +143,28 @@ export function TableOfContents() {
   }
 
   return (
-    <div className="sticky top-[120px] w-full px-2">
+    <div className="w-full">
       <div className="space-y-0.5">
         {headings.map((heading) => (
           <Tooltip key={heading.id} delayDuration={0}>
             <TooltipTrigger asChild>
               <button 
                 className={cn(
-                  "w-full h-4 px-2 group relative transition-colors rounded-sm",
+                  "w-full h-3 group relative transition-colors rounded-sm",
                   activeId === heading.id && "bg-accent/50"
                 )}
                 onClick={() => handleClick(heading)}
               >
                 <div 
                   className={cn(
-                    "absolute top-1/2 -translate-y-1/2 h-[2px] rounded-full transition-colors",
+                    "absolute top-1/2 -translate-y-1/2 h-[1px] rounded-full transition-colors",
                     activeId === heading.id 
                       ? "bg-muted-foreground/50" 
                       : "bg-muted group-hover:bg-muted-foreground/50"
                   )}
                   style={{
-                    width: `${100 - (heading.level - 1) * 10}%`,
-                    left: `${(heading.level - 1) * 10}%`
+                    width: `${80 - (heading.level - 1) * 15}%`,
+                    left: `${(heading.level - 1) * 15}%`
                   }}
                 />
               </button>

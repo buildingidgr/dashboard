@@ -19,6 +19,7 @@ import { DocumentWebSocket } from '@/lib/services/websocket';
 import { getAccessToken } from '@/lib/services/auth';
 import { Skeleton } from "@/components/ui/skeleton";
 import { DocumentMetadata } from '@/components/document-metadata';
+import { TableOfContents } from '@/components/editor/table-of-contents';
 
 function safeStringify(value: unknown): string {
   const seen = new WeakSet();
@@ -359,9 +360,9 @@ export function PlateEditor() {
   return (
     <DndProvider backend={HTML5Backend}>
       <Plate editor={editor} onChange={handleContentChange}>
-        <div className="flex h-screen flex-col">
+        <div className="min-h-screen flex flex-col">
           {/* Sticky header section */}
-          <div className="sticky top-0 z-50 bg-background">
+          <div className="sticky top-0 z-50 w-full bg-background">
             <DocumentMetadata
               title={title}
               editedAt="Just now"
@@ -377,9 +378,18 @@ export function PlateEditor() {
             </div>
           </div>
 
-          {/* Content section */}
-          <div className="flex-1 overflow-auto">
-            <Editor />
+          {/* Content section with TOC sidebar */}
+          <div className="flex flex-1">
+            <div className="relative flex-1">
+              <div className="mx-auto max-w-[900px]">
+                <Editor variant="fullWidth" />
+              </div>
+            </div>
+            <div className="w-32 flex-none relative">
+              <div className="fixed right-4 top-[120px] w-24">
+                <TableOfContents />
+              </div>
+            </div>
           </div>
         </div>
       </Plate>
