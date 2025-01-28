@@ -9,6 +9,7 @@ import { DndProvider } from 'react-dnd';
 import { Plate } from '@udecode/plate-common/react';
 import { type Value, type TElement, type TDescendant } from '@udecode/plate-common';
 import { ParagraphPlugin } from '@udecode/plate-common/react';
+import { useEditorScrollRef } from '@udecode/plate-common/react';
 
 import { useCreateEditor } from '@/components/editor/use-create-editor';
 import { Editor } from '@/components/plate-ui/editor';
@@ -20,6 +21,7 @@ import { getAccessToken } from '@/lib/services/auth';
 import { Skeleton } from "@/components/ui/skeleton";
 import { DocumentMetadata } from '@/components/document-metadata';
 import { TableOfContents } from '@/components/editor/table-of-contents';
+import { EditorContainer } from '@/components/plate-ui/editor';
 
 function safeStringify(value: unknown): string {
   const seen = new WeakSet();
@@ -86,6 +88,53 @@ function validateContent(content: unknown): content is TElement[] {
       return validateContent([child as TElement]);
     });
   });
+}
+
+// Create a new component for the editor content
+interface EditorContentProps {
+  title: string;
+  setTitle: (title: string) => void;
+}
+
+function EditorContent({ title, setTitle }: EditorContentProps) {
+  const scrollRef = useEditorScrollRef();
+
+  return (
+    <div className="min-h-[calc(100vh-64px)] flex flex-col" ref={scrollRef}>
+      {/* Sticky header section */}
+      <div className="sticky top-16 z-30 w-full bg-background">
+        <DocumentMetadata
+          title={title}
+          editedAt="Just now"
+          editedBy="You"
+          createdBy="You"
+          createdAt="Today"
+          onTitleChange={setTitle}
+        />
+        <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+          <FixedToolbar>
+            <FixedToolbarButtons />
+          </FixedToolbar>
+        </div>
+      </div>
+
+      {/* Content section with TOC sidebar */}
+      <div className="flex flex-1">
+        <div className="relative flex-1">
+          <EditorContainer>
+            <div className="mx-auto max-w-[900px]">
+              <Editor variant="fullWidth" />
+            </div>
+          </EditorContainer>
+        </div>
+        <div className="w-32 flex-none relative">
+          <div className="fixed right-4 top-[300px] w-12">
+            <TableOfContents />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function PlateEditor() {
@@ -360,38 +409,7 @@ export function PlateEditor() {
   return (
     <DndProvider backend={HTML5Backend}>
       <Plate editor={editor} onChange={handleContentChange}>
-        <div className="min-h-[calc(100vh-64px)] flex flex-col">
-          {/* Sticky header section */}
-          <div className="sticky top-16 z-30 w-full bg-background">
-            <DocumentMetadata
-              title={title}
-              editedAt="Just now"
-              editedBy="You"
-              createdBy="You"
-              createdAt="Today"
-              onTitleChange={setTitle}
-            />
-            <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-              <FixedToolbar>
-                <FixedToolbarButtons />
-              </FixedToolbar>
-            </div>
-          </div>
-
-          {/* Content section with TOC sidebar */}
-          <div className="flex flex-1">
-            <div className="relative flex-1">
-              <div className="mx-auto max-w-[900px]">
-                <Editor variant="fullWidth" />
-              </div>
-            </div>
-            <div className="w-32 flex-none relative">
-              <div className="fixed right-4 top-[300px] w-12">
-                <TableOfContents />
-              </div>
-            </div>
-          </div>
-        </div>
+        <EditorContent title={title} setTitle={setTitle} />
       </Plate>
     </DndProvider>
   );

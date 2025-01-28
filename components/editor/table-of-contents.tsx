@@ -5,6 +5,7 @@ import { useEditorRef, useEditorState } from '@udecode/plate-common/react'
 import { getNodeString, getNodeEntries } from '@udecode/plate-common'
 import { type TElement } from '@udecode/plate-common'
 import { HEADING_KEYS, isHeading } from '@udecode/plate-heading'
+import { useTocSideBarState, useTocSideBar } from '@udecode/plate-heading/react'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -25,125 +26,86 @@ const headingDepth: Record<string, number> = {
 };
 
 export function TableOfContents() {
-  const [headings, setHeadings] = useState<TocItem[]>([])
-  const [activeId, setActiveId] = useState<string>('')
   const editor = useEditorState()
   const editorRef = useEditorRef()
 
-  useEffect(() => {
-    if (!editor || !editorRef) return
+  // Use Plate's TOC sidebar state
+  const {
+    headingList,
+    activeContentId,
+    tocRef,
+    mouseInToc,
+    setMouseInToc,
+    setIsObserve,
+    onContentScroll,
+  } = useTocSideBarState({
+    topOffset: 120, // 64px for nav + ~56px for toolbar
+  })
 
-    // Function to extract headings from the editor
-    const extractHeadings = () => {
-      const items: TocItem[] = []
-      
-      const values = getNodeEntries(editor, {
-        at: [],
-        match: (n) => isHeading(n),
-      })
+  // Get TOC sidebar props and handlers
+  const { navProps } = useTocSideBar({
+    activeContentId,
+    editor,
+    headingList,
+    mouseInToc,
+    open: true,
+    setMouseInToc,
+    setIsObserve,
+    tocRef,
+    onContentScroll,
+  })
 
-      if (!values) return
-
-      Array.from(values, ([node, path]) => {
-        const { type } = node as TElement
-        const text = getNodeString(node)
-        const level = headingDepth[type]
-        const id = `heading-${path[0]}`
-
-        if (text) {
-          items.push({
-            id,
-            text,
-            level,
-            path
-          })
-
-          // Set ID on the DOM element
-          const element = document.querySelector(`[data-slate-node="element"][data-slate-type="${type}"]`)
-          if (element && !element.id) {
-            element.id = id
-          }
-        }
-      })
-
-      setHeadings(items)
+  const handleClick = (heading: TocItem, e: React.MouseEvent) => {
+    console.log('Clicked heading:', heading)
+    if (!editor) {
+      console.log('No editor found')
+      return
     }
-
-    // Initial extraction
-    extractHeadings()
-
-    // Set up observer for content changes
-    const observer = new MutationObserver(extractHeadings)
-    const editorElement = document.querySelector('[data-slate-editor="true"]')
-    
-    if (editorElement) {
-      observer.observe(editorElement, { 
-        childList: true, 
-        subtree: true,
-        characterData: true 
-      })
-    }
-
-    // Set up intersection observer for active heading
-    const intersectionObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveId(entry.target.id)
-          }
-        })
-      },
-      {
-        rootMargin: '-20% 0px -60% 0px'
-      }
-    )
-
-    // Observe all heading elements
-    headings.forEach(({ id }) => {
-      const element = document.getElementById(id)
-      if (element) {
-        intersectionObserver.observe(element)
-      }
-    })
-
-    return () => {
-      observer.disconnect()
-      intersectionObserver.disconnect()
-    }
-  }, [editor, editorRef])
-
-  const handleClick = (heading: TocItem) => {
-    if (!editor) return
 
     // Find the heading element
-    const element = document.querySelector(`[data-slate-node="element"][data-slate-type="${'h' + heading.level}"]`)
-    if (!element) return
+    const headingElement = document.querySelector(`[data-slate-node="element"][data-slate-type="h${heading.level}"]`) as HTMLElement
+    if (!headingElement) {
+      console.log('Heading element not found')
+      return
+    }
 
-    // Get the fixed toolbar height
-    const toolbar = document.querySelector('.sticky.top-0')
-    const toolbarHeight = toolbar?.getBoundingClientRect().height || 0
+    // Calculate offsets for sticky elements
+    const navbarHeight = 64; // Height of the top navbar
+    const toolbarHeight = 56; // Height of the editor toolbar
+    const documentMetadataHeight = 64; // Height of the document metadata section
+    const totalOffset = navbarHeight + toolbarHeight + documentMetadataHeight;
 
-    // Get the editor container
-    const editorContainer = document.querySelector('.flex-1.overflow-auto')
-    if (!editorContainer) return
+    // Get the element's position
+    const elementRect = headingElement.getBoundingClientRect();
+    const absoluteElementTop = elementRect.top + window.pageYOffset;
+    
+    // Calculate the final scroll position
+    const scrollPosition = absoluteElementTop - totalOffset;
 
-    // Calculate the scroll position
-    const containerRect = editorContainer.getBoundingClientRect()
-    const elementRect = element.getBoundingClientRect()
-    const scrollTop = elementRect.top - containerRect.top + editorContainer.scrollTop - toolbarHeight - 20
+    // Smooth scroll to the position
+    window.scrollTo({
+      top: scrollPosition,
+      behavior: 'smooth'
+    });
 
-    // Scroll the editor container
-    editorContainer.scrollTo({
-      top: scrollTop,
+    // Call the original onContentScroll for any additional functionality
+    onContentScroll({
+      id: heading.id,
+      el: headingElement,
       behavior: 'smooth'
     })
-
-    // Set active heading
-    setActiveId(heading.id)
   }
 
+  // Map headings to our TocItem format
+  const headings: TocItem[] = headingList.map(heading => ({
+    id: heading.id || `heading-${heading.path[0]}`,
+    text: heading.title,
+    level: heading.depth,
+    path: heading.path
+  }))
+
   return (
-    <div className="w-full">
+    <div className="w-full" ref={tocRef as any}>
       <div className="space-y-[2px]">
         {headings.map((heading) => (
           <Tooltip key={heading.id} delayDuration={0}>
@@ -151,14 +113,16 @@ export function TableOfContents() {
               <button 
                 className={cn(
                   "w-full h-1 group relative transition-colors rounded-sm",
-                  activeId === heading.id && "bg-accent/50"
+                  activeContentId === heading.id && "bg-accent/50"
                 )}
-                onClick={() => handleClick(heading)}
+                onClick={(e) => handleClick(heading, e)}
+                onMouseEnter={() => setMouseInToc(true)}
+                onMouseLeave={() => setMouseInToc(false)}
               >
                 <div 
                   className={cn(
                     "absolute top-1/2 -translate-y-1/2 h-[4px] rounded-full transition-colors",
-                    activeId === heading.id 
+                    activeContentId === heading.id 
                       ? "bg-muted-foreground/50" 
                       : "bg-muted-foreground/40 group-hover:bg-muted-foreground/90"
                   )}

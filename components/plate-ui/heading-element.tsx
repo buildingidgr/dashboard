@@ -4,6 +4,7 @@ import React from 'react';
 
 import { withRef, withVariants } from '@udecode/cn';
 import { cva } from 'class-variance-authority';
+import { useElement } from '@udecode/plate-common/react';
 
 import { PlateElement } from './plate-element';
 
@@ -26,11 +27,20 @@ const HeadingElementVariants = withVariants(PlateElement, headingVariants, [
 
 export const HeadingElement = withRef<typeof HeadingElementVariants>(
   ({ children, variant = 'h1', ...props }, ref) => {
+    const element = useElement();
+    console.log('Rendering heading element:', {
+      element,
+      variant,
+      props
+    });
+
     return (
       <HeadingElementVariants
         ref={ref}
         as={variant!}
         variant={variant}
+        data-slate-node="element"
+        data-slate-type={variant}
         {...props}
       >
         {children}

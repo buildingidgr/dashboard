@@ -25,7 +25,7 @@ import { DatePlugin } from '@udecode/plate-date/react';
 import { EmojiInputPlugin } from '@udecode/plate-emoji/react';
 import { ExcalidrawPlugin } from '@udecode/plate-excalidraw/react';
 import { HEADING_KEYS } from '@udecode/plate-heading';
-import { TocPlugin } from '@udecode/plate-heading/react';
+import { TocPlugin, HeadingPlugin } from '@udecode/plate-heading/react';
 import { HighlightPlugin } from '@udecode/plate-highlight/react';
 import { HorizontalRulePlugin } from '@udecode/plate-horizontal-rule/react';
 import { KbdPlugin } from '@udecode/plate-kbd/react';
@@ -51,6 +51,7 @@ import {
   TableRowPlugin,
 } from '@udecode/plate-table/react';
 import { TogglePlugin } from '@udecode/plate-toggle/react';
+import { NodeIdPlugin } from '@udecode/plate-node-id';
 
 import { copilotPlugins } from '@/components/editor/plugins/copilot-plugins';
 import { editorPlugins } from '@/components/editor/plugins/editor-plugins';
@@ -146,6 +147,35 @@ export const useCreateEditor = () => {
       ...copilotPlugins,
       ...editorPlugins,
       FloatingToolbarPlugin,
+      HeadingPlugin.configure({
+        options: {
+          levels: 6,
+        }
+      }),
+      NodeIdPlugin,
+      TocPlugin.configure({
+        options: {
+          isScroll: true,
+          scrollOptions: {
+            behavior: 'smooth',
+            block: 'start',
+            inline: 'nearest',
+          },
+          topOffset: 120,
+          queryHeading: (editor) => {
+            console.log('Querying headings:', editor.children);
+            return editor.children
+              .filter((node: any) => node.type && node.type.startsWith('h'))
+              .map((node: any, index) => ({
+                id: String(node.id || `heading-${index}`),
+                depth: parseInt(node.type.slice(1), 10),
+                title: String(node.children?.[0]?.text || ''),
+                type: node.type,
+                path: [index],
+              }));
+          },
+        },
+      }),
     ],
     id: 'editor',
     value: [{
