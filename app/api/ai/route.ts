@@ -2,11 +2,6 @@ import { OpenAI } from 'openai';
 
 export const runtime = 'edge';
 
-// Check if the API key is configured
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('Missing OPENAI_API_KEY environment variable');
-}
-
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   maxRetries: 3, // Auto retry on rate limit errors
@@ -41,6 +36,17 @@ async function createChatCompletion(messages: any[], retries = 3) {
 
 export async function POST(req: Request) {
   try {
+    // Check for OpenAI API key at runtime
+    if (!process.env.OPENAI_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'OpenAI API key not configured' }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // Check for authorization header
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
