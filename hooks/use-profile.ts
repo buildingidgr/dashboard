@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useToast } from './use-toast'
 import { getMyProfile, updateProfile, type Profile } from '@/lib/services/profile'
 import { useSession } from '@clerk/nextjs'
+import { getAccessToken } from '@/lib/services/auth'
 
 export function useProfile() {
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -15,14 +16,30 @@ export function useProfile() {
   const fetchProfile = async () => {
     try {
       setIsLoading(true)
-      const data = await getMyProfile()
+      const token = getAccessToken()
+      if (!token) {
+        throw new Error('No access token available')
+      }
+
+      const response = await fetch('/api/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.details || errorData.error || 'Failed to fetch profile')
+      }
+
+      const data = await response.json()
       setProfile(data)
       setError(null)
     } catch (err) {
-      setError(err as Error)
+      setError(err instanceof Error ? err : new Error(err instanceof string ? err : 'Failed to fetch profile'))
       toast({
         title: "Error",
-        description: "Failed to load profile data",
+        description: error?.message || "Failed to load profile data",
         variant: "destructive",
       })
     } finally {
