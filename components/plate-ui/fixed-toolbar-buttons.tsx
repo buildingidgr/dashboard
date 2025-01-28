@@ -42,7 +42,7 @@ import { ColorDropdownMenu } from './color-dropdown-menu';
 import { CommentToolbarButton } from './comment-toolbar-button';
 import { EmojiDropdownMenu } from './emoji-dropdown-menu';
 import { ExportToolbarButton } from './export-toolbar-button';
-import { FontSizeToolbarButton } from './font-size-toolbar-button';
+import { FontSizeDropdownMenu } from './font-size-dropdown-menu';
 import { RedoToolbarButton, UndoToolbarButton } from './history-toolbar-button';
 import {
   BulletedIndentListToolbarButton,
@@ -134,6 +134,8 @@ export function FixedToolbarButtons() {
             >
               <PaintBucketIcon />
             </ColorDropdownMenu>
+
+            <FontSizeDropdownMenu />
           </ToolbarGroup>
 
           <ToolbarGroup>
