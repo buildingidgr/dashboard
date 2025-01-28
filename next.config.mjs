@@ -9,12 +9,15 @@ const nextConfig = {
           pathname: '/maps/api/staticmap/**',
         },
       ],
+      unoptimized: true,
     },
     experimental: {
       serverActions: true,
     },
-  }
-  
-  export default nextConfig;
+    // Disable powered by header
+    poweredByHeader: false,
+}
+
+export default nextConfig;
   
   
