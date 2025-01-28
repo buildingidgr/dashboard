@@ -7,10 +7,64 @@ import { OpportunityGrowthChart } from "@/components/dashboard/opportunity-growt
 import Image from "next/image"
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/hooks/use-profile";
+import { useSession } from "@clerk/nextjs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   const { total, loading, error } = usePublicOpportunities();
   const { profile, isLoading: profileLoading } = useProfile();
+  const { isLoaded: isSessionLoaded } = useSession();
+
+  if (!isSessionLoaded) {
+    return (
+      <div className="container space-y-8 py-8">
+        {/* Welcome Section Skeleton */}
+        <div className="rounded-lg border bg-card p-8">
+          <div className="space-y-4">
+            <div>
+              <Skeleton className="h-9 w-64" />
+              <Skeleton className="h-5 w-96 mt-2" />
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              {[...Array(4)].map((_, index) => (
+                <div key={index} className="p-6">
+                  <div className="flex gap-6 h-full">
+                    <Skeleton className="h-[75px] w-[75px] flex-shrink-0" />
+                    <div className="flex flex-col justify-between py-1 flex-1">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="h-4 w-4" />
+                          <Skeleton className="h-5 w-32" />
+                        </div>
+                        <Skeleton className="h-10 w-full" />
+                      </div>
+                      <Skeleton className="h-6 w-32 mt-4" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Dashboard Content Skeleton */}
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+          <Card className="p-6">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-10 w-10 rounded-lg" />
+              <div className="flex-1">
+                <Skeleton className="h-5 w-32 mb-2" />
+                <Skeleton className="h-8 w-16" />
+              </div>
+            </div>
+          </Card>
+          <Card className="p-6">
+            <Skeleton className="h-[200px] w-full" />
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container space-y-8 py-8">
