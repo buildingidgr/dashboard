@@ -16,6 +16,11 @@ const nextConfig = {
     },
     // Disable powered by header
     poweredByHeader: false,
+    // Ensure proper static file handling
+    distDir: '.next',
+    generateBuildId: async () => {
+      return 'build'
+    },
 }
 
 export default nextConfig;
