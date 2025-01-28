@@ -73,8 +73,8 @@ export default function DashboardPage() {
                     <Image
                       src={feature.image}
                       alt={feature.alt}
-                      width={100}
-                      height={100}
+                      width={75}
+                      height={75}
                       className="opacity-90"
                     />
                   </div>
