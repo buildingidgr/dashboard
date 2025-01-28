@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useEditorRef, useEditorState } from '@udecode/plate-common/react'
 import { getNodeString, getNodeEntries } from '@udecode/plate-common'
 import { type TElement } from '@udecode/plate-common'
@@ -28,6 +28,7 @@ const headingDepth: Record<string, number> = {
 export function TableOfContents() {
   const editor = useEditorState()
   const editorRef = useEditorRef()
+  const [currentHeadingId, setCurrentHeadingId] = useState<string>('');
 
   // Use Plate's TOC sidebar state with adjusted offset
   const {
@@ -39,7 +40,7 @@ export function TableOfContents() {
     setIsObserve,
     onContentScroll,
   } = useTocSideBarState({
-    topOffset: 200, // Increased offset to account for all sticky elements
+    topOffset: 200,
   })
 
   // Get TOC sidebar props and handlers
@@ -56,28 +57,89 @@ export function TableOfContents() {
   })
 
   const handleClick = (heading: TocItem, e: React.MouseEvent) => {
-    console.log('Clicked heading:', heading)
-    if (!editor) {
-      console.log('No editor found')
-      return
-    }
+    if (!editor) return;
 
-    // Find the heading element
-    const headingElement = document.querySelector(`[data-slate-node="element"][data-slate-type="h${heading.level}"]`) as HTMLElement
-    if (!headingElement) {
-      console.log('Heading element not found')
-      return
+    // Find the heading element by text content since IDs might not be reliable
+    const headingElements = document.querySelectorAll(`[data-slate-node="element"][data-slate-type="h${heading.level}"]`);
+    const headingElement = Array.from(headingElements).find(el => el.textContent === heading.text) as HTMLElement;
+    
+    if (!headingElement) return;
+
+    // Ensure the heading has an ID
+    if (!headingElement.id) {
+      headingElement.id = heading.id;
     }
 
     e.preventDefault();
+    setCurrentHeadingId(heading.id);
 
-    // Use Plate's built-in scroll functionality
+    // Scroll to the heading using Plate's built-in functionality
     onContentScroll({
       id: heading.id,
       el: headingElement,
       behavior: 'smooth'
     });
   }
+
+  // Ensure headings have IDs that match our TOC
+  useEffect(() => {
+    headingList.forEach(heading => {
+      const headingElements = document.querySelectorAll(`[data-slate-node="element"][data-slate-type="h${heading.depth}"]`);
+      const headingElement = Array.from(headingElements).find(el => el.textContent === heading.title);
+      if (headingElement && !headingElement.id) {
+        headingElement.id = heading.id;
+      }
+    });
+  }, [headingList]);
+
+  // Add scroll event listener
+  useEffect(() => {
+    const handleScroll = () => {
+      const headingElements = document.querySelectorAll('[data-slate-node="element"][data-slate-type^="h"]');
+      const viewportHeight = window.innerHeight;
+      
+      interface ClosestHeading {
+        id: string;
+        distance: number;
+      }
+
+      // Find the heading that's closest to the top of the viewport
+      let closestHeading: ClosestHeading | null = null;
+
+      headingElements.forEach((element: Element) => {
+        const rect = element.getBoundingClientRect();
+        const distance = Math.abs(rect.top - 200); // 200px offset to match topOffset
+
+        // Update closest heading if this one is closer to the target position
+        if (!closestHeading || distance < closestHeading.distance) {
+          closestHeading = { 
+            id: element.getAttribute('id') || '', 
+            distance 
+          };
+        }
+      });
+
+      // Update current heading ID if we found a heading and we're not hovering over TOC
+      if (closestHeading?.id && !mouseInToc) {
+        setCurrentHeadingId(closestHeading.id);
+      }
+    };
+
+    // Throttle the scroll handler to improve performance
+    let ticking = false;
+    const scrollListener = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', scrollListener);
+    return () => window.removeEventListener('scroll', scrollListener);
+  }, [mouseInToc]);
 
   // Map headings to our TocItem format
   const headings: TocItem[] = headingList.map(heading => ({
@@ -96,7 +158,7 @@ export function TableOfContents() {
               <button 
                 className={cn(
                   "w-full h-1 group relative transition-colors rounded-sm",
-                  activeContentId === heading.id && "bg-accent/50"
+                  currentHeadingId === heading.id && "bg-accent/50"
                 )}
                 onClick={(e) => handleClick(heading, e)}
                 onMouseEnter={() => setMouseInToc(true)}
@@ -105,9 +167,10 @@ export function TableOfContents() {
                 <div 
                   className={cn(
                     "absolute top-1/2 -translate-y-1/2 h-[4px] rounded-full transition-colors",
-                    activeContentId === heading.id 
-                      ? "bg-muted-foreground/50" 
-                      : "bg-muted-foreground/40 group-hover:bg-muted-foreground/90"
+                    currentHeadingId === heading.id 
+                      ? "bg-muted-foreground/90"
+                      : "bg-muted-foreground/40 group-hover:bg-muted-foreground/90",
+                    currentHeadingId === heading.id && "shadow-sm shadow-accent"
                   )}
                   style={{
                     width: `${70 - (heading.level - 1) * 20}%`,
