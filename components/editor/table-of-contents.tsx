@@ -157,7 +157,7 @@ export function TableOfContents() {
               >
                 <div 
                   className={cn(
-                    "absolute top-1/2 -translate-y-1/2 h-[2px] rounded-full transition-colors",
+                    "absolute top-1/2 -translate-y-1/2 h-[4px] rounded-full transition-colors",
                     activeId === heading.id 
                       ? "bg-muted-foreground/90" 
                       : "bg-muted-foreground/40 group-hover:bg-muted-foreground/90"
