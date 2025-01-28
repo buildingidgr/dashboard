@@ -6,17 +6,19 @@ import { nanoid } from 'nanoid'
 // Use the same secret configuration as middleware
 const JWT_SECRET = process.env.JWT_SECRET || process.env.CLERK_SECRET_KEY
 
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET or CLERK_SECRET_KEY environment variable is not set')
-}
-
-// After the check, we know JWT_SECRET is defined
-const secret: string = JWT_SECRET
-
 export async function POST(request: NextRequest) {
   try {
     console.log('Token exchange request received')
     
+    // Check for required environment variables at runtime
+    if (!JWT_SECRET) {
+      console.error('Missing required environment variable: JWT_SECRET or CLERK_SECRET_KEY')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+
     // Validate request body
     const body = await request.json()
     const { sessionId, userId } = body
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Using secret:', secret.substring(0, 10) + '...')
+    console.log('Using secret:', JWT_SECRET.substring(0, 10) + '...')
 
     // Create access token
     const accessToken = await new SignJWT({
@@ -61,7 +63,7 @@ export async function POST(request: NextRequest) {
       .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
       .setIssuedAt()
       .setExpirationTime('1h')
-      .sign(new TextEncoder().encode(secret))
+      .sign(new TextEncoder().encode(JWT_SECRET))
 
     // Create refresh token
     const refreshToken = await new SignJWT({
@@ -73,7 +75,7 @@ export async function POST(request: NextRequest) {
       .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
       .setIssuedAt()
       .setExpirationTime('7d')
-      .sign(new TextEncoder().encode(secret))
+      .sign(new TextEncoder().encode(JWT_SECRET))
 
     console.log('Tokens generated successfully')
 
