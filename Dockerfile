@@ -21,6 +21,10 @@ ENV NEXT_TELEMETRY_DISABLED 1
 # Build Next.js based on the preferred package manager
 RUN npm run build
 
+# If the build fails, we want to see the error
+RUN test -d .next || (echo "Build failed!" && exit 1)
+RUN test -d .next/standalone || (echo "Standalone directory not found!" && exit 1)
+
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
@@ -31,15 +35,17 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copy necessary files
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.mjs ./
+COPY --from=builder /app/package.json ./package.json
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+# Set up the standalone directory structure
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-# Automatically leverage output traces to reduce image size
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Set permissions
+RUN chown -R nextjs:nodejs .
 
 USER nextjs
 
