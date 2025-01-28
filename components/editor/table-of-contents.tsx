@@ -150,7 +150,7 @@ export function TableOfContents() {
             <TooltipTrigger asChild>
               <button 
                 className={cn(
-                  "w-full h-2 group relative transition-colors rounded-sm",
+                  "w-full h-1 group relative transition-colors rounded-sm",
                   activeId === heading.id && "bg-accent/50"
                 )}
                 onClick={() => handleClick(heading)}
@@ -159,7 +159,7 @@ export function TableOfContents() {
                   className={cn(
                     "absolute top-1/2 -translate-y-1/2 h-[4px] rounded-full transition-colors",
                     activeId === heading.id 
-                      ? "bg-muted-foreground/90" 
+                      ? "bg-muted-foreground/50" 
                       : "bg-muted-foreground/40 group-hover:bg-muted-foreground/90"
                   )}
                   style={{
