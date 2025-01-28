@@ -386,7 +386,7 @@ export function PlateEditor() {
               </div>
             </div>
             <div className="w-32 flex-none relative">
-              <div className="fixed right-4 top-[152px] w-24">
+              <div className="fixed right-4 top-[300px] w-12">
                 <TableOfContents />
               </div>
             </div>

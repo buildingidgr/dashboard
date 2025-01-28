@@ -159,12 +159,12 @@ export function TableOfContents() {
                   className={cn(
                     "absolute top-1/2 -translate-y-1/2 h-[2px] rounded-full transition-colors",
                     activeId === heading.id 
-                      ? "bg-muted-foreground/50" 
-                      : "bg-muted group-hover:bg-muted-foreground/50"
+                      ? "bg-muted-foreground/90" 
+                      : "bg-muted-foreground/40 group-hover:bg-muted-foreground/90"
                   )}
                   style={{
-                    width: `${30 - (heading.level - 1) * 15}%`,
-                    left: `${(heading.level - 1) * 15}%`
+                    width: `${60 - (heading.level - 1) * 20}%`,
+                    left: `${(heading.level - 1) * 20}%`
                   }}
                 />
               </button>
