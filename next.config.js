@@ -21,9 +21,6 @@ const nextConfig = {
     // Number of pages that should be kept simultaneously without being disposed
     pagesBufferLength: 2
   },
-  experimental: {
-    serverActions: true,
-  },
   images: {
     domains: ['images.unsplash.com', 'avatars.githubusercontent.com'],
   },
@@ -31,6 +28,6 @@ const nextConfig = {
     config.externals = [...config.externals, 'canvas', 'jsdom'];
     return config;
   },
-}
+};
 
-module.exports = nextConfig 
+module.exports = nextConfig; 
