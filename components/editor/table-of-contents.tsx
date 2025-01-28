@@ -69,18 +69,41 @@ export function TableOfContents() {
       return
     }
 
-    // Calculate offsets for sticky elements
-    const navbarHeight = 64; // Height of the top navbar
-    const toolbarHeight = 56; // Height of the editor toolbar
-    const documentMetadataHeight = 64; // Height of the document metadata section
-    const totalOffset = navbarHeight + toolbarHeight + documentMetadataHeight;
+    e.preventDefault();
 
-    // Get the element's position
+    // Get all the fixed/sticky elements
+    const clientLayoutTopBar = document.querySelector('nav') as HTMLElement; // Main top navigation
+    const documentMetadata = document.querySelector('[class*="sticky top-16"]') as HTMLElement; // Document metadata bar
+    const editorToolbar = documentMetadata?.querySelector('[class*="border-b"]') as HTMLElement; // Editor toolbar
+
+    // Calculate offsets
+    const clientLayoutTopBarHeight = clientLayoutTopBar?.offsetHeight || 0;
+    const documentMetadataHeight = documentMetadata?.offsetHeight || 0;
+    const editorToolbarHeight = editorToolbar?.offsetHeight || 0;
+
+    // Log the heights for debugging
+    console.log('Heights:', {
+      clientLayoutTopBar: clientLayoutTopBarHeight,
+      documentMetadata: documentMetadataHeight,
+      editorToolbar: editorToolbarHeight
+    });
+
+    // Calculate total offset including any additional padding
+    const padding = 16; // Add some padding for better visibility
+    const totalOffset = clientLayoutTopBarHeight + documentMetadataHeight + editorToolbarHeight + padding;
+
+    // Get the scroll container (the main editor container)
+    const scrollContainer = document.querySelector('[class*="min-h-[calc(100vh-64px)]"]') as HTMLElement;
+    if (!scrollContainer) {
+      console.log('Scroll container not found');
+      return;
+    }
+
+    // Calculate the target scroll position
+    const containerRect = scrollContainer.getBoundingClientRect();
     const elementRect = headingElement.getBoundingClientRect();
-    const absoluteElementTop = elementRect.top + window.pageYOffset;
-    
-    // Calculate the final scroll position
-    const scrollPosition = absoluteElementTop - totalOffset;
+    const relativeElementTop = elementRect.top - containerRect.top;
+    const scrollPosition = scrollContainer.scrollTop + relativeElementTop - totalOffset;
 
     // Smooth scroll to the position
     window.scrollTo({
@@ -93,7 +116,7 @@ export function TableOfContents() {
       id: heading.id,
       el: headingElement,
       behavior: 'smooth'
-    })
+    });
   }
 
   // Map headings to our TocItem format
