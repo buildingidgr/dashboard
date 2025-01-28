@@ -360,9 +360,9 @@ export function PlateEditor() {
   return (
     <DndProvider backend={HTML5Backend}>
       <Plate editor={editor} onChange={handleContentChange}>
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-[calc(100vh-64px)] flex flex-col">
           {/* Sticky header section */}
-          <div className="sticky top-0 z-50 w-full bg-background">
+          <div className="sticky top-16 z-30 w-full bg-background">
             <DocumentMetadata
               title={title}
               editedAt="Just now"
@@ -386,7 +386,7 @@ export function PlateEditor() {
               </div>
             </div>
             <div className="w-32 flex-none relative">
-              <div className="fixed right-4 top-[120px] w-24">
+              <div className="fixed right-4 top-[152px] w-24">
                 <TableOfContents />
               </div>
             </div>
