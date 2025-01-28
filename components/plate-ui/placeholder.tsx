@@ -41,7 +41,7 @@ export const withPlaceholders = (components: any) =>
     {
       key: ParagraphPlugin.key,
       hideOnBlur: true,
-      placeholder: 'Type a paragraph',
+      placeholder: "Write something, or press 'space' for AI, '/' for commands...",
       query: {
         maxLevel: 1,
       },
