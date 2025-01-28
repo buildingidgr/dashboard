@@ -18,6 +18,9 @@ const nextConfig = {
     poweredByHeader: false,
     // Ensure proper static file handling
     distDir: '.next',
+    // Ensure proper output configuration
+    outputFileTracing: true,
+    outputStandalone: true,
     generateBuildId: async () => {
       return 'build'
     },
