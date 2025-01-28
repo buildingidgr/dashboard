@@ -144,13 +144,13 @@ export function TableOfContents() {
 
   return (
     <div className="w-full">
-      <div className="space-y-0.5">
+      <div className="space-y-[2px]">
         {headings.map((heading) => (
           <Tooltip key={heading.id} delayDuration={0}>
             <TooltipTrigger asChild>
               <button 
                 className={cn(
-                  "w-full h-3 group relative transition-colors rounded-sm",
+                  "w-full h-2 group relative transition-colors rounded-sm",
                   activeId === heading.id && "bg-accent/50"
                 )}
                 onClick={() => handleClick(heading)}
@@ -163,7 +163,7 @@ export function TableOfContents() {
                       : "bg-muted-foreground/40 group-hover:bg-muted-foreground/90"
                   )}
                   style={{
-                    width: `${60 - (heading.level - 1) * 20}%`,
+                    width: `${70 - (heading.level - 1) * 20}%`,
                     left: `${(heading.level - 1) * 20}%`
                   }}
                 />
