@@ -29,7 +29,7 @@ export function TableOfContents() {
   const editor = useEditorState()
   const editorRef = useEditorRef()
 
-  // Use Plate's TOC sidebar state
+  // Use Plate's TOC sidebar state with adjusted offset
   const {
     headingList,
     activeContentId,
@@ -39,7 +39,7 @@ export function TableOfContents() {
     setIsObserve,
     onContentScroll,
   } = useTocSideBarState({
-    topOffset: 120, // 64px for nav + ~56px for toolbar
+    topOffset: 200, // Increased offset to account for all sticky elements
   })
 
   // Get TOC sidebar props and handlers
@@ -71,47 +71,7 @@ export function TableOfContents() {
 
     e.preventDefault();
 
-    // Get all the fixed/sticky elements
-    const clientLayoutTopBar = document.querySelector('nav') as HTMLElement; // Main top navigation
-    const documentMetadata = document.querySelector('[class*="sticky top-16"]') as HTMLElement; // Document metadata bar
-    const editorToolbar = documentMetadata?.querySelector('[class*="border-b"]') as HTMLElement; // Editor toolbar
-
-    // Calculate offsets
-    const clientLayoutTopBarHeight = clientLayoutTopBar?.offsetHeight || 0;
-    const documentMetadataHeight = documentMetadata?.offsetHeight || 0;
-    const editorToolbarHeight = editorToolbar?.offsetHeight || 0;
-
-    // Log the heights for debugging
-    console.log('Heights:', {
-      clientLayoutTopBar: clientLayoutTopBarHeight,
-      documentMetadata: documentMetadataHeight,
-      editorToolbar: editorToolbarHeight
-    });
-
-    // Calculate total offset including any additional padding
-    const padding = 16; // Add some padding for better visibility
-    const totalOffset = clientLayoutTopBarHeight + documentMetadataHeight + editorToolbarHeight + padding;
-
-    // Get the scroll container (the main editor container)
-    const scrollContainer = document.querySelector('[class*="min-h-[calc(100vh-64px)]"]') as HTMLElement;
-    if (!scrollContainer) {
-      console.log('Scroll container not found');
-      return;
-    }
-
-    // Calculate the target scroll position
-    const containerRect = scrollContainer.getBoundingClientRect();
-    const elementRect = headingElement.getBoundingClientRect();
-    const relativeElementTop = elementRect.top - containerRect.top;
-    const scrollPosition = scrollContainer.scrollTop + relativeElementTop - totalOffset;
-
-    // Smooth scroll to the position
-    window.scrollTo({
-      top: scrollPosition,
-      behavior: 'smooth'
-    });
-
-    // Call the original onContentScroll for any additional functionality
+    // Use Plate's built-in scroll functionality
     onContentScroll({
       id: heading.id,
       el: headingElement,
