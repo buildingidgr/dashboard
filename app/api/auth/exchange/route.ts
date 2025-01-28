@@ -3,12 +3,16 @@ import { headers } from 'next/headers'
 
 const AUTH_API_URL = process.env.AUTH_API_URL
 
-if (!AUTH_API_URL) {
-  throw new Error('AUTH_API_URL environment variable is not set')
-}
-
 export async function POST(request: Request) {
   try {
+    // Check AUTH_API_URL at runtime
+    if (!AUTH_API_URL) {
+      return NextResponse.json(
+        { error: 'AUTH_API_URL environment variable is not set' },
+        { status: 500 }
+      )
+    }
+
     const { sessionId, userId } = await request.json()
     const headersList = headers()
     const origin = headersList.get('origin')
