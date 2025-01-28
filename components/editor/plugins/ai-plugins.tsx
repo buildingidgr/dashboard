@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-
+import { useChat } from 'ai/react';
 import { AIChatPlugin, AIPlugin } from '@udecode/plate-ai/react';
 import {
   BaseBoldPlugin,
@@ -30,6 +30,7 @@ import {
 } from '@/components/plate-ui/indent-todo-marker-static';
 
 import { cursorOverlayPlugin } from './cursor-overlay-plugin';
+
 const createAIEditor = () => {
   const editor = createSlateEditor({
     id: 'ai',
@@ -154,6 +155,35 @@ export const PROMPT_TEMPLATES = {
   userSelecting,
 };
 
+export const AIChatContext = React.createContext<ReturnType<typeof useChat> | null>(null);
+
+function AIPluginProvider({ children }: { children: React.ReactNode }) {
+  const chat = useChat({
+    api: '/api/ai',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY}`,
+    },
+    onError: (error) => {
+      console.error('AI Chat error:', error);
+    },
+  });
+
+  return (
+    <AIChatContext.Provider value={chat}>
+      {children}
+    </AIChatContext.Provider>
+  );
+}
+
+export function useAIChat() {
+  const context = React.useContext(AIChatContext);
+  if (!context) {
+    throw new Error('useAIChat must be used within an AIPluginProvider');
+  }
+  return context;
+}
+
 export const aiPlugins = [
   cursorOverlayPlugin,
   MarkdownPlugin.configure({ options: { indentList: true } }),
@@ -176,6 +206,12 @@ export const aiPlugins = [
             : PROMPT_TEMPLATES.systemDefault;
       },
     },
-    render: { afterEditable: () => <AIMenu /> },
+    render: {
+      afterEditable: () => (
+        <AIPluginProvider>
+          <AIMenu />
+        </AIPluginProvider>
+      ),
+    },
   }),
 ] as const;

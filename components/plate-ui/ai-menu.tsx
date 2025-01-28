@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-
 import { AIChatPlugin, useEditorChat } from '@udecode/plate-ai/react';
 import {
   type SlateEditor,
@@ -24,8 +23,7 @@ import {
 } from '@udecode/plate-selection/react';
 import { Loader2Icon } from 'lucide-react';
 
-import { useChat } from '@/components/editor/use-chat';
-
+import { useAIChat } from '@/components/editor/plugins/ai-plugins';
 import { AIChatEditor } from './ai-chat-editor';
 import { AIMenuItems } from './ai-menu-items';
 import { Command, CommandList, InputCommand } from './command';
@@ -39,17 +37,16 @@ export function AIMenu() {
 
   const aiEditorRef = React.useRef<SlateEditor | null>(null);
   const [value, setValue] = React.useState('');
+  const [error, setError] = React.useState<string | null>(null);
 
-  const chat = useChat();
+  const chat = useAIChat();
 
-  const { input, isLoading, messages, setInput } = chat;
-  const [anchorElement, setAnchorElement] = React.useState<HTMLElement | null>(
-    null
-  );
+  const [anchorElement, setAnchorElement] = React.useState<HTMLElement | null>(null);
 
   const setOpen = (open: boolean) => {
     if (open) {
       api.aiChat.show();
+      setError(null); // Clear any previous errors
     } else {
       api.aiChat.hide();
     }
@@ -68,7 +65,7 @@ export function AIMenu() {
     onOpenChange: (open) => {
       if (!open) {
         setAnchorElement(null);
-        setInput('');
+        chat.setInput('');
       }
     },
     onOpenCursor: () => {
@@ -107,8 +104,8 @@ export function AIMenu() {
         onEscapeKeyDown={(e) => {
           e.preventDefault();
 
-          if (isLoading) {
-            api.aiChat.stop();
+          if (chat.isLoading) {
+            chat.stop();
           } else {
             api.aiChat.hide();
           }
@@ -122,38 +119,46 @@ export function AIMenu() {
           value={value}
           onValueChange={setValue}
         >
-          {mode === 'chat' && isSelecting && messages.length > 0 && (
+          {error && (
+            <div className="flex items-center gap-2 p-2 text-sm text-red-500">
+              <span className="flex-shrink-0">⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {mode === 'chat' && isSelecting && chat.messages.length > 0 && (
             <AIChatEditor aiEditorRef={aiEditorRef} />
           )}
 
-          {isLoading ? (
+          {chat.isLoading ? (
             <div className="flex grow select-none items-center gap-2 p-2 text-sm text-muted-foreground">
               <Loader2Icon className="size-4 animate-spin" />
-              {messages.length > 1 ? 'Editing...' : 'Thinking...'}
+              {chat.messages.length > 1 ? 'Editing...' : 'Thinking...'}
             </div>
           ) : (
             <InputCommand
               variant="ghost"
               className="rounded-none border-b border-solid border-border [&_svg]:hidden"
-              value={input}
+              value={chat.input}
               onKeyDown={(e) => {
-                if (isHotkey('backspace')(e) && input.length === 0) {
+                if (isHotkey('backspace')(e) && chat.input.length === 0) {
                   e.preventDefault();
                   api.aiChat.hide();
                 }
                 if (isHotkey('enter')(e) && !e.shiftKey && !value) {
                   e.preventDefault();
-                  void api.aiChat.submit();
+                  setError(null); // Clear any previous errors
+                  void chat.handleSubmit(e);
                 }
               }}
-              onValueChange={setInput}
+              onValueChange={chat.setInput}
               placeholder="Ask AI anything..."
               data-plate-focus
               autoFocus
             />
           )}
 
-          {!isLoading && (
+          {!chat.isLoading && !error && (
             <CommandList>
               <AIMenuItems aiEditorRef={aiEditorRef} setValue={setValue} />
             </CommandList>
