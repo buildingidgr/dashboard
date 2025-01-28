@@ -3,9 +3,7 @@
 import { DocumentsTable } from "@/components/documents/documents-table";
 import { useToast } from "@/components/ui/use-toast";
 import { useSession } from "@clerk/nextjs";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 
 export default function DocumentsPage() {
   const { toast } = useToast();
