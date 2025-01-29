@@ -16,7 +16,7 @@ import {
   BaseCodeLinePlugin,
   BaseCodeSyntaxPlugin,
 } from '@udecode/plate-code-block';
-import { BaseParagraphPlugin, createSlateEditor } from '@udecode/plate-common';
+import { BaseParagraphPlugin, createSlateEditor, type SlateEditor } from '@udecode/plate-common';
 import { BaseHeadingPlugin, HEADING_LEVELS } from '@udecode/plate-heading';
 import { BaseHorizontalRulePlugin } from '@udecode/plate-horizontal-rule';
 import { BaseIndentListPlugin } from '@udecode/plate-indent-list';
@@ -199,7 +199,13 @@ export function useAIChat() {
 export const aiPlugins = [
   cursorOverlayPlugin,
   MarkdownPlugin.configure({ options: { indentList: true } }),
-  AIPlugin,
+  AIPlugin.configure({
+    options: {
+      onAccept: (editor: SlateEditor) => {
+        console.log('AI Plugin accept callback triggered');
+      },
+    },
+  }),
   AIChatPlugin.configure({
     options: {
       createAIEditor,
@@ -216,6 +222,9 @@ export const aiPlugins = [
           : isSelecting
             ? PROMPT_TEMPLATES.systemSelecting
             : PROMPT_TEMPLATES.systemDefault;
+      },
+      onAccept: (editor: SlateEditor) => {
+        console.log('AIChatPlugin accept callback triggered');
       },
     },
     render: {

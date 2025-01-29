@@ -28,6 +28,7 @@ import {
   Wand,
   X,
 } from 'lucide-react';
+import { Path } from 'slate';
 
 import { CommandGroup, CommandItem } from './command';
 
@@ -42,9 +43,44 @@ export const aiChatItems = {
     icon: <Check />,
     label: 'Accept',
     value: 'accept',
-    onSelect: ({ editor }) => {
-      editor.getTransforms(AIChatPlugin).aiChat.accept();
-      focusEditor(editor, getEndPoint(editor, editor.selection!));
+    onSelect: ({ editor, aiEditor }) => {
+      console.log('Accept action triggered');
+      console.log('Editor state before accept:', editor.children);
+      console.log('AI Editor state:', aiEditor.children);
+      
+      // Get the current selection
+      const selection = editor.selection;
+      
+      if (!selection) {
+        console.error('No selection found');
+        return;
+      }
+      
+      // Get the AI editor content
+      const aiContent = aiEditor.children;
+      
+      try {
+        // Start a new operation
+        editor.selection = selection;
+        
+        // If there's a selection, delete it first
+        if (!Path.equals(selection.anchor.path, selection.focus.path) || selection.anchor.offset !== selection.focus.offset) {
+          editor.deleteFragment();
+        }
+        
+        // Insert the AI content at the current selection
+        editor.insertFragment(aiContent);
+        
+        // Hide the AI chat interface
+        editor.getApi(AIChatPlugin).aiChat.hide();
+        
+        // Focus the editor at the end of the inserted content
+        focusEditor(editor, getEndPoint(editor, editor.selection!));
+        
+        console.log('Editor state after accept:', editor.children);
+      } catch (error) {
+        console.error('Error accepting AI content:', error);
+      }
     },
   },
   continueWrite: {
