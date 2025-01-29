@@ -38,6 +38,13 @@ export type EditorChatState =
   | 'selectionCommand'
   | 'selectionSuggestion';
 
+// Add type for custom element with ID
+type CustomElement = {
+  id?: string;
+  type: string;
+  children: any[];
+};
+
 type MenuItemType = {
   icon: React.ReactNode;
   label: string;
@@ -54,34 +61,51 @@ export const aiChatItems: Record<string, MenuItemType> = {
     icon: <Check />,
     label: 'Accept',
     value: 'accept',
-    onSelect: ({ editor, aiEditor }: { editor: PlateEditor; aiEditor: SlateEditor }) => {
+    onSelect: ({ editor, aiEditor }) => {
       console.log('Accept action triggered');
       console.log('Editor state before accept:', editor.children);
       console.log('AI Editor state:', aiEditor.children);
       
-      // Get the current selection
-      const selection = editor.selection;
-      
-      if (!selection) {
-        console.error('No selection found');
+      // Get the block ID we stored earlier
+      const blockId = (editor as any).blockToReplace;
+      if (!blockId) {
+        console.error('No block ID found');
         return;
       }
-      
-      // Get the AI editor content
-      const aiContent = aiEditor.children;
-      
+
+      // Find the block by ID
+      const [blockNode, blockPath] = Array.from(
+        editor.nodes({
+          match: n => !('text' in n) && (n as CustomElement).id === blockId,
+        })
+      )[0] || [];
+
+      if (!blockNode) {
+        console.error('No block found with ID:', blockId);
+        return;
+      }
+
+      // Get the AI content
+      const aiContent = aiEditor.children[0];
+      if (!aiContent) {
+        console.error('No AI content found');
+        return;
+      }
+
+      const aiText = getNodeString(aiContent);
+
       try {
-        // Start a new operation
-        editor.selection = selection;
+        // Select the entire block
+        editor.select(blockPath);
         
-        // If there's a selection, delete it first
-        if (!Path.equals(selection.anchor.path, selection.focus.path) || selection.anchor.offset !== selection.focus.offset) {
-          editor.deleteFragment();
-        }
-        
-        // Insert the AI content at the current selection
-        editor.insertFragment(aiContent);
-        
+        // Remove any marks and replace the content
+        editor.removeMark('strikethrough');
+        editor.deleteFragment();
+        editor.insertText(aiText);
+
+        // Clean up the stored block ID
+        delete (editor as any).blockToReplace;
+
         // Hide the AI chat interface
         editor.getApi(AIChatPlugin).aiChat.hide();
         
@@ -121,7 +145,34 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     label: 'Discard',
     shortcut: 'Esc',
     value: 'discard',
-    onSelect: ({ editor }: { editor: PlateEditor; aiEditor: SlateEditor }) => {
+    onSelect: ({ editor }) => {
+      // Get the block ID we stored earlier
+      const blockId = (editor as any).blockToReplace;
+      if (!blockId) {
+        console.error('No block ID found for discard');
+        return;
+      }
+
+      // Find the block by ID
+      const [blockNode, blockPath] = Array.from(
+        editor.nodes({
+          match: n => !('text' in n) && (n as CustomElement).id === blockId,
+        })
+      )[0] || [];
+
+      if (!blockNode) {
+        console.error('No block found with ID:', blockId);
+        return;
+      }
+
+      // Select the block and remove strikethrough
+      editor.select(blockPath);
+      editor.removeMark('strikethrough');
+
+      // Clean up the stored block ID
+      delete (editor as any).blockToReplace;
+
+      // Remove any AI-generated content and hide the interface
       editor.getTransforms(AIPlugin).ai.undo();
       editor.getApi(AIChatPlugin).aiChat.hide();
     },
@@ -156,9 +207,30 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     label: 'Improve writing',
     value: 'improveWriting',
     onSelect: ({ editor }) => {
+      const selection = editor.selection;
+      if (!selection) return;
+
+      // Get the selected text
+      const selectedText = editor.string(selection);
+      if (!selectedText) return;
+
+      // Get the block containing the selection
+      const blockEntry = getAncestorNode(editor);
+      if (!blockEntry) return;
+
+      const block = blockEntry[0] as CustomElement;
+      const blockId = block.id;
+      if (!blockId) return;
+
+      // Apply strikethrough to the selected text
+      editor.addMark('strikethrough', true);
+
+      // Store the block ID in the editor state for later use
+      (editor as any).blockToReplace = blockId;
+
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
-        prompt: 'Improve the writing',
+        prompt: 'Improve this text by making it more clear, concise, and professional: ' + selectedText,
       });
     },
   },
@@ -197,7 +269,31 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     label: 'Replace selection',
     value: 'replace',
     onSelect: ({ aiEditor, editor }) => {
-      void editor.getTransforms(AIChatPlugin).aiChat.replaceSelection(aiEditor);
+      // Find the block with strikethrough
+      const [strikethroughNode, strikethroughPath] = Array.from(
+        editor.nodes({
+          match: n => editor.marks?.strikethrough === true,
+        })
+      )[0] || [];
+
+      if (!strikethroughNode) return;
+
+      // Get the AI content
+      const aiContent = aiEditor.children[0];
+      if (!aiContent) return;
+
+      const aiText = getNodeString(aiContent);
+
+      // Select the text with strikethrough
+      editor.select(strikethroughPath);
+      
+      // Remove the strikethrough, delete the selected text, and insert new text
+      editor.removeMark('strikethrough');
+      editor.deleteFragment();
+      editor.insertText(aiText);
+
+      // Hide the AI chat interface
+      editor.getApi(AIChatPlugin).aiChat.hide();
     },
   },
   simplifyLanguage: {
