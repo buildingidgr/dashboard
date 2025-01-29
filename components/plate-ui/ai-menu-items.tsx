@@ -123,21 +123,49 @@ export const aiChatItems: Record<string, MenuItemType> = {
     icon: <PenLine />,
     label: 'Continue writing',
     value: 'continueWrite',
-    onSelect: ({ editor }: { editor: PlateEditor; aiEditor: SlateEditor }) => {
-      const ancestorNode = getAncestorNode(editor);
+    onSelect: ({ editor }) => {
+      // Get the entire document content
+      const documentContent = editor.children.map(getNodeString).join('\n');
 
-      if (!ancestorNode) return;
+      // Get the block containing the selection
+      const blockEntry = getAncestorNode(editor);
+      if (!blockEntry) {
+        console.log('No block entry found');
+        return;
+      }
 
-      const isEmpty = getNodeString(ancestorNode[0]).trim().length === 0;
+      const block = blockEntry[0] as CustomElement;
+      const blockId = block.id;
+      console.log('Found block with ID:', blockId);
+
+      if (!blockId) {
+        console.log('Block has no ID');
+        return;
+      }
+
+      // Store the block ID in the editor state for later use
+      (editor as any).blockToReplace = blockId;
+
+      // Find the block element
+      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
+      if (blockElement) {
+        console.log('Block element found, current classes:', blockElement.classList.toString());
+        
+        // Add temporary classes to the text spans inside the block
+        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
+        textSpans.forEach(span => {
+          console.log('Adding classes to span:', span.textContent);
+          span.classList.add('opacity-50', 'line-through');
+        });
+        
+        console.log('Classes after adding to spans:', 
+          Array.from(textSpans).map(span => span.classList.toString())
+        );
+      }
 
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
-        prompt: isEmpty
-          ? `<Document>
-{editor}
-</Document>
-Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
-          : 'Continue writing AFTER <Block> ONLY ONE SENTENCE. DONT REPEAT THE TEXT.',
+        prompt: `<Document>\n${documentContent}\n</Document>\nStart writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`,
       });
     },
   },
@@ -192,12 +220,48 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     label: 'Explain',
     value: 'explain',
     onSelect: ({ editor }) => {
+      // Get the entire document content
+      const documentContent = editor.children.map(getNodeString).join('\n');
+
+      // Get the block containing the selection
+      const blockEntry = getAncestorNode(editor);
+      if (!blockEntry) {
+        console.log('No block entry found');
+        return;
+      }
+
+      const block = blockEntry[0] as CustomElement;
+      const blockId = block.id;
+      console.log('Found block with ID:', blockId);
+
+      if (!blockId) {
+        console.log('Block has no ID');
+        return;
+      }
+
+      // Store the block ID in the editor state for later use
+      (editor as any).blockToReplace = blockId;
+
+      // Find the block element
+      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
+      if (blockElement) {
+        console.log('Block element found, current classes:', blockElement.classList.toString());
+        
+        // Add temporary classes to the text spans inside the block
+        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
+        textSpans.forEach(span => {
+          console.log('Adding classes to span:', span.textContent);
+          span.classList.add('opacity-50', 'line-through');
+        });
+        
+        console.log('Classes after adding to spans:', 
+          Array.from(textSpans).map(span => span.classList.toString())
+        );
+      }
+
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
-        prompt: {
-          default: 'Explain {editor}',
-          selecting: 'Explain',
-        },
+        prompt: `<Document>\n${documentContent}\n</Document>\nExplain the content of <Document>`,
       });
     },
   },
@@ -206,9 +270,58 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     label: 'Fix spelling & grammar',
     value: 'fixSpelling',
     onSelect: ({ editor }) => {
+      const selection = editor.selection;
+      if (!selection) {
+        console.log('No selection found');
+        return;
+      }
+
+      // Get the selected text
+      const selectedText = editor.string(selection);
+      if (!selectedText) {
+        console.log('No selected text found');
+        return;
+      }
+
+      // Get the block containing the selection
+      const blockEntry = getAncestorNode(editor);
+      if (!blockEntry) {
+        console.log('No block entry found');
+        return;
+      }
+
+      const block = blockEntry[0] as CustomElement;
+      const blockId = block.id;
+      console.log('Found block with ID:', blockId);
+
+      if (!blockId) {
+        console.log('Block has no ID');
+        return;
+      }
+
+      // Store the block ID in the editor state for later use
+      (editor as any).blockToReplace = blockId;
+
+      // Find the block element
+      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
+      if (blockElement) {
+        console.log('Block element found, current classes:', blockElement.classList.toString());
+        
+        // Add temporary classes to the text spans inside the block
+        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
+        textSpans.forEach(span => {
+          console.log('Adding classes to span:', span.textContent);
+          span.classList.add('opacity-50', 'line-through');
+        });
+        
+        console.log('Classes after adding to spans:', 
+          Array.from(textSpans).map(span => span.classList.toString())
+        );
+      }
+
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
-        prompt: 'Fix spelling and grammar',
+        prompt: 'Fix the spelling and grammar of this text: ' + selectedText,
       });
     },
   },
@@ -346,9 +459,58 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     label: 'Make shorter',
     value: 'makeShorter',
     onSelect: ({ editor }) => {
+      const selection = editor.selection;
+      if (!selection) {
+        console.log('No selection found');
+        return;
+      }
+
+      // Get the selected text
+      const selectedText = editor.string(selection);
+      if (!selectedText) {
+        console.log('No selected text found');
+        return;
+      }
+
+      // Get the block containing the selection
+      const blockEntry = getAncestorNode(editor);
+      if (!blockEntry) {
+        console.log('No block entry found');
+        return;
+      }
+
+      const block = blockEntry[0] as CustomElement;
+      const blockId = block.id;
+      console.log('Found block with ID:', blockId);
+
+      if (!blockId) {
+        console.log('Block has no ID');
+        return;
+      }
+
+      // Store the block ID in the editor state for later use
+      (editor as any).blockToReplace = blockId;
+
+      // Find the block element
+      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
+      if (blockElement) {
+        console.log('Block element found, current classes:', blockElement.classList.toString());
+        
+        // Add temporary classes to the text spans inside the block
+        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
+        textSpans.forEach(span => {
+          console.log('Adding classes to span:', span.textContent);
+          span.classList.add('opacity-50', 'line-through');
+        });
+        
+        console.log('Classes after adding to spans:', 
+          Array.from(textSpans).map(span => span.classList.toString())
+        );
+      }
+
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
-        prompt: 'Make shorter',
+        prompt: 'Make this text shorter: ' + selectedText,
       });
     },
   },
@@ -426,9 +588,58 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     label: 'Simplify language',
     value: 'simplifyLanguage',
     onSelect: ({ editor }) => {
+      const selection = editor.selection;
+      if (!selection) {
+        console.log('No selection found');
+        return;
+      }
+
+      // Get the selected text
+      const selectedText = editor.string(selection);
+      if (!selectedText) {
+        console.log('No selected text found');
+        return;
+      }
+
+      // Get the block containing the selection
+      const blockEntry = getAncestorNode(editor);
+      if (!blockEntry) {
+        console.log('No block entry found');
+        return;
+      }
+
+      const block = blockEntry[0] as CustomElement;
+      const blockId = block.id;
+      console.log('Found block with ID:', blockId);
+
+      if (!blockId) {
+        console.log('Block has no ID');
+        return;
+      }
+
+      // Store the block ID in the editor state for later use
+      (editor as any).blockToReplace = blockId;
+
+      // Find the block element
+      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
+      if (blockElement) {
+        console.log('Block element found, current classes:', blockElement.classList.toString());
+        
+        // Add temporary classes to the text spans inside the block
+        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
+        textSpans.forEach(span => {
+          console.log('Adding classes to span:', span.textContent);
+          span.classList.add('opacity-50', 'line-through');
+        });
+        
+        console.log('Classes after adding to spans:', 
+          Array.from(textSpans).map(span => span.classList.toString())
+        );
+      }
+
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
-        prompt: 'Simplify the language',
+        prompt: 'Simplify the language of this text: ' + selectedText,
       });
     },
   },
@@ -437,12 +648,48 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     label: 'Add a summary',
     value: 'summarize',
     onSelect: ({ editor }) => {
+      // Get the entire document content
+      const documentContent = editor.children.map(getNodeString).join('\n');
+
+      // Get the block containing the selection
+      const blockEntry = getAncestorNode(editor);
+      if (!blockEntry) {
+        console.log('No block entry found');
+        return;
+      }
+
+      const block = blockEntry[0] as CustomElement;
+      const blockId = block.id;
+      console.log('Found block with ID:', blockId);
+
+      if (!blockId) {
+        console.log('Block has no ID');
+        return;
+      }
+
+      // Store the block ID in the editor state for later use
+      (editor as any).blockToReplace = blockId;
+
+      // Find the block element
+      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
+      if (blockElement) {
+        console.log('Block element found, current classes:', blockElement.classList.toString());
+        
+        // Add temporary classes to the text spans inside the block
+        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
+        textSpans.forEach(span => {
+          console.log('Adding classes to span:', span.textContent);
+          span.classList.add('opacity-50', 'line-through');
+        });
+        
+        console.log('Classes after adding to spans:', 
+          Array.from(textSpans).map(span => span.classList.toString())
+        );
+      }
+
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
-        prompt: {
-          default: 'Summarize {editor}',
-          selecting: 'Summarize',
-        },
+        prompt: `<Document>\n${documentContent}\n</Document>\nSummarize the content of <Document>`,
       });
     },
   },
