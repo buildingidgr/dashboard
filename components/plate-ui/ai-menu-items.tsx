@@ -8,6 +8,10 @@ import {
   getAncestorNode,
   getEndPoint,
   getNodeString,
+  type TDescendant,
+  type TElement,
+  type TNode,
+  type TOperation,
 } from '@udecode/plate-common';
 import {
   type PlateEditor,
@@ -29,7 +33,7 @@ import {
   Wand,
   X,
 } from 'lucide-react';
-import { Path } from 'slate';
+import { Path, Node } from 'slate';
 
 import { CommandGroup, CommandItem } from './command';
 import { EditorVisualManager } from './editor-visual-utils';
@@ -73,6 +77,8 @@ export const aiChatItems: Record<string, MenuItemType> = {
       const blockId = (editor as any).blockToReplace;
       // Get the insertion position (for insertion cases)
       const insertPosition = (editor as any).insertPosition;
+      // Get selected block IDs (for multiple block selection)
+      const selectedBlockIds = (editor as any).selectedBlockIds || [];
 
       try {
         // Get the AI content
@@ -85,8 +91,37 @@ export const aiChatItems: Record<string, MenuItemType> = {
         const aiText = getNodeString(aiContent);
         console.log('AI text to insert:', aiText);
 
-        if (blockId) {
-          // Handle replacement case (improve writing, make longer/shorter, etc.)
+        if (selectedBlockIds.length > 0) {
+          // Handle multiple block selection case
+          const blockEntries = Array.from(
+            editor.nodes({
+              match: n => !('text' in n) && selectedBlockIds.includes((n as CustomElement).id),
+            })
+          );
+
+          if (blockEntries.length === 0) {
+            console.error('No blocks found with selected IDs:', selectedBlockIds);
+            return;
+          }
+
+          // Sort blocks by path to ensure we replace from bottom to top
+          blockEntries.sort((a, b) => Path.compare(b[1], a[1]));
+
+          // Replace each selected block with the AI content
+          blockEntries.forEach(([node, path]) => {
+            editor.apply({
+              type: 'remove_node',
+              path,
+              node: node as TDescendant,
+            } as TOperation);
+          });
+
+          // Insert the AI content at the position of the first block
+          const firstPath = blockEntries[blockEntries.length - 1][1];
+          const nodes = Array.isArray(aiContent) ? aiContent : [aiContent];
+          editor.insertNodes(nodes as Node[], { at: firstPath });
+        } else if (blockId) {
+          // Handle single block replacement case
           const [blockNode, blockPath] = Array.from(
             editor.nodes({
               match: n => !('text' in n) && (n as CustomElement).id === blockId,
@@ -317,31 +352,33 @@ export const aiChatItems: Record<string, MenuItemType> = {
         return;
       }
 
-      // Get the block containing the selection
-      const blockEntry = getAncestorNode(editor);
-      if (!blockEntry) {
-        console.log('No block entry found');
+      // Get all blocks in the selection range
+      const selectedBlocks = Array.from(
+        editor.nodes({
+          at: selection,
+          match: n => !('text' in n) && (n as CustomElement).id !== undefined,
+        })
+      );
+
+      if (selectedBlocks.length === 0) {
+        console.log('No blocks found in selection');
         return;
       }
 
-      const block = blockEntry[0] as CustomElement;
-      const blockId = block.id;
-      if (!blockId) {
-        console.log('Block has no ID');
-        return;
-      }
+      // Store the block IDs in the editor state for later use
+      const selectedBlockIds = selectedBlocks.map(([block]) => (block as CustomElement).id!) as string[];
+      (editor as any).selectedBlockIds = selectedBlockIds;
 
-      // Store the block ID in the editor state for later use
-      (editor as any).blockToReplace = blockId;
-
-      // Apply visual feedback
-      EditorVisualManager.applyVisualFeedback({
-        blockId,
-        styles: {
-          opacity: '0.5',
-          textDecoration: 'line-through'
-        },
-        debug: true
+      // Apply visual feedback to all selected blocks
+      selectedBlockIds.forEach(blockId => {
+        EditorVisualManager.applyVisualFeedback({
+          blockId,
+          styles: {
+            opacity: '0.5',
+            textDecoration: 'line-through'
+          },
+          debug: true
+        });
       });
 
       void editor.getApi(AIChatPlugin).aiChat.submit({
