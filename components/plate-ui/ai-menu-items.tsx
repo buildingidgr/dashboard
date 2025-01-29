@@ -43,6 +43,7 @@ type CustomElement = {
   id?: string;
   type: string;
   children: any[];
+  isPendingReplacement?: boolean;
 };
 
 type MenuItemType = {
@@ -146,6 +147,8 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     shortcut: 'Esc',
     value: 'discard',
     onSelect: ({ editor }) => {
+      console.log('Discard action triggered');
+      
       // Get the block ID we stored earlier
       const blockId = (editor as any).blockToReplace;
       if (!blockId) {
@@ -153,28 +156,35 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
         return;
       }
 
-      // Find the block by ID
-      const [blockNode, blockPath] = Array.from(
-        editor.nodes({
-          match: n => !('text' in n) && (n as CustomElement).id === blockId,
-        })
-      )[0] || [];
+      try {
+        // Find the block element and clean up temporary classes
+        const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
+        if (blockElement) {
+          console.log('Block element found for cleanup, current classes:', blockElement.classList.toString());
+          
+          // Remove classes from all text spans
+          const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
+          textSpans.forEach(span => {
+            console.log('Removing classes from span:', span.textContent);
+            span.classList.remove('opacity-50', 'line-through');
+          });
+          
+          console.log('Classes after cleanup:', 
+            Array.from(textSpans).map(span => span.classList.toString())
+          );
+        }
 
-      if (!blockNode) {
-        console.error('No block found with ID:', blockId);
-        return;
+        // Remove any AI-generated content
+        editor.getTransforms(AIPlugin).ai.undo();
+
+        // Clean up the stored block ID
+        delete (editor as any).blockToReplace;
+
+        // Hide the AI chat interface
+        editor.getApi(AIChatPlugin).aiChat.hide();
+      } catch (error) {
+        console.error('Error during discard:', error);
       }
-
-      // Select the block and remove strikethrough
-      editor.select(blockPath);
-      editor.removeMark('strikethrough');
-
-      // Clean up the stored block ID
-      delete (editor as any).blockToReplace;
-
-      // Remove any AI-generated content and hide the interface
-      editor.getTransforms(AIPlugin).ai.undo();
-      editor.getApi(AIChatPlugin).aiChat.hide();
     },
   },
   explain: {
@@ -207,26 +217,55 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     label: 'Improve writing',
     value: 'improveWriting',
     onSelect: ({ editor }) => {
+      console.log('Improve writing triggered');
       const selection = editor.selection;
-      if (!selection) return;
+      if (!selection) {
+        console.log('No selection found');
+        return;
+      }
 
       // Get the selected text
       const selectedText = editor.string(selection);
-      if (!selectedText) return;
+      if (!selectedText) {
+        console.log('No selected text found');
+        return;
+      }
 
       // Get the block containing the selection
       const blockEntry = getAncestorNode(editor);
-      if (!blockEntry) return;
+      if (!blockEntry) {
+        console.log('No block entry found');
+        return;
+      }
 
       const block = blockEntry[0] as CustomElement;
       const blockId = block.id;
-      if (!blockId) return;
+      console.log('Found block with ID:', blockId);
 
-      // Apply strikethrough to the selected text
-      editor.addMark('strikethrough', true);
+      if (!blockId) {
+        console.log('Block has no ID');
+        return;
+      }
 
       // Store the block ID in the editor state for later use
       (editor as any).blockToReplace = blockId;
+
+      // Find the block element
+      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
+      if (blockElement) {
+        console.log('Block element found, current classes:', blockElement.classList.toString());
+        
+        // Add temporary classes to the text spans inside the block
+        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
+        textSpans.forEach(span => {
+          console.log('Adding classes to span:', span.textContent);
+          span.classList.add('opacity-50', 'line-through');
+        });
+        
+        console.log('Classes after adding to spans:', 
+          Array.from(textSpans).map(span => span.classList.toString())
+        );
+      }
 
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
@@ -269,31 +308,68 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     label: 'Replace selection',
     value: 'replace',
     onSelect: ({ aiEditor, editor }) => {
-      // Find the block with strikethrough
-      const [strikethroughNode, strikethroughPath] = Array.from(
+      // Get the block ID we stored earlier
+      const blockId = (editor as any).blockToReplace;
+      if (!blockId) {
+        console.error('No block ID found');
+        return;
+      }
+
+      // Find the block by ID
+      const [blockNode, blockPath] = Array.from(
         editor.nodes({
-          match: n => editor.marks?.strikethrough === true,
+          match: n => !('text' in n) && (n as CustomElement).id === blockId,
         })
       )[0] || [];
 
-      if (!strikethroughNode) return;
+      if (!blockNode) {
+        console.error('No block found with ID:', blockId);
+        return;
+      }
+
+      // Find the block element and clean up temporary classes
+      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
+      if (blockElement) {
+        console.log('Block element found for cleanup, current classes:', blockElement.classList.toString());
+        
+        // Remove classes from all text spans
+        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
+        textSpans.forEach(span => {
+          console.log('Removing classes from span:', span.textContent);
+          span.classList.remove('opacity-50', 'line-through');
+        });
+        
+        console.log('Classes after cleanup:', 
+          Array.from(textSpans).map(span => span.classList.toString())
+        );
+      }
 
       // Get the AI content
       const aiContent = aiEditor.children[0];
-      if (!aiContent) return;
+      if (!aiContent) {
+        console.error('No AI content found');
+        return;
+      }
 
       const aiText = getNodeString(aiContent);
 
-      // Select the text with strikethrough
-      editor.select(strikethroughPath);
-      
-      // Remove the strikethrough, delete the selected text, and insert new text
-      editor.removeMark('strikethrough');
-      editor.deleteFragment();
-      editor.insertText(aiText);
+      try {
+        // Select the block and replace content
+        editor.select(blockPath);
+        editor.deleteFragment();
+        editor.insertText(aiText);
 
-      // Hide the AI chat interface
-      editor.getApi(AIChatPlugin).aiChat.hide();
+        // Clean up the stored block ID
+        delete (editor as any).blockToReplace;
+
+        // Hide the AI chat interface
+        editor.getApi(AIChatPlugin).aiChat.hide();
+        
+        // Focus the editor at the end of the inserted content
+        focusEditor(editor, getEndPoint(editor, editor.selection!));
+      } catch (error) {
+        console.error('Error replacing content:', error);
+      }
     },
   },
   simplifyLanguage: {
