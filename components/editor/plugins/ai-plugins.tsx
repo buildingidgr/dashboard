@@ -177,8 +177,7 @@ function AIPluginProvider({ children }: { children: React.ReactNode }) {
     },
     id: 'editor',
     initialMessages: [],
-    sendExtraMessageFields: true,
-    experimental_streamData: true
+    sendExtraMessageFields: true
   });
 
   return (
@@ -209,6 +208,7 @@ export const aiPlugins = [
   AIChatPlugin.configure({
     options: {
       createAIEditor,
+      mode: 'insert',
       promptTemplate: ({ isBlockSelecting, isSelecting }) => {
         return isBlockSelecting
           ? PROMPT_TEMPLATES.userBlockSelecting
@@ -222,9 +222,6 @@ export const aiPlugins = [
           : isSelecting
             ? PROMPT_TEMPLATES.systemSelecting
             : PROMPT_TEMPLATES.systemDefault;
-      },
-      onAccept: (editor: SlateEditor) => {
-        console.log('AIChatPlugin accept callback triggered');
       },
     },
     render: {

@@ -127,7 +127,7 @@ export function AIMenu() {
           )}
 
           {chat.messages.length > 0 && (
-            <div className="ai-chat-preview">
+            <div className="ai-chat-preview hidden">
               <AIChatEditor aiEditorRef={aiEditorRef} />
             </div>
           )}

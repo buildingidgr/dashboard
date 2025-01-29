@@ -121,6 +121,7 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     value: 'explain',
     onSelect: ({ editor }) => {
       void editor.getApi(AIChatPlugin).aiChat.submit({
+        mode: 'insert',
         prompt: {
           default: 'Explain {editor}',
           selecting: 'Explain',
@@ -134,6 +135,7 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     value: 'fixSpelling',
     onSelect: ({ editor }) => {
       void editor.getApi(AIChatPlugin).aiChat.submit({
+        mode: 'insert',
         prompt: 'Fix spelling and grammar',
       });
     },
@@ -144,6 +146,7 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     value: 'improveWriting',
     onSelect: ({ editor }) => {
       void editor.getApi(AIChatPlugin).aiChat.submit({
+        mode: 'insert',
         prompt: 'Improve the writing',
       });
     },
@@ -162,6 +165,7 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     value: 'makeLonger',
     onSelect: ({ editor }) => {
       void editor.getApi(AIChatPlugin).aiChat.submit({
+        mode: 'insert',
         prompt: 'Make longer',
       });
     },
@@ -172,6 +176,7 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     value: 'makeShorter',
     onSelect: ({ editor }) => {
       void editor.getApi(AIChatPlugin).aiChat.submit({
+        mode: 'insert',
         prompt: 'Make shorter',
       });
     },
@@ -190,6 +195,7 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     value: 'simplifyLanguage',
     onSelect: ({ editor }) => {
       void editor.getApi(AIChatPlugin).aiChat.submit({
+        mode: 'insert',
         prompt: 'Simplify the language',
       });
     },
