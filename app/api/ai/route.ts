@@ -86,64 +86,60 @@ export async function POST(req: Request) {
     // Create a ReadableStream from the OpenAI response
     const stream = new ReadableStream({
       async start(controller) {
-        const messageId = `msg_${Date.now()}`;
         try {
-          console.log('Stream start: Creating message ID and sending start message');
+          console.log('Stream start: Creating chat completion');
+          let promptTokens = 0;
+          let completionTokens = 0;
           
-          // Send the initial message
-          controller.enqueue(new TextEncoder().encode('data: {"id":"' + messageId + '","object":"chat.completion.chunk","created":' + Date.now() + ',"model":"gpt-3.5-turbo","choices":[{"index":0,"delta":{"role":"assistant"},"finish_reason":null}]}\n\n'));
-
-          let fullContent = '';
-          console.log('Beginning to process response chunks...');
           for await (const chunk of response) {
             const content = chunk.choices[0]?.delta?.content;
             if (content) {
-              fullContent += content;
-              // Send content chunk in OpenAI format
-              controller.enqueue(new TextEncoder().encode('data: {"id":"' + messageId + '","object":"chat.completion.chunk","created":' + Date.now() + ',"model":"gpt-3.5-turbo","choices":[{"index":0,"delta":{"content":' + JSON.stringify(content) + '},"finish_reason":null}]}\n\n'));
+              // Send content chunk with 0: prefix
+              controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(content)}\n`));
+              completionTokens++;
             }
           }
 
-          // Send the final message
-          controller.enqueue(new TextEncoder().encode('data: {"id":"' + messageId + '","object":"chat.completion.chunk","created":' + Date.now() + ',"model":"gpt-3.5-turbo","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}\n\n'));
-          
-          // Send the [DONE] message
-          controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+          // Send the finish events with e: and d: prefixes
+          const usage = {
+            promptTokens,
+            completionTokens
+          };
+
+          const eventFinish = {
+            finishReason: "stop",
+            usage,
+            isContinued: false
+          };
+          controller.enqueue(new TextEncoder().encode(`e:${JSON.stringify(eventFinish)}\n`));
+
+          const dataFinish = {
+            finishReason: "stop",
+            usage
+          };
+          controller.enqueue(new TextEncoder().encode(`d:${JSON.stringify(dataFinish)}\n`));
           
           console.log('Closing stream controller');
           controller.close();
         } catch (error) {
           console.error('Stream error details:', error);
-          // Send error in OpenAI format
-          const errorMessage = {
-            id: messageId,
-            object: 'chat.completion.chunk',
-            created: Date.now(),
-            model: 'gpt-3.5-turbo',
-            choices: [{
-              index: 0,
-              delta: {},
-              finish_reason: 'error'
-            }],
-            error: {
-              message: error instanceof Error ? error.message : 'An error occurred',
-              type: error instanceof Error ? error.name : 'UnknownError',
-            }
+          // Send error with e: prefix
+          const errorEvent = {
+            finishReason: "error",
+            error: error instanceof Error ? error.message : 'An error occurred'
           };
-          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(errorMessage)}\n\n`));
-          controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+          controller.enqueue(new TextEncoder().encode(`e:${JSON.stringify(errorEvent)}\n`));
           controller.close();
         }
-      },
+      }
     });
 
     // Return the stream with the appropriate headers
     return new Response(stream, {
       headers: {
-        'Content-Type': 'text/event-stream',
+        'Content-Type': 'text/plain', // Changed to text/plain as per Plate.js example
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-        'x-vercel-ai-data-stream': 'v1'
       },
     });
   } catch (error: any) {

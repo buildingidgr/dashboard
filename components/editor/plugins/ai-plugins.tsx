@@ -162,11 +162,22 @@ function AIPluginProvider({ children }: { children: React.ReactNode }) {
     api: '/api/ai',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY}`,
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Authorization': 'Bearer session',
+    },
+    body: {
+      model: 'gpt-3.5-turbo'
     },
     onError: (error) => {
       console.error('AI Chat error:', error);
     },
+    onFinish: (message) => {
+      console.log('Chat finished:', message);
+    },
+    id: 'editor',
+    initialMessages: [],
+    sendExtraMessageFields: true
   });
 
   return (

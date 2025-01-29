@@ -304,6 +304,13 @@ export function PlateEditor() {
     let websocket: DocumentWebSocket | null = null;
 
     const initializeWebSocket = async () => {
+      // Check if WebSocket is enabled via environment variable
+      const isWebSocketEnabled = process.env.NEXT_PUBLIC_ENABLE_WEBSOCKET === 'true';
+      if (!isWebSocketEnabled) {
+        console.log('WebSocket connections are disabled via environment variable');
+        return;
+      }
+
       if (isInitializing || !documentId) return;
 
       const token = await getAccessToken();
