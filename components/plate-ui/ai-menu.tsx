@@ -93,7 +93,16 @@ export function AIMenu() {
   );
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
+    <Popover 
+      open={open} 
+      onOpenChange={(newOpen) => {
+        if (open && !newOpen) {
+          return;
+        }
+        setOpen(newOpen);
+      }} 
+      modal={false}
+    >
       <PopoverAnchor virtualRef={{ current: anchorElement }} />
 
       <PopoverContent

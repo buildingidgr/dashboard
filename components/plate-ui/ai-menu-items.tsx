@@ -38,12 +38,23 @@ export type EditorChatState =
   | 'selectionCommand'
   | 'selectionSuggestion';
 
-export const aiChatItems = {
+type MenuItemType = {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  shortcut?: string;
+  component?: React.ComponentType<{ menuState: EditorChatState }>;
+  filterItems?: boolean;
+  items?: { label: string; value: string }[];
+  onSelect?: (props: { editor: PlateEditor; aiEditor: SlateEditor }) => void;
+};
+
+export const aiChatItems: Record<string, MenuItemType> = {
   accept: {
     icon: <Check />,
     label: 'Accept',
     value: 'accept',
-    onSelect: ({ editor, aiEditor }) => {
+    onSelect: ({ editor, aiEditor }: { editor: PlateEditor; aiEditor: SlateEditor }) => {
       console.log('Accept action triggered');
       console.log('Editor state before accept:', editor.children);
       console.log('AI Editor state:', aiEditor.children);
@@ -87,7 +98,7 @@ export const aiChatItems = {
     icon: <PenLine />,
     label: 'Continue writing',
     value: 'continueWrite',
-    onSelect: ({ editor }) => {
+    onSelect: ({ editor }: { editor: PlateEditor; aiEditor: SlateEditor }) => {
       const ancestorNode = getAncestorNode(editor);
 
       if (!ancestorNode) return;
@@ -108,9 +119,9 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
   discard: {
     icon: <X />,
     label: 'Discard',
-    shortcut: 'Escape',
+    shortcut: 'Esc',
     value: 'discard',
-    onSelect: ({ editor }) => {
+    onSelect: ({ editor }: { editor: PlateEditor; aiEditor: SlateEditor }) => {
       editor.getTransforms(AIPlugin).ai.undo();
       editor.getApi(AIChatPlugin).aiChat.hide();
     },
@@ -222,25 +233,7 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
       void editor.getApi(AIChatPlugin).aiChat.reload();
     },
   },
-} satisfies Record<
-  string,
-  {
-    icon: React.ReactNode;
-    label: string;
-    value: string;
-    component?: React.ComponentType<{ menuState: EditorChatState }>;
-    filterItems?: boolean;
-    items?: { label: string; value: string }[];
-    shortcut?: string;
-    onSelect?: ({
-      aiEditor,
-      editor,
-    }: {
-      aiEditor: SlateEditor;
-      editor: PlateEditor;
-    }) => void;
-  }
->;
+} satisfies Record<string, MenuItemType>;
 
 const menuStateItems: Record<
   EditorChatState,
@@ -324,7 +317,7 @@ export const AIMenuItems = ({
           {group.items.map((menuItem) => (
             <CommandItem
               key={menuItem.value}
-              className="[&_svg]:text-muted-foreground"
+              className="cursor-pointer [&_svg]:text-muted-foreground"
               value={menuItem.value}
               onSelect={() => {
                 menuItem.onSelect?.({
@@ -335,6 +328,11 @@ export const AIMenuItems = ({
             >
               {menuItem.icon}
               <span>{menuItem.label}</span>
+              {menuItem.shortcut && (
+                <span className="ml-auto text-xs tracking-widest text-muted-foreground">
+                  {menuItem.shortcut}
+                </span>
+              )}
             </CommandItem>
           ))}
         </CommandGroup>
