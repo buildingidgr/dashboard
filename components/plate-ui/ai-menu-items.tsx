@@ -24,6 +24,7 @@ import {
   ListEnd,
   ListMinus,
   ListPlus,
+  MessageSquare,
   PenLine,
   Wand,
   X,
@@ -31,6 +32,7 @@ import {
 import { Path } from 'slate';
 
 import { CommandGroup, CommandItem } from './command';
+import { EditorVisualManager } from './editor-visual-utils';
 
 export type EditorChatState =
   | 'cursorCommand'
@@ -63,49 +65,91 @@ export const aiChatItems: Record<string, MenuItemType> = {
     label: 'Accept',
     value: 'accept',
     onSelect: ({ editor, aiEditor }) => {
-      console.log('Accept action triggered');
+      console.log('=== Accept Action Started ===');
       console.log('Editor state before accept:', editor.children);
       console.log('AI Editor state:', aiEditor.children);
       
-      // Get the block ID we stored earlier
+      // Get the block ID (for replacement cases)
       const blockId = (editor as any).blockToReplace;
-      if (!blockId) {
-        console.error('No block ID found');
-        return;
-      }
-
-      // Find the block by ID
-      const [blockNode, blockPath] = Array.from(
-        editor.nodes({
-          match: n => !('text' in n) && (n as CustomElement).id === blockId,
-        })
-      )[0] || [];
-
-      if (!blockNode) {
-        console.error('No block found with ID:', blockId);
-        return;
-      }
-
-      // Get the AI content
-      const aiContent = aiEditor.children[0];
-      if (!aiContent) {
-        console.error('No AI content found');
-        return;
-      }
-
-      const aiText = getNodeString(aiContent);
+      // Get the insertion position (for insertion cases)
+      const insertPosition = (editor as any).insertPosition;
 
       try {
-        // Select the entire block
-        editor.select(blockPath);
-        
-        // Remove any marks and replace the content
-        editor.removeMark('strikethrough');
-        editor.deleteFragment();
-        editor.insertText(aiText);
+        // Get the AI content
+        const aiContent = aiEditor.children[0];
+        if (!aiContent) {
+          console.error('No AI content found');
+          return;
+        }
 
-        // Clean up the stored block ID
-        delete (editor as any).blockToReplace;
+        const aiText = getNodeString(aiContent);
+        console.log('AI text to insert:', aiText);
+
+        if (blockId) {
+          // Handle replacement case (improve writing, make longer/shorter, etc.)
+          const [blockNode, blockPath] = Array.from(
+            editor.nodes({
+              match: n => !('text' in n) && (n as CustomElement).id === blockId,
+            })
+          )[0] || [];
+
+          if (!blockNode) {
+            console.error('No block found with ID:', blockId);
+            return;
+          }
+
+          // Remove visual feedback
+          EditorVisualManager.removeVisualFeedback({
+            blockId,
+            styles: {
+              opacity: '0.5',
+              textDecoration: 'line-through'
+            },
+            debug: true
+          });
+
+          // Replace the content
+          editor.select(blockPath);
+          editor.deleteFragment();
+          editor.insertText(aiText);
+
+          // Clean up the stored block ID
+          delete (editor as any).blockToReplace;
+        } else if (insertPosition) {
+          // Handle insertion case (continue writing, summarize, explain, ask AI)
+          editor.select(insertPosition);
+
+          // Split AI text into paragraphs
+          const paragraphs = aiText.split('\n').filter(p => p.trim());
+
+          // Create new paragraph nodes for each line
+          paragraphs.forEach((text, index) => {
+            // Create a unique ID for the new paragraph
+            const newId = `ai-${Date.now()}-${index}`;
+
+            // Create a new paragraph node
+            const newParagraph = {
+              type: 'p',
+              id: newId,
+              children: [{ text }]
+            };
+
+            // Insert the new paragraph
+            editor.insertNode(newParagraph);
+
+            // Move selection to the end of the inserted paragraph
+            const point = editor.end([]);
+            editor.select(point);
+
+            // Add a line break after each paragraph except the last one
+            if (index < paragraphs.length - 1) {
+              editor.insertBreak();
+            }
+          });
+
+          // Clean up the stored insertion position
+          delete (editor as any).insertPosition;
+        }
 
         // Hide the AI chat interface
         editor.getApi(AIChatPlugin).aiChat.hide();
@@ -114,6 +158,7 @@ export const aiChatItems: Record<string, MenuItemType> = {
         focusEditor(editor, getEndPoint(editor, editor.selection!));
         
         console.log('Editor state after accept:', editor.children);
+        console.log('=== Accept Action Completed ===');
       } catch (error) {
         console.error('Error accepting AI content:', error);
       }
@@ -127,41 +172,8 @@ export const aiChatItems: Record<string, MenuItemType> = {
       // Get the entire document content
       const documentContent = editor.children.map(getNodeString).join('\n');
 
-      // Get the block containing the selection
-      const blockEntry = getAncestorNode(editor);
-      if (!blockEntry) {
-        console.log('No block entry found');
-        return;
-      }
-
-      const block = blockEntry[0] as CustomElement;
-      const blockId = block.id;
-      console.log('Found block with ID:', blockId);
-
-      if (!blockId) {
-        console.log('Block has no ID');
-        return;
-      }
-
-      // Store the block ID in the editor state for later use
-      (editor as any).blockToReplace = blockId;
-
-      // Find the block element
-      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
-      if (blockElement) {
-        console.log('Block element found, current classes:', blockElement.classList.toString());
-        
-        // Add temporary classes to the text spans inside the block
-        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
-        textSpans.forEach(span => {
-          console.log('Adding classes to span:', span.textContent);
-          span.classList.add('opacity-50', 'line-through');
-        });
-        
-        console.log('Classes after adding to spans:', 
-          Array.from(textSpans).map(span => span.classList.toString())
-        );
-      }
+      // Store the current selection for later use
+      (editor as any).insertPosition = editor.selection;
 
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
@@ -175,41 +187,40 @@ export const aiChatItems: Record<string, MenuItemType> = {
     shortcut: 'Esc',
     value: 'discard',
     onSelect: ({ editor }) => {
-      console.log('Discard action triggered');
+      console.log('=== Discard Action Started ===');
       
-      // Get the block ID we stored earlier
+      // Get the block ID (for replacement cases)
       const blockId = (editor as any).blockToReplace;
-      if (!blockId) {
-        console.error('No block ID found for discard');
-        return;
-      }
+      // Get the insertion position (for insertion cases)
+      const insertPosition = (editor as any).insertPosition;
 
       try {
-        // Find the block element and clean up temporary classes
-        const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
-        if (blockElement) {
-          console.log('Block element found for cleanup, current classes:', blockElement.classList.toString());
-          
-          // Remove classes from all text spans
-          const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
-          textSpans.forEach(span => {
-            console.log('Removing classes from span:', span.textContent);
-            span.classList.remove('opacity-50', 'line-through');
+        if (blockId) {
+          // Handle replacement case
+          EditorVisualManager.removeVisualFeedback({
+            blockId,
+            styles: {
+              opacity: '0.5',
+              textDecoration: 'line-through'
+            },
+            debug: true
           });
-          
-          console.log('Classes after cleanup:', 
-            Array.from(textSpans).map(span => span.classList.toString())
-          );
+
+          // Clean up the stored block ID
+          delete (editor as any).blockToReplace;
+        } else if (insertPosition) {
+          // Handle insertion case
+          // Just clean up the stored insertion position
+          delete (editor as any).insertPosition;
         }
 
         // Remove any AI-generated content
         editor.getTransforms(AIPlugin).ai.undo();
-
-        // Clean up the stored block ID
-        delete (editor as any).blockToReplace;
+        console.log('Removed AI-generated content');
 
         // Hide the AI chat interface
         editor.getApi(AIChatPlugin).aiChat.hide();
+        console.log('=== Discard Action Completed ===');
       } catch (error) {
         console.error('Error during discard:', error);
       }
@@ -223,41 +234,8 @@ export const aiChatItems: Record<string, MenuItemType> = {
       // Get the entire document content
       const documentContent = editor.children.map(getNodeString).join('\n');
 
-      // Get the block containing the selection
-      const blockEntry = getAncestorNode(editor);
-      if (!blockEntry) {
-        console.log('No block entry found');
-        return;
-      }
-
-      const block = blockEntry[0] as CustomElement;
-      const blockId = block.id;
-      console.log('Found block with ID:', blockId);
-
-      if (!blockId) {
-        console.log('Block has no ID');
-        return;
-      }
-
-      // Store the block ID in the editor state for later use
-      (editor as any).blockToReplace = blockId;
-
-      // Find the block element
-      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
-      if (blockElement) {
-        console.log('Block element found, current classes:', blockElement.classList.toString());
-        
-        // Add temporary classes to the text spans inside the block
-        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
-        textSpans.forEach(span => {
-          console.log('Adding classes to span:', span.textContent);
-          span.classList.add('opacity-50', 'line-through');
-        });
-        
-        console.log('Classes after adding to spans:', 
-          Array.from(textSpans).map(span => span.classList.toString())
-        );
-      }
+      // Store the current selection for later use
+      (editor as any).insertPosition = editor.selection;
 
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
@@ -292,8 +270,6 @@ export const aiChatItems: Record<string, MenuItemType> = {
 
       const block = blockEntry[0] as CustomElement;
       const blockId = block.id;
-      console.log('Found block with ID:', blockId);
-
       if (!blockId) {
         console.log('Block has no ID');
         return;
@@ -302,22 +278,15 @@ export const aiChatItems: Record<string, MenuItemType> = {
       // Store the block ID in the editor state for later use
       (editor as any).blockToReplace = blockId;
 
-      // Find the block element
-      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
-      if (blockElement) {
-        console.log('Block element found, current classes:', blockElement.classList.toString());
-        
-        // Add temporary classes to the text spans inside the block
-        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
-        textSpans.forEach(span => {
-          console.log('Adding classes to span:', span.textContent);
-          span.classList.add('opacity-50', 'line-through');
-        });
-        
-        console.log('Classes after adding to spans:', 
-          Array.from(textSpans).map(span => span.classList.toString())
-        );
-      }
+      // Apply visual feedback
+      EditorVisualManager.applyVisualFeedback({
+        blockId,
+        styles: {
+          opacity: '0.5',
+          textDecoration: 'line-through'
+        },
+        debug: true
+      });
 
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
@@ -330,7 +299,8 @@ export const aiChatItems: Record<string, MenuItemType> = {
     label: 'Improve writing',
     value: 'improveWriting',
     onSelect: ({ editor }) => {
-      console.log('Improve writing triggered');
+      console.log('=== Improve Writing Started ===');
+      
       const selection = editor.selection;
       if (!selection) {
         console.log('No selection found');
@@ -353,8 +323,6 @@ export const aiChatItems: Record<string, MenuItemType> = {
 
       const block = blockEntry[0] as CustomElement;
       const blockId = block.id;
-      console.log('Found block with ID:', blockId);
-
       if (!blockId) {
         console.log('Block has no ID');
         return;
@@ -363,27 +331,21 @@ export const aiChatItems: Record<string, MenuItemType> = {
       // Store the block ID in the editor state for later use
       (editor as any).blockToReplace = blockId;
 
-      // Find the block element
-      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
-      if (blockElement) {
-        console.log('Block element found, current classes:', blockElement.classList.toString());
-        
-        // Add temporary classes to the text spans inside the block
-        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
-        textSpans.forEach(span => {
-          console.log('Adding classes to span:', span.textContent);
-          span.classList.add('opacity-50', 'line-through');
-        });
-        
-        console.log('Classes after adding to spans:', 
-          Array.from(textSpans).map(span => span.classList.toString())
-        );
-      }
+      // Apply visual feedback
+      EditorVisualManager.applyVisualFeedback({
+        blockId,
+        styles: {
+          opacity: '0.5',
+          textDecoration: 'line-through'
+        },
+        debug: true
+      });
 
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
         prompt: 'Improve this text by making it more clear, concise, and professional: ' + selectedText,
       });
+      console.log('=== Improve Writing Completed ===');
     },
   },
   insertBelow: {
@@ -421,8 +383,6 @@ export const aiChatItems: Record<string, MenuItemType> = {
 
       const block = blockEntry[0] as CustomElement;
       const blockId = block.id;
-      console.log('Found block with ID:', blockId);
-
       if (!blockId) {
         console.log('Block has no ID');
         return;
@@ -431,22 +391,15 @@ export const aiChatItems: Record<string, MenuItemType> = {
       // Store the block ID in the editor state for later use
       (editor as any).blockToReplace = blockId;
 
-      // Find the block element
-      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
-      if (blockElement) {
-        console.log('Block element found, current classes:', blockElement.classList.toString());
-        
-        // Add temporary classes to the text spans inside the block
-        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
-        textSpans.forEach(span => {
-          console.log('Adding classes to span:', span.textContent);
-          span.classList.add('opacity-50', 'line-through');
-        });
-        
-        console.log('Classes after adding to spans:', 
-          Array.from(textSpans).map(span => span.classList.toString())
-        );
-      }
+      // Apply visual feedback
+      EditorVisualManager.applyVisualFeedback({
+        blockId,
+        styles: {
+          opacity: '0.5',
+          textDecoration: 'line-through'
+        },
+        debug: true
+      });
 
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
@@ -481,8 +434,6 @@ export const aiChatItems: Record<string, MenuItemType> = {
 
       const block = blockEntry[0] as CustomElement;
       const blockId = block.id;
-      console.log('Found block with ID:', blockId);
-
       if (!blockId) {
         console.log('Block has no ID');
         return;
@@ -491,22 +442,15 @@ export const aiChatItems: Record<string, MenuItemType> = {
       // Store the block ID in the editor state for later use
       (editor as any).blockToReplace = blockId;
 
-      // Find the block element
-      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
-      if (blockElement) {
-        console.log('Block element found, current classes:', blockElement.classList.toString());
-        
-        // Add temporary classes to the text spans inside the block
-        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
-        textSpans.forEach(span => {
-          console.log('Adding classes to span:', span.textContent);
-          span.classList.add('opacity-50', 'line-through');
-        });
-        
-        console.log('Classes after adding to spans:', 
-          Array.from(textSpans).map(span => span.classList.toString())
-        );
-      }
+      // Apply visual feedback
+      EditorVisualManager.applyVisualFeedback({
+        blockId,
+        styles: {
+          opacity: '0.5',
+          textDecoration: 'line-through'
+        },
+        debug: true
+      });
 
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
@@ -610,8 +554,6 @@ export const aiChatItems: Record<string, MenuItemType> = {
 
       const block = blockEntry[0] as CustomElement;
       const blockId = block.id;
-      console.log('Found block with ID:', blockId);
-
       if (!blockId) {
         console.log('Block has no ID');
         return;
@@ -620,22 +562,15 @@ export const aiChatItems: Record<string, MenuItemType> = {
       // Store the block ID in the editor state for later use
       (editor as any).blockToReplace = blockId;
 
-      // Find the block element
-      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
-      if (blockElement) {
-        console.log('Block element found, current classes:', blockElement.classList.toString());
-        
-        // Add temporary classes to the text spans inside the block
-        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
-        textSpans.forEach(span => {
-          console.log('Adding classes to span:', span.textContent);
-          span.classList.add('opacity-50', 'line-through');
-        });
-        
-        console.log('Classes after adding to spans:', 
-          Array.from(textSpans).map(span => span.classList.toString())
-        );
-      }
+      // Apply visual feedback
+      EditorVisualManager.applyVisualFeedback({
+        blockId,
+        styles: {
+          opacity: '0.5',
+          textDecoration: 'line-through'
+        },
+        debug: true
+      });
 
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
@@ -651,41 +586,8 @@ export const aiChatItems: Record<string, MenuItemType> = {
       // Get the entire document content
       const documentContent = editor.children.map(getNodeString).join('\n');
 
-      // Get the block containing the selection
-      const blockEntry = getAncestorNode(editor);
-      if (!blockEntry) {
-        console.log('No block entry found');
-        return;
-      }
-
-      const block = blockEntry[0] as CustomElement;
-      const blockId = block.id;
-      console.log('Found block with ID:', blockId);
-
-      if (!blockId) {
-        console.log('Block has no ID');
-        return;
-      }
-
-      // Store the block ID in the editor state for later use
-      (editor as any).blockToReplace = blockId;
-
-      // Find the block element
-      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
-      if (blockElement) {
-        console.log('Block element found, current classes:', blockElement.classList.toString());
-        
-        // Add temporary classes to the text spans inside the block
-        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
-        textSpans.forEach(span => {
-          console.log('Adding classes to span:', span.textContent);
-          span.classList.add('opacity-50', 'line-through');
-        });
-        
-        console.log('Classes after adding to spans:', 
-          Array.from(textSpans).map(span => span.classList.toString())
-        );
-      }
+      // Store the current selection for later use
+      (editor as any).insertPosition = editor.selection;
 
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
@@ -699,6 +601,23 @@ export const aiChatItems: Record<string, MenuItemType> = {
     value: 'tryAgain',
     onSelect: ({ editor }) => {
       void editor.getApi(AIChatPlugin).aiChat.reload();
+    },
+  },
+  askAI: {
+    icon: <MessageSquare />,
+    label: 'Ask AI anything',
+    value: 'askAI',
+    onSelect: ({ editor }) => {
+      // Get the entire document content
+      const documentContent = editor.children.map(getNodeString).join('\n');
+
+      // Store the current selection for later use
+      (editor as any).insertPosition = editor.selection;
+
+      void editor.getApi(AIChatPlugin).aiChat.submit({
+        mode: 'insert',
+        prompt: `<Document>\n${documentContent}\n</Document>\nAnalyze the content in <Document> and provide insights. Write your response as a new paragraph.`,
+      });
     },
   },
 } satisfies Record<string, MenuItemType>;

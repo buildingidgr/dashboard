@@ -294,8 +294,22 @@ export function PlateEditor() {
       }
     };
 
-    const interval = setInterval(saveDocument, 2000);
-    return () => clearInterval(interval);
+    // Save every 30 seconds (like Notion) instead of 2 seconds
+    const interval = setInterval(saveDocument, 30000);
+
+    // Save when user leaves the page
+    const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      await saveDocument();
+      return undefined;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [documentId, editor]);
 
   // Initialize WebSocket connection

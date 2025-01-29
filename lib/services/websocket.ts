@@ -108,9 +108,12 @@ export class DocumentWebSocket {
       clearInterval(this.autoSaveTimer);
     }
 
+    // Check for changes every 5 seconds, but only save if needed
     this.autoSaveTimer = setInterval(async () => {
-      await this.checkAndSave();
-    }, 5000); // Check every 5 seconds
+      if (this.pendingChanges) {
+        await this.checkAndSave();
+      }
+    }, 5000);
   }
 
   private async checkAndSave() {
@@ -119,8 +122,9 @@ export class DocumentWebSocket {
     const now = Date.now();
     const timeSinceLastSave = now - this.lastSaveTime;
 
-    if ((this.pendingChanges && timeSinceLastSave >= this.SAVE_INTERVAL) || 
-        timeSinceLastSave >= this.FORCE_SAVE_INTERVAL) {
+    // Save if there are pending changes and it's been at least 2 seconds since last save
+    // This helps batch rapid changes together
+    if (this.pendingChanges && timeSinceLastSave >= 2000) {
       await this.saveDocument();
     }
   }
