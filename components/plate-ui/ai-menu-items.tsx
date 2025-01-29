@@ -119,7 +119,7 @@ export const aiChatItems: Record<string, MenuItemType> = {
           // Handle insertion case (continue writing, summarize, explain, ask AI)
           editor.select(insertPosition);
 
-          // Split AI text into paragraphs
+          // Split AI text into paragraphs and preserve formatting
           const paragraphs = aiText.split('\n').filter(p => p.trim());
 
           // Create new paragraph nodes for each line
@@ -127,11 +127,11 @@ export const aiChatItems: Record<string, MenuItemType> = {
             // Create a unique ID for the new paragraph
             const newId = `ai-${Date.now()}-${index}`;
 
-            // Create a new paragraph node
+            // Create a new paragraph node with text
             const newParagraph = {
               type: 'p',
               id: newId,
-              children: [{ text }]
+              children: [{ text: text.trim() }]
             };
 
             // Insert the new paragraph
@@ -149,6 +149,9 @@ export const aiChatItems: Record<string, MenuItemType> = {
 
           // Clean up the stored insertion position
           delete (editor as any).insertPosition;
+        } else {
+          console.error('No block ID or insertion position found');
+          return;
         }
 
         // Hide the AI chat interface
@@ -614,9 +617,20 @@ export const aiChatItems: Record<string, MenuItemType> = {
       // Store the current selection for later use
       (editor as any).insertPosition = editor.selection;
 
+      // Create a new paragraph for the response
+      const newId = `ai-${Date.now()}`;
+      const newParagraph = {
+        type: 'p',
+        id: newId,
+        children: [{ text: '' }]
+      };
+
+      // Insert the new paragraph at the current position
+      editor.insertNode(newParagraph);
+
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
-        prompt: `<Document>\n${documentContent}\n</Document>\nAnalyze the content in <Document> and provide insights. Write your response as a new paragraph.`,
+        prompt: `<Document>\n${documentContent}\n</Document>\nAnalyze the content in <Document> and provide insights. Write your response as a clear, concise paragraph.`,
       });
     },
   },

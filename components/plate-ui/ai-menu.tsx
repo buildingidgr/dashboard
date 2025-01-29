@@ -159,6 +159,7 @@ export function AIMenu() {
                 if (isHotkey('enter')(e) && !e.shiftKey && !value) {
                   e.preventDefault();
                   setError(null);
+                  (editor as any).insertPosition = editor.selection;
                   void chat.handleSubmit(e);
                 }
               }}
