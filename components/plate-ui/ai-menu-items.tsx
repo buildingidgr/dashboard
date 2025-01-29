@@ -286,9 +286,58 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
     label: 'Make longer',
     value: 'makeLonger',
     onSelect: ({ editor }) => {
+      const selection = editor.selection;
+      if (!selection) {
+        console.log('No selection found');
+        return;
+      }
+
+      // Get the selected text
+      const selectedText = editor.string(selection);
+      if (!selectedText) {
+        console.log('No selected text found');
+        return;
+      }
+
+      // Get the block containing the selection
+      const blockEntry = getAncestorNode(editor);
+      if (!blockEntry) {
+        console.log('No block entry found');
+        return;
+      }
+
+      const block = blockEntry[0] as CustomElement;
+      const blockId = block.id;
+      console.log('Found block with ID:', blockId);
+
+      if (!blockId) {
+        console.log('Block has no ID');
+        return;
+      }
+
+      // Store the block ID in the editor state for later use
+      (editor as any).blockToReplace = blockId;
+
+      // Find the block element
+      const blockElement = document.querySelector(`[data-block-id="${blockId}"]`);
+      if (blockElement) {
+        console.log('Block element found, current classes:', blockElement.classList.toString());
+        
+        // Add temporary classes to the text spans inside the block
+        const textSpans = blockElement.querySelectorAll('[data-slate-string="true"]');
+        textSpans.forEach(span => {
+          console.log('Adding classes to span:', span.textContent);
+          span.classList.add('opacity-50', 'line-through');
+        });
+        
+        console.log('Classes after adding to spans:', 
+          Array.from(textSpans).map(span => span.classList.toString())
+        );
+      }
+
       void editor.getApi(AIChatPlugin).aiChat.submit({
         mode: 'insert',
-        prompt: 'Make longer',
+        prompt: 'Make this text longer: ' + selectedText,
       });
     },
   },
