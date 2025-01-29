@@ -46,7 +46,7 @@ export function AIMenu() {
   const setOpen = (open: boolean) => {
     if (open) {
       api.aiChat.show();
-      setError(null); // Clear any previous errors
+      setError(null);
     } else {
       api.aiChat.hide();
     }
@@ -126,8 +126,10 @@ export function AIMenu() {
             </div>
           )}
 
-          {mode === 'chat' && isSelecting && chat.messages.length > 0 && (
-            <AIChatEditor aiEditorRef={aiEditorRef} />
+          {chat.messages.length > 0 && (
+            <div className="ai-chat-preview">
+              <AIChatEditor aiEditorRef={aiEditorRef} />
+            </div>
           )}
 
           {chat.isLoading ? (
@@ -147,7 +149,7 @@ export function AIMenu() {
                 }
                 if (isHotkey('enter')(e) && !e.shiftKey && !value) {
                   e.preventDefault();
-                  setError(null); // Clear any previous errors
+                  setError(null);
                   void chat.handleSubmit(e);
                 }
               }}

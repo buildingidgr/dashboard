@@ -106,7 +106,7 @@
     "@udecode/plate-trailing-block": "^41.0.0",
     "@uploadthing/react": "^7.1.0",
     "address-format": "^0.0.3",
-    "ai": "^4.1.10",
+    "ai": "^4.1.11",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

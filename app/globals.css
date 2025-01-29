@@ -148,3 +148,41 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* AI Chat Preview */
+.ai-chat-preview {
+  @apply p-4 bg-muted/50;
+}
+
+.ai-chat-preview .slate-editor {
+  @apply text-sm;
+}
+
+.ai-chat-preview .slate-editor p {
+  @apply my-1;
+}
+
+.ai-chat-preview .slate-editor pre {
+  @apply my-2 p-2 bg-muted rounded-md;
+}
+
+.ai-chat-preview .slate-editor code {
+  @apply text-xs;
+}
+
+.ai-chat-preview .slate-editor blockquote {
+  @apply my-2 pl-4 border-l-2 border-muted-foreground/20;
+}
+
+.ai-chat-preview .slate-editor ul,
+.ai-chat-preview .slate-editor ol {
+  @apply my-2 pl-6;
+}
+
+.ai-chat-preview .slate-editor ul {
+  @apply list-disc;
+}
+
+.ai-chat-preview .slate-editor ol {
+  @apply list-decimal;
+}

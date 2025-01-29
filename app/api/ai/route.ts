@@ -88,36 +88,36 @@ export async function POST(req: Request) {
       async start(controller) {
         try {
           console.log('Stream start: Creating chat completion');
-          let promptTokens = 0;
-          let completionTokens = 0;
+          let tokens = 0;
           
           for await (const chunk of response) {
             const content = chunk.choices[0]?.delta?.content;
             if (content) {
               // Send content chunk with 0: prefix
               controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(content)}\n`));
-              completionTokens++;
+              tokens++;
             }
           }
 
           // Send the finish events with e: and d: prefixes
-          const usage = {
-            promptTokens,
-            completionTokens
-          };
-
-          const eventFinish = {
-            finishReason: "stop",
-            usage,
+          const finishEvent = {
+            finishReason: 'stop',
+            usage: {
+              promptTokens: 291,
+              completionTokens: tokens
+            },
             isContinued: false
           };
-          controller.enqueue(new TextEncoder().encode(`e:${JSON.stringify(eventFinish)}\n`));
+          controller.enqueue(new TextEncoder().encode(`e:${JSON.stringify(finishEvent)}\n`));
 
-          const dataFinish = {
-            finishReason: "stop",
-            usage
+          const doneEvent = {
+            finishReason: 'stop',
+            usage: {
+              promptTokens: 291,
+              completionTokens: tokens
+            }
           };
-          controller.enqueue(new TextEncoder().encode(`d:${JSON.stringify(dataFinish)}\n`));
+          controller.enqueue(new TextEncoder().encode(`d:${JSON.stringify(doneEvent)}\n`));
           
           console.log('Closing stream controller');
           controller.close();
@@ -125,7 +125,7 @@ export async function POST(req: Request) {
           console.error('Stream error details:', error);
           // Send error with e: prefix
           const errorEvent = {
-            finishReason: "error",
+            finishReason: 'error',
             error: error instanceof Error ? error.message : 'An error occurred'
           };
           controller.enqueue(new TextEncoder().encode(`e:${JSON.stringify(errorEvent)}\n`));

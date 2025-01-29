@@ -177,7 +177,8 @@ function AIPluginProvider({ children }: { children: React.ReactNode }) {
     },
     id: 'editor',
     initialMessages: [],
-    sendExtraMessageFields: true
+    sendExtraMessageFields: true,
+    experimental_streamData: true
   });
 
   return (
